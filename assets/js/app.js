@@ -171,7 +171,13 @@
     const wrap = document.getElementById('heatmap');
     if (!wrap) return;
     wrap.innerHTML = '';
-    const tooltip = document.getElementById('tooltip');
+    let tooltip = document.getElementById('tooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'tooltip';
+      tooltip.className = 'tooltip';
+      document.body.appendChild(tooltip);
+    }
 
     const activityMap = {};
     (appState.activities || []).forEach(act => {
@@ -552,80 +558,6 @@
         }
       });
     }
-    // 9. Create Project Modal Controls
-    const btnOpenProjectModal = document.getElementById('btnOpenCreateProjectModal');
-    const btnCloseProjectModal = document.getElementById('btnCloseProjectModal');
-    const btnCancelProjectModal = document.getElementById('btnCancelProjectModal');
-    const createProjectModalOverlay = document.getElementById('createProjectModalOverlay');
-    const createProjectForm = document.getElementById('createProjectForm');
-
-    function openProjectModal() {
-      if (createProjectModalOverlay) createProjectModalOverlay.classList.add('active');
-    }
-    function closeProjectModal() {
-      if (createProjectModalOverlay) createProjectModalOverlay.classList.remove('active');
-    }
-
-    if (btnOpenProjectModal) btnOpenProjectModal.addEventListener('click', openProjectModal);
-    if (btnCloseProjectModal) btnCloseProjectModal.addEventListener('click', closeProjectModal);
-    if (btnCancelProjectModal) btnCancelProjectModal.addEventListener('click', closeProjectModal);
-    if (createProjectModalOverlay) {
-      createProjectModalOverlay.addEventListener('click', (e) => {
-        if (e.target === createProjectModalOverlay) closeProjectModal();
-      });
-    }
-
-    if (createProjectForm) {
-      createProjectForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('projName').value.trim();
-        const code = document.getElementById('projCode').value.trim();
-        const category = document.getElementById('projCategory').value;
-        const level = document.getElementById('projLevel').value;
-        const total_modules = parseInt(document.getElementById('projModules').value, 10);
-
-        const btnSubmit = document.getElementById('btnSubmitProjectModal');
-        btnSubmit.disabled = true;
-        btnSubmit.textContent = 'Creating...';
-
-        try {
-          const res = await secureFetch('api/create_project.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, code, category, level, total_modules })
-          });
-          const data = await res.json();
-          if (data.success) {
-            closeProjectModal();
-            showToast(`Project "${name}" created.`);
-            setTimeout(() => { window.location.href = 'courses.php'; }, 1000);
-          } else {
-            alert('Error creating project: ' + (data.message || data.error));
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = 'Create Project';
-        }
-      });
-    }
-
-    // 10. Upgrade Account Modal Controls
-    const btnUpgradeAccount = document.querySelector('.btn-upgrade-account');
-    const upgradeModalOverlay = document.getElementById('upgradeModalOverlay');
-    const btnCloseUpgradeModal = document.getElementById('btnCloseUpgradeModal');
-
-    if (btnUpgradeAccount && upgradeModalOverlay) {
-      btnUpgradeAccount.addEventListener('click', () => {
-        upgradeModalOverlay.classList.add('active');
-      });
-    }
-    if (btnCloseUpgradeModal && upgradeModalOverlay) {
-      btnCloseUpgradeModal.addEventListener('click', () => {
-        upgradeModalOverlay.classList.remove('active');
-      });
-    }
     // 11. Pomodoro Focus Studio Engine
     const btnToggleTimer = document.getElementById('btnToggleTimer');
     const btnResetTimer = document.getElementById('btnResetTimer');
@@ -849,16 +781,28 @@
     // 15. Create Project Modal Controller
     window.openCreateProjectModal = function() {
       const modal = document.getElementById('createProjectModalOverlay');
-      if (modal) modal.classList.add('active');
+      if (modal) {
+        modal.classList.add('active');
+        setTimeout(() => document.getElementById('projName')?.focus(), 80);
+      }
     };
+    window.closeCreateProjectModal = function() {
+      const modal = document.getElementById('createProjectModalOverlay');
+      if (modal) modal.classList.remove('active');
+    };
+
     const btnCloseProj = document.getElementById('btnCloseProjectModal');
+    const btnCancelProj = document.getElementById('btnCancelProjectModal');
     const projModal = document.getElementById('createProjectModalOverlay');
-    if (btnCloseProj && projModal) {
-      btnCloseProj.addEventListener('click', () => projModal.classList.remove('active'));
+
+    if (btnCloseProj) btnCloseProj.addEventListener('click', window.closeCreateProjectModal);
+    if (btnCancelProj) btnCancelProj.addEventListener('click', window.closeCreateProjectModal);
+    if (projModal) {
       projModal.addEventListener('click', (e) => {
-        if (e.target === projModal) projModal.classList.remove('active');
+        if (e.target === projModal) window.closeCreateProjectModal();
       });
     }
+
     const createProjForm = document.getElementById('createProjectForm');
     if (createProjForm && projModal) {
       createProjForm.addEventListener('submit', async (e) => {
@@ -866,18 +810,25 @@
         const pName = document.getElementById('projName')?.value.trim();
         const pCode = document.getElementById('projCode')?.value.trim() || 'PRJ';
         const pCat = document.getElementById('projCategory')?.value || 'Design';
+        const pLevel = document.getElementById('projLevel')?.value || 'Standard';
         if (!pName) return;
+
+        const submitBtn = document.getElementById('btnSubmitProjectModal');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Creating...';
+        }
 
         try {
           const res = await secureFetch('api/create_project.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: pName, code: pCode, category: pCat })
+            body: JSON.stringify({ name: pName, code: pCode, category: pCat, level: pLevel })
           });
           const data = await res.json();
           if (data.success) {
-            showToast('Project created successfully.');
-            projModal.classList.remove('active');
+            showToast(`Project "${pName}" created.`);
+            window.closeCreateProjectModal();
             createProjForm.reset();
             setTimeout(() => {
               if (window.location.pathname.includes('courses')) location.reload();
@@ -888,6 +839,11 @@
           }
         } catch (err) {
           console.error(err);
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Project';
+          }
         }
       });
     }
