@@ -88,10 +88,10 @@ include __DIR__ . '/includes/head.php';
     <div class="goals-header-row">
       <div>
         <h2 class="goals-title">Objectives &amp; Key Results</h2>
-        <p class="goals-subtitle">Track high-level quarterly targets and project deliverables</p>
+        <p class="goals-subtitle">Track project targets and deliverables</p>
       </div>
       <button type="button" class="btn-save" style="display:inline-flex; align-items:center; gap:6px;" onclick="openGoalModal()">
-        + New Objective
+        New Objective
       </button>
     </div>
 
@@ -99,9 +99,9 @@ include __DIR__ . '/includes/head.php';
     <div class="goals-grid">
       <?php if (empty($goals)): ?>
         <div style="grid-column:1/-1; text-align:center; padding:48px 20px; background:var(--panel-bg); border:1px solid var(--border); border-radius:var(--radius-sm);">
-          <div style="font-size:15px; font-weight:600; color:var(--ink); margin-bottom:4px;">No goals created yet</div>
-          <p style="color:var(--muted); font-size:13px; margin:0 0 16px;">Define your quarterly targets and track progress.</p>
-          <button type="button" class="btn-save" onclick="openGoalModal()">+ Create Objective</button>
+          <div style="font-size:15px; font-weight:600; color:var(--ink); margin-bottom:4px;">No objectives created yet</div>
+          <p style="color:var(--muted); font-size:13px; margin:0 0 16px;">Set targets and log progress toward your project milestones.</p>
+          <button type="button" class="btn-save" onclick="openGoalModal()">Create Objective</button>
         </div>
       <?php else: ?>
         <?php foreach ($goals as $g): 
@@ -238,7 +238,7 @@ async function handleCreateGoal(e) {
     });
     const data = await res.json();
     if (data.success) {
-      if (typeof showToast === 'function') showToast('Goal created successfully!');
+      if (typeof showToast === 'function') showToast('Objective created.');
       setTimeout(() => location.reload(), 400);
     } else {
       alert(data.message || 'Failed to create goal');
@@ -257,7 +257,7 @@ async function updateGoalProgress(goalId, newCurrent, status) {
     });
     const data = await res.json();
     if (data.success) {
-      if (typeof showToast === 'function') showToast('Progress updated!');
+      if (typeof showToast === 'function') showToast('Progress updated.');
       setTimeout(() => location.reload(), 300);
     }
   } catch (err) {
@@ -277,7 +277,7 @@ async function deleteGoal(goalId) {
     if (data.success) {
       const el = document.getElementById(`goalCard-${goalId}`);
       if (el) el.remove();
-      if (typeof showToast === 'function') showToast('Goal removed.');
+      if (typeof showToast === 'function') showToast('Objective removed.');
     }
   } catch (err) {
     console.error(err);

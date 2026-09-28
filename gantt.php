@@ -94,7 +94,7 @@ include __DIR__ . '/includes/head.php';
     <div class="gantt-page-header">
       <div class="gantt-title-wrap">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E65C7" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h6"/><path d="M10 12h8"/><path d="M7 16h5"/></svg>
-        <h2 class="gantt-title">Gantt Chart Interactive Timeline</h2>
+        <h2 class="gantt-title">Gantt Timeline</h2>
       </div>
     </div>
 
@@ -108,7 +108,7 @@ include __DIR__ . '/includes/head.php';
 
       <div style="display:flex; align-items:center; gap:12px;">
         <button type="button" class="btn-step" id="btnToggleCriticalPath" onclick="toggleCriticalPath()" style="display:inline-flex; align-items:center; gap:6px; font-weight:700;">
-          ⚡ Highlight Critical Path
+          Highlight Critical Path
         </button>
         <div style="font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; user-select:none;" onclick="toggleAutoSchedule()" title="Click to toggle auto-scheduling">
           <span>Auto Scheduling: <b id="autoScheduleBadge" style="color:#10B981;">ON</b></span>
@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (data.success) {
         if (typeof showToast === 'function') {
-          showToast(`📅 Rescheduled to ${fmtStart} (${durationDays} days)`);
+          showToast(`Rescheduled to ${fmtStart} (${durationDays} days)`);
         }
       }
     } catch (err) {

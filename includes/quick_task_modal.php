@@ -30,7 +30,7 @@ if (isset($db, $userId)) {
         style="font-size: 14px; padding: 9px 12px;"
       />
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; font-size:11.5px; color:var(--text-muted);">
-        <span>Type naturally. Tags like <code>#urgent</code> or <code>due tomorrow</code> parse automatically.</span>
+        <span>Enter task details. Use keywords like <code>#urgent</code> or <code>due tomorrow</code> to set values.</span>
         <button type="button" id="btnOmniClear" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:11.5px; display:none;">Clear</button>
       </div>
     </div>

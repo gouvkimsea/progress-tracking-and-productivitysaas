@@ -10,8 +10,8 @@ Mindrift is **100% production deployable** across all environments:
 - ✅ **Docker & Container Ready**: Includes a production-tuned `Dockerfile` and `docker-compose.yml`.
 - ✅ **Apache / cPanel Ready**: `.htaccess` pre-configured with sensitive file protection (`.env`, `*.sqlite`, `*.sql`), Gzip compression, and browser caching.
 - ✅ **Nginx / VPS Ready**: `nginx.conf.example` included with PHP-FPM FastCGI and directory execution blocks.
-- ✅ **Zero-Config Database Fallback**: Automatically defaults to MySQL, but falls back seamlessly to SQLite (`mindrift.sqlite`) if no database server is configured.
-- ✅ **Cloud / PaaS Ready**: Seamlessly runs on Render, Railway, Fly.io, or Heroku.
+- ✅ **Zero-Config Database Fallback**: Automatically uses MySQL, or falls back to local SQLite (`mindrift.sqlite`) if no database server is configured.
+- ✅ **Cloud / PaaS Ready**: Deployable on Render, Railway, Fly.io, or Heroku.
 
 ---
 

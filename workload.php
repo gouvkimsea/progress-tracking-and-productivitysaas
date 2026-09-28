@@ -208,7 +208,7 @@ include __DIR__ . '/includes/head.php';
           <!-- Member 1 Breakdown Sub-row -->
           <tr id="breakdown-1" style="display:none; background:rgba(108,92,231,0.03);">
             <td colspan="28" style="padding:10px 16px; font-size:12px; color:var(--muted);">
-              📋 Assigned to: <b>Core Dashboard Redesign</b> (34h) · <b>Gantt Auto-Scheduler</b> (22h)
+              Assigned to: <b>Core Dashboard Redesign</b> (34h) · <b>Gantt Auto-Scheduler</b> (22h)
             </td>
           </tr>
 
@@ -218,7 +218,7 @@ include __DIR__ . '/includes/head.php';
               <div class="resource-td-cell">
                 <div class="resource-user-flex">
                   <button type="button" class="btn-expand-res" onclick="toggleMemberBreakdown(this, 'breakdown-2')" style="background:none; border:none; color:#6B7280; font-size:11px; cursor:pointer; padding:2px 4px;">▾</button>
-                  <div class="resource-avatar unassigned-avatar">👤</div>
+                  <div class="resource-avatar unassigned-avatar" style="font-size:11px; font-weight:700;">UA</div>
                   <span style="color:#6B7280;">unassigned</span>
                 </div>
               </div>
@@ -230,7 +230,7 @@ include __DIR__ . '/includes/head.php';
           <!-- Member 2 Breakdown Sub-row -->
           <tr id="breakdown-2" style="display:none; background:rgba(0,0,0,0.02);">
             <td colspan="28" style="padding:10px 16px; font-size:12px; color:var(--muted);">
-              0 tasks currently unassigned. All sprint assignments are allocated.
+              No unassigned tasks.
             </td>
           </tr>
         </tbody>

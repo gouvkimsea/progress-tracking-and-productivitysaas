@@ -38,7 +38,7 @@ $stmtStreaks = $db->prepare("SELECT * FROM weekly_streaks WHERE user_id = :uid O
 $stmtStreaks->execute(['uid' => $userId]);
 $weeklyStreaks = $stmtStreaks->fetchAll();
 
-$pageTitle = 'Mindrift — Progress Tracking Dashboard';
+$pageTitle = 'Mindrift — Dashboard';
 include __DIR__ . '/includes/head.php';
 ?>
 </head>
@@ -133,7 +133,7 @@ include __DIR__ . '/includes/head.php';
           </button>
           <div class="filter-menu" id="filterMenu">
             <button class="sel" data-cat="all">All courses</button>
-            <button data-cat="Design">Design mastery</button>
+            <button data-cat="Design">Design</button>
             <button data-cat="Programming">JavaScript</button>
             <button data-cat="Design">Photoshop</button>
             <button data-cat="Data Science">Python for Data</button>

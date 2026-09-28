@@ -1,7 +1,7 @@
 <!-- ============ REUSABLE TOPBAR HEADER ============ -->
 <header class="topbar">
   <div>
-    <p class="greeting">Welcome back, <?= htmlspecialchars($user['name'] ?? 'User'); ?></p>
+    <p class="greeting">Welcome, <?= htmlspecialchars($user['name'] ?? 'User'); ?></p>
     <h1 class="date" id="todayDate"><?= date('l, M j'); ?></h1>
   </div>
 
@@ -40,7 +40,7 @@
           <button type="button" onclick="markAllNotificationsRead()" style="background:none; border:none; color:var(--brand-primary); font-size:11.5px; font-weight:500; cursor:pointer;">Mark all read</button>
         </div>
         <div id="notifList" style="max-height:280px; overflow-y:auto;">
-          <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px;">Loading alerts...</div>
+          <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px;">Loading notifications...</div>
         </div>
       </div>
     </div>
@@ -59,7 +59,7 @@
       </div>
       <a href="api/logout.php" class="btn-logout" title="Sign Out">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span>Exit</span>
+        <span>Sign Out</span>
       </a>
     </div>
 
@@ -96,11 +96,11 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="projLevel">Priority / Tier</label>
+          <label class="form-label" for="projLevel">Priority</label>
           <select id="projLevel" class="form-input">
             <option value="Standard">Standard</option>
-            <option value="Strategic" selected>Strategic</option>
-            <option value="Critical">Critical</option>
+            <option value="High" selected>High</option>
+            <option value="Urgent">Urgent</option>
           </select>
         </div>
       </div>

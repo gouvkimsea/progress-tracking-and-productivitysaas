@@ -160,7 +160,7 @@ include __DIR__ . '/includes/head.php';
           <?php if (empty($timeLogs)): ?>
             <tr>
               <td colspan="5">
-                <div class="timelog-empty-state">No filtered data. Please apply other filters</div>
+                <div class="timelog-empty-state">No time logs recorded yet. Click "Log time" to record a session.</div>
               </td>
             </tr>
           <?php else: ?>

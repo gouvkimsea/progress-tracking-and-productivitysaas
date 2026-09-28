@@ -99,13 +99,13 @@ include __DIR__ . '/includes/head.php';
       </div>
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <a href="portfolio.php" class="btn-save" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-size:12.5px; padding:6px 14px; background:var(--purple); color:#fff; border-radius:6px; font-weight:700;">
-          🎓 Executive Portfolio (PDF)
+          Export Portfolio (PDF)
         </a>
         <a href="api/export.php?type=tasks" class="btn-save" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-size:12.5px; padding:6px 14px; background:#0E65C7; color:#fff; border-radius:6px; font-weight:700;">
-          📥 Export Tasks CSV
+          Export Tasks (CSV)
         </a>
         <a href="api/export.php?type=timelog" class="btn-save" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-size:12.5px; padding:6px 14px; background:#10B981; color:#fff; border-radius:6px; font-weight:700;">
-          📊 Export Time Logs CSV
+          Export Time Logs (CSV)
         </a>
       </div>
     </div>
@@ -118,7 +118,7 @@ include __DIR__ . '/includes/head.php';
       <!-- Card 1: Milestone timeline -->
       <div class="report-card" data-cat="progress">
         <h3 class="report-card-title">Milestone timeline</h3>
-        <p class="report-card-desc">Get visual representation of your project's milestones along a timeline.</p>
+        <p class="report-card-desc">View milestone dates and timeline progress.</p>
 
         <div class="milestone-timeline-wrap">
           <svg viewBox="0 0 400 160" width="100%" height="160">
@@ -163,7 +163,7 @@ include __DIR__ . '/includes/head.php';
           <h3 class="report-card-title">Projects by status</h3>
           <a href="courses.php" style="color:#0E65C7; text-decoration:none; font-size:14px; font-weight:700;">+ New</a>
         </div>
-        <p class="report-card-desc">Get a color-coded pie chart overview of your projects based on their current statuses — on track, off track, at risk or completed.</p>
+        <p class="report-card-desc">Project count categorized by status: on track, at risk, off track, or no status.</p>
 
         <div class="donut-chart-flex">
           <svg viewBox="0 0 100 100" class="donut-chart-svg">
@@ -193,7 +193,7 @@ include __DIR__ . '/includes/head.php';
           <h3 class="report-card-title">Project Budget Utilization</h3>
           <span style="font-size:12.5px; font-weight:700; color:#10B981;">On Target</span>
         </div>
-        <p class="report-card-desc">Track real-time expenditure against allocated resource budgets across all sprints.</p>
+        <p class="report-card-desc">Track project expenditure against the allocated budget.</p>
         <div style="margin-top:14px;">
           <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:6px;">
             <span style="color:var(--muted);">Utilized: $14,200</span>
@@ -211,7 +211,7 @@ include __DIR__ . '/includes/head.php';
           <h3 class="report-card-title">Time on Tasks Logged</h3>
           <a href="analytics.php" style="color:var(--blue); text-decoration:none; font-size:13px; font-weight:600;">View Logs →</a>
         </div>
-        <p class="report-card-desc">Compare estimated vs logged hours across all active team task assignments.</p>
+        <p class="report-card-desc">Total hours logged on active tasks.</p>
         <div style="display:flex; align-items:center; gap:16px; margin-top:14px;">
           <div style="flex:1; background:var(--panel-bg); border:1px solid var(--border); padding:12px; border-radius:6px; text-align:center;">
             <div style="font-size:22px; font-weight:700; color:var(--ink);">184h</div>

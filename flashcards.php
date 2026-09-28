@@ -35,7 +35,7 @@ foreach ($initialCards as $c) {
     if ((int)($c['interval_days'] ?? 1) >= 7) $masteredCount++;
 }
 
-$pageTitle = 'Mindrift — MindCards Revision Studio';
+$pageTitle = 'Mindrift — Flashcards';
 include __DIR__ . '/includes/head.php';
 ?>
 <style>
@@ -270,15 +270,14 @@ include __DIR__ . '/includes/head.php';
       <!-- Top Action Bar -->
       <div class="fc-header-row">
         <div class="fc-title-wrap">
-          <span style="font-size: 26px;">🗂️</span>
           <div>
-            <h2 class="fc-title">MindCards Studio</h2>
-            <div style="font-size: 12.5px; color: var(--muted); margin-top: 2px;">Active recall &amp; SuperMemo-2 spaced repetition</div>
+            <h2 class="fc-title">Flashcards</h2>
+            <div style="font-size: 12.5px; color: var(--muted); margin-top: 2px;">Review study cards with spaced repetition</div>
           </div>
         </div>
         <button type="button" class="btn-save" onclick="document.getElementById('createCardModal').classList.add('active')" style="display:inline-flex; align-items:center; gap:8px; font-size:13px; padding:8px 16px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          + Add Flashcard
+          Add Flashcard
         </button>
       </div>
 
@@ -320,14 +319,14 @@ include __DIR__ . '/includes/head.php';
           <div class="fc-face fc-front">
             <div class="fc-badge" id="cardCourse">Course Name</div>
             <div class="fc-content-text" id="cardQuestion">Loading question...</div>
-            <div class="fc-hint">💡 Tap anywhere or press Space to flip</div>
+            <div class="fc-hint">Click card or press Space to flip</div>
           </div>
 
           <!-- Back Face -->
           <div class="fc-face fc-back">
-            <div class="fc-badge" style="color:#10B981; background:rgba(16,185,129,0.08);">Key Concept Answer</div>
+            <div class="fc-badge" style="color:#10B981; background:rgba(16,185,129,0.08);">Answer</div>
             <div class="fc-content-text" id="cardAnswer" style="font-size:17.5px; font-weight:600;">Loading answer...</div>
-            <div class="fc-hint">Rate your retention below to advance interval</div>
+            <div class="fc-hint">Rate your recall to schedule the next review</div>
           </div>
 
         </div>
@@ -384,12 +383,12 @@ include __DIR__ . '/includes/head.php';
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="fcQuestion">Front: Question or Prompt</label>
-          <textarea id="fcQuestion" class="form-input" rows="3" placeholder="e.g. What is the difference between synchronous and asynchronous execution?" required></textarea>
+          <label class="form-label" for="fcQuestion">Question</label>
+          <textarea id="fcQuestion" class="form-input" rows="3" placeholder="Enter question..." required></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label" for="fcAnswer">Back: Answer &amp; Key Insight</label>
-          <textarea id="fcAnswer" class="form-input" rows="3" placeholder="e.g. Synchronous code executes sequentially blocking the thread..." required></textarea>
+          <label class="form-label" for="fcAnswer">Answer</label>
+          <textarea id="fcAnswer" class="form-input" rows="3" placeholder="Enter answer..." required></textarea>
         </div>
       </div>
       <div class="modal-footer">
@@ -415,9 +414,9 @@ function renderCard() {
   if (ratingStrip) ratingStrip.style.display = 'none';
 
   if (!deckCards || deckCards.length === 0) {
-    document.getElementById('cardCourse').textContent = 'Empty Deck';
-    document.getElementById('cardQuestion').textContent = '🎉 You have reviewed all cards in this deck! Click "+ Add Flashcard" to add more.';
-    document.getElementById('cardAnswer').textContent = 'No more cards due today.';
+    document.getElementById('cardCourse').textContent = 'Deck Completed';
+    document.getElementById('cardQuestion').textContent = 'All cards in this deck have been reviewed. Add new cards or check back later.';
+    document.getElementById('cardAnswer').textContent = 'No cards currently due for review.';
     counterText.textContent = '0 of 0';
     return;
   }
@@ -520,7 +519,7 @@ async function submitFlashcard(e) {
     });
     const data = await res.json();
     if (data.success) {
-      if (typeof showToast === 'function') showToast('Flashcard created successfully!');
+      if (typeof showToast === 'function') showToast('Flashcard created.');
       document.getElementById('createCardModal').classList.remove('active');
       setTimeout(() => location.reload(), 400);
     } else {

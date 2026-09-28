@@ -127,14 +127,14 @@ include __DIR__ . '/includes/head.php';
       </div>
       <button class="btn-outline-create" id="btnOpenCreateProjFromHeader">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Create new project
+        New Project
       </button>
     </div>
 
     <!-- Search input bar -->
     <div class="search-box-wrap">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="projSearchInput" class="search-box-input" placeholder="Search" />
+      <input type="text" id="projSearchInput" class="search-box-input" placeholder="Search projects..." />
     </div>
 
     <!-- Sort & Filter Tabs -->
@@ -200,7 +200,7 @@ include __DIR__ . '/includes/head.php';
 
       <div style="background:var(--panel-bg); border:1px solid var(--border); border-radius:6px; padding:14px; margin-bottom:18px;">
         <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:6px;">
-          <span style="color:var(--muted);">Modules Progress</span>
+          <span style="color:var(--muted);">Module Progress</span>
           <span id="infoModalProgressTxt" style="color:var(--ink);">0 / 10 (0%)</span>
         </div>
         <div style="width:100%; height:6px; background:var(--border); border-radius:3px; overflow:hidden;">
@@ -334,7 +334,7 @@ async function deleteProject(projId) {
     });
     const data = await res.json();
     if (data.success) {
-      if (typeof showToast === 'function') showToast('Project deleted successfully');
+      if (typeof showToast === 'function') showToast('Project deleted.');
       setTimeout(() => location.reload(), 400);
     } else {
       alert(data.message || 'Failed to delete project');

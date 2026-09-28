@@ -62,7 +62,7 @@ include __DIR__ . '/includes/head.php';
     <div class="files-page-header">
       <div class="files-title-wrap">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        <h2 class="files-title">Project File Manager</h2>
+        <h2 class="files-title">Files</h2>
       </div>
     </div>
 
@@ -71,7 +71,7 @@ include __DIR__ . '/includes/head.php';
       <div style="margin-bottom:8px; color:var(--muted);">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </div>
-      <h3 style="margin:0 0 4px; font-size:14px; font-weight:600; color:var(--ink);">Click to upload document or drag &amp; drop</h3>
+      <h3 style="margin:0 0 4px; font-size:14px; font-weight:600; color:var(--ink);">Upload a file or drag and drop</h3>
       <p style="margin:0; font-size:12px; color:var(--muted);">PDF, DOCX, PNG, JPG, ZIP</p>
       <input type="file" id="fileUploadInput" style="display:none;" onchange="uploadFile(this.files[0])" />
     </div>
@@ -80,8 +80,8 @@ include __DIR__ . '/includes/head.php';
     <div class="files-grid-wrap">
       <?php if (empty($files)): ?>
         <div style="grid-column: 1 / -1; text-align:center; padding:36px 20px; color:var(--muted); background:var(--panel-bg); border:1px dashed var(--border); border-radius:8px;">
-          <div style="font-size:14px; font-weight:600; color:var(--ink); margin-bottom:4px;">No files uploaded yet</div>
-          <div style="font-size:12px; margin-bottom:14px;">Upload project documentation and files above.</div>
+          <div style="font-size:14px; font-weight:600; color:var(--ink); margin-bottom:4px;">No files uploaded</div>
+          <div style="font-size:12px; margin-bottom:14px;">Upload files to attach them to your workspace.</div>
           <button type="button" class="btn btn-secondary" style="margin:0 auto; display:inline-flex;" onclick="document.getElementById('fileUploadInput').click();">Upload File</button>
         </div>
       <?php else: ?>
@@ -150,7 +150,7 @@ async function uploadFile(file) {
     const data = await res.json();
     if (data.success) {
       if (typeof showToast === 'function') {
-        showToast('File uploaded successfully!');
+        showToast('File uploaded.');
       }
       setTimeout(() => location.reload(), 400);
     } else {
@@ -158,14 +158,14 @@ async function uploadFile(file) {
     }
   } catch (err) {
     console.error(err);
-    alert('Upload failed. Please check network or file format.');
+    alert('Upload failed. Check your file format and try again.');
   } finally {
     if (dropzoneH3) dropzoneH3.textContent = originalH3;
   }
 }
 
 async function deleteFile(fileId) {
-  if (!confirm('Are you sure you want to delete this file? This cannot be undone.')) return;
+  if (!confirm('Delete this file?')) return;
   try {
     const res = await secureFetch('api/files.php', {
       method: 'POST',
@@ -177,7 +177,7 @@ async function deleteFile(fileId) {
       const card = document.getElementById(`fileCard-${fileId}`);
       if (card) card.remove();
       if (typeof showToast === 'function') {
-        showToast('File deleted successfully');
+        showToast('File deleted.');
       }
     } else {
       alert('Failed to delete file: ' + (data.message || 'Unknown error'));

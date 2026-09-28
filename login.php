@@ -163,8 +163,8 @@ $isDark = ($initialTheme === 'dark');
     <span class="brand-name">Mindrift</span>
   </div>
 
-  <h1 class="auth-title">Welcome back</h1>
-  <p class="auth-subtitle">Sign in to your Mindrift account</p>
+  <h1 class="auth-title">Sign In</h1>
+  <p class="auth-subtitle">Enter your email and password to access your workspace.</p>
 
   <div class="alert-box alert-error" id="alertBox"></div>
 
@@ -230,14 +230,14 @@ $isDark = ($initialTheme === 'dark');
         }, 600);
       } else {
         alertBox.className = 'alert-box alert-error';
-        alertBox.textContent = data.message || 'Login failed.';
+        alertBox.textContent = data.message || 'Invalid email or password. Please try again.';
         alertBox.style.display = 'block';
         btnSubmit.disabled = false;
         btnSubmit.textContent = 'Sign In';
       }
     } catch (err) {
       alertBox.className = 'alert-box alert-error';
-      alertBox.textContent = 'Connection error. Please try again.';
+      alertBox.textContent = 'Could not connect to the server. Check your connection and try again.';
       alertBox.style.display = 'block';
       btnSubmit.disabled = false;
       btnSubmit.textContent = 'Sign In';

@@ -89,7 +89,7 @@ include __DIR__ . '/includes/head.php';
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E65C7" stroke-width="2.2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="11" y="3" width="5" height="12" rx="1"/><rect x="19" y="3" width="5" height="15" rx="1"/></svg>
         <h2 class="kanban-title">Kanban Board</h2>
       </div>
-      <span style="font-size:13px; color:#6B7280; font-weight:500;">Tip: Drag and drop cards to change status instantly</span>
+      <span style="font-size:13px; color:#6B7280; font-weight:500;">Drag cards between columns or use the dropdown to change status.</span>
     </div>
 
     <!-- 4 Kanban Columns -->

@@ -42,7 +42,7 @@ include __DIR__ . '/includes/head.php';
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
         <div>
           <h2 class="help-title">Help &amp; Guides</h2>
-          <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">Frequently asked questions and platform usage</p>
+          <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">Answers to common questions and product guides</p>
         </div>
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('supportModalOverlay').classList.add('active')" style="display:inline-flex; align-items:center; gap:6px;">
           Contact Support
@@ -50,7 +50,7 @@ include __DIR__ . '/includes/head.php';
       </div>
     </div>
 
-    <!-- Quick Action Power Shortcuts -->
+    <!-- Shortcuts -->
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:20px;">
       <div class="card" style="padding:14px; cursor:pointer;" onclick="if(typeof openCmdPalette==='function')openCmdPalette();">
         <div style="font-weight:600; font-size:13.5px; color:var(--ink);">Command Palette</div>
@@ -107,7 +107,7 @@ include __DIR__ . '/includes/head.php';
 <div class="modal-overlay" id="supportModalOverlay">
   <div class="modal-card">
     <div class="modal-header">
-      <h3 class="modal-title">Contact Support &amp; Feedback</h3>
+      <h3 class="modal-title">Contact Support</h3>
       <button class="modal-close-btn" onclick="document.getElementById('supportModalOverlay').classList.remove('active')">&times;</button>
     </div>
     <form onsubmit="handleSupportSubmit(event)">
@@ -184,9 +184,9 @@ window.handleSupportSubmit = function(e) {
   if (!sub || !msg) return;
 
   if (typeof showToast === 'function') {
-    showToast('✉️ Support request sent! We will follow up via email.');
+    showToast('Support request sent. We will respond by email.');
   } else {
-    alert('Thank you! Your message has been sent.');
+    alert('Your message has been sent.');
   }
   document.getElementById('supportModalOverlay').classList.remove('active');
   e.target.reset();

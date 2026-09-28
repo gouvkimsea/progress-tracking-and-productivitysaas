@@ -179,10 +179,10 @@ include __DIR__ . '/includes/head.php';
     <!-- Tab Strip -->
     <div class="tasks-tab-nav">
       <div class="tasks-tab-item active" id="tabPersonalTasks" onclick="switchTaskTab('personal')">
-        📋 My Tasks (<?= $taskCount; ?>)
+        My Tasks (<?= $taskCount; ?>)
       </div>
       <div class="tasks-tab-item" id="tabGroupAssignments" onclick="switchTaskTab('group')">
-        👥 Group Assignments (<?= count($groupAssignments); ?>)
+        Group Assignments (<?= count($groupAssignments); ?>)
       </div>
     </div>
 
@@ -253,10 +253,9 @@ include __DIR__ . '/includes/head.php';
           <?php if (empty($tasks)): ?>
             <tr>
               <td colspan="8" style="text-align: center; padding: 48px 20px; color: #6B7280;">
-                <div style="font-size: 36px; margin-bottom: 8px;">📋</div>
-                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-bottom: 4px;">No tasks yet</div>
-                <div style="font-size: 13px; margin-bottom: 16px;">Get started by creating your first project assignment.</div>
-                <button type="button" class="btn-save" style="margin: 0 auto; display: inline-flex;" onclick="document.getElementById('btnOpenAddTaskFromHeader')?.click();">+ Add First Task</button>
+                <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 4px;">No tasks yet</div>
+                <div style="font-size: 13px; margin-bottom: 16px;">Create a task to track your work.</div>
+                <button type="button" class="btn-save" style="margin: 0 auto; display: inline-flex;" onclick="document.getElementById('btnOpenAddTaskFromHeader')?.click();">Create Task</button>
               </td>
             </tr>
           <?php else: ?>
@@ -292,9 +291,9 @@ include __DIR__ . '/includes/head.php';
   <div id="groupAssignmentsView" style="display:none;">
     <div class="tasks-toolbar-bar">
       <div class="toolbar-left">
-        <span>Total Group Deliverables: <b><?= count($groupAssignments); ?></b></span>
+        <span>Total Deliverables: <b><?= count($groupAssignments); ?></b></span>
         <span style="color:#D1D5DB;">|</span>
-        <span style="color:var(--muted);">Collaborative team milestones &amp; peer submissions</span>
+        <span style="color:var(--muted);">Shared team assignments and milestones</span>
       </div>
       <div class="toolbar-right">
         <button type="button" class="btn-save" onclick="document.getElementById('createGroupModal').classList.add('active')" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:6px 14px;">
@@ -329,28 +328,28 @@ include __DIR__ . '/includes/head.php';
             ?>
               <tr id="groupRow-<?= $ga['id']; ?>">
                 <td style="text-align:center; color:var(--muted); font-size:12px;"><?= $ga['id']; ?></td>
-                <td style="font-weight:700; color:var(--ink);">
+                <td style="font-weight:600; color:var(--ink);">
                   <?= htmlspecialchars($ga['title']); ?>
                 </td>
                 <td>
-                  <span style="font-size:11.5px; font-weight:700; color:#0E65C7; background:rgba(14,101,199,0.08); padding:3px 8px; border-radius:6px;">
+                  <span style="font-size:11.5px; font-weight:600; color:#0E65C7; background:rgba(14,101,199,0.08); padding:3px 8px; border-radius:4px;">
                     <?= htmlspecialchars($ga['course_name']); ?>
                   </span>
                 </td>
                 <td>
-                  <span class="due-badge normal">📅 <?= htmlspecialchars($ga['due_date']); ?></span>
+                  <span class="due-badge normal"><?= htmlspecialchars($ga['due_date']); ?></span>
                 </td>
                 <td>
                   <span class="priority-badge <?= $isCompleted ? 'priority-low' : 'priority-medium'; ?>" id="gaStatus-<?= $ga['id']; ?>">
-                    <?= $isCompleted ? '✓ Completed' : '⏳ In Progress'; ?>
+                    <?= $isCompleted ? 'Completed' : 'In Progress'; ?>
                   </span>
                 </td>
                 <td style="color:var(--muted); font-size:12.5px;">
-                  <?= !empty($ga['completed_by_user_name']) ? '👤 ' . htmlspecialchars($ga['completed_by_user_name']) : '—'; ?>
+                  <?= !empty($ga['completed_by_user_name']) ? htmlspecialchars($ga['completed_by_user_name']) : '—'; ?>
                 </td>
                 <td style="text-align:center;">
                   <?php if ($isCompleted): ?>
-                    <span style="color:#10B981; font-size:12px; font-weight:700;">Completed ✓</span>
+                    <span style="color:#10B981; font-size:12px; font-weight:600;">Completed</span>
                   <?php else: ?>
                     <button type="button" class="btn-save" onclick="completeGroupAssignment(<?= $ga['id']; ?>)" style="padding:4px 10px; font-size:11.5px; background:#10B981;">
                       Mark Done
@@ -370,7 +369,7 @@ include __DIR__ . '/includes/head.php';
 <div class="modal-overlay" id="addTaskModalOverlay">
   <div class="modal-card">
     <div class="modal-header">
-      <h3 class="modal-title">Add New Task</h3>
+      <h3 class="modal-title">Add Task</h3>
       <button class="modal-close-btn" id="btnCloseAddTaskModal">&times;</button>
     </div>
     <form id="addTaskForm">
@@ -387,10 +386,10 @@ include __DIR__ . '/includes/head.php';
           <div class="form-group">
             <label class="form-label" for="taskPriorityInput">Priority</label>
             <select id="taskPriorityInput" class="form-input">
-              <option value="Urgent">🔥 Urgent</option>
-              <option value="High">⚡ High</option>
-              <option value="Medium" selected>📌 Medium</option>
-              <option value="Low">☕ Low</option>
+              <option value="Urgent">Urgent</option>
+              <option value="High">High</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Low">Low</option>
             </select>
           </div>
           <div class="form-group">
@@ -570,7 +569,7 @@ window.submitGroupAssignment = async function(e) {
     });
     const data = await res.json();
     if (data.success) {
-      if (typeof showToast === 'function') showToast('Group assignment created successfully!');
+      if (typeof showToast === 'function') showToast('Group assignment created.');
       setTimeout(() => location.reload(), 400);
     } else {
       alert(data.message || 'Failed to create group assignment');
@@ -699,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (data.success) {
-          showToast('Task created successfully!');
+          showToast('Task created.');
           modal.classList.remove('active');
           form.reset();
           setTimeout(() => location.reload(), 400);
@@ -751,7 +750,7 @@ async function deleteTask(taskId) {
     if (data.success) {
       const row = document.getElementById('taskRow-' + taskId);
       if (row) row.remove();
-      if (typeof showToast === 'function') showToast('Task deleted successfully');
+      if (typeof showToast === 'function') showToast('Task deleted.');
     } else {
       alert('Failed to delete task: ' + data.message);
     }

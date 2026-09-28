@@ -154,8 +154,8 @@ $isDark = ($initialTheme === 'dark');
     <span class="brand-name">Mindrift</span>
   </div>
 
-  <h1 class="auth-title">Create an account</h1>
-  <p class="auth-subtitle">Get started with your personal productivity workspace</p>
+  <h1 class="auth-title">Create Account</h1>
+  <p class="auth-subtitle">Enter your details to create an account.</p>
 
   <div class="alert-box alert-error" id="alertBox"></div>
 
@@ -203,7 +203,7 @@ $isDark = ($initialTheme === 'dark');
 
     if (password !== confirmPassword) {
       alertBox.className = 'alert-box alert-error';
-      alertBox.textContent = 'Passwords do not match. Please verify.';
+      alertBox.textContent = 'Passwords do not match. Enter the same password in both fields.';
       alertBox.style.display = 'block';
       return;
     }
@@ -236,7 +236,7 @@ $isDark = ($initialTheme === 'dark');
       }
     } catch (err) {
       alertBox.className = 'alert-box alert-error';
-      alertBox.textContent = 'Connection error. Please try again.';
+      alertBox.textContent = 'Could not connect to the server. Check your connection and try again.';
       alertBox.style.display = 'block';
       btnSubmit.disabled = false;
       btnSubmit.textContent = 'Create Account';

@@ -281,7 +281,7 @@
           });
           const data = await res.json();
           if (data.success) {
-            showToast(`${item.day_name} check-in updated! Streak: ${data.data.total_learning_streak} days`);
+            showToast(`${item.day_name} check-in updated. Streak: ${data.data.total_learning_streak} days`);
             if (appState.stats) {
               appState.stats.learning_streak = data.data.total_learning_streak;
               renderStats();
@@ -374,7 +374,7 @@
               fg.setAttribute('stroke-dashoffset', (C - (C * c.progress_pct / 100)).toString());
             }
 
-            showToast(`Progress saved for ${c.name}! (${c.completed_modules}/${c.total_modules} modules)`);
+            showToast(`Progress saved for ${c.name} (${c.completed_modules}/${c.total_modules} modules)`);
           }
         } catch (e) {
           console.error('Error updating course progress:', e);
@@ -537,7 +537,7 @@
           const data = await res.json();
           if (data.success) {
             closeModal();
-            showToast(`Logged ${lessons} lesson(s), ${minutes} mins!`);
+            showToast(`Logged ${lessons} lesson(s), ${minutes} mins.`);
             
             // Reload fresh stats from database
             await loadDashboardData();
@@ -597,7 +597,7 @@
           const data = await res.json();
           if (data.success) {
             closeProjectModal();
-            showToast(`New Project "${name}" created!`);
+            showToast(`Project "${name}" created.`);
             setTimeout(() => { window.location.href = 'courses.php'; }, 1000);
           } else {
             alert('Error creating project: ' + (data.message || data.error));
@@ -1132,7 +1132,7 @@
         const pBtn = document.getElementById('btnToggleTimer') || document.getElementById('startTimerBtn');
         if (pBtn) {
           pBtn.click();
-          showToast('🍅 Pomodoro Focus session started!');
+          showToast('Focus session started.');
         } else {
           window.location.href = 'index.php';
         }
@@ -1630,7 +1630,7 @@
         const data = await res.json();
 
         if (data.success) {
-          showToast(`Task "${parsed.title}" created successfully!`);
+          showToast(`Task "${parsed.title}" created.`);
           closeQuickTaskModal();
 
           // If currently on tasks, kanban, calendar, or gantt, smoothly reload after a short delay
@@ -1648,7 +1648,7 @@
         }
       } catch (err) {
         console.error('Quick task error:', err);
-        showToast('Error connecting to task service');
+        showToast('Could not save task. Check your connection and try again.');
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;

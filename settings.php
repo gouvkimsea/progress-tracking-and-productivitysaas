@@ -34,7 +34,7 @@ include __DIR__ . '/includes/head.php';
 
     <div class="settings-header">
       <h2 class="settings-title">Account Settings</h2>
-      <p style="margin:4px 0 0; color:var(--muted); font-size:14px; font-weight:500;">Manage your profile credentials and password</p>
+      <p style="margin:4px 0 0; color:var(--muted); font-size:14px; font-weight:500;">Update your name, email, password, and theme preference.</p>
     </div>
 
     <div class="card settings-card">
@@ -133,7 +133,7 @@ window.setAppTheme = function(theme) {
       document.cookie = "mindrift_theme=" + theme + "; path=/; max-age=31536000; SameSite=Lax";
     } catch(e) {}
   }
-  if (typeof showToast === 'function') showToast(`Theme preference updated to ${theme} mode`);
+  if (typeof showToast === 'function') showToast(`Theme set to ${theme}`);
 };
 
 document.getElementById('settingsForm').addEventListener('submit', async (e) => {
@@ -160,7 +160,7 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
       alert.className = 'auth-alert success';
       alert.textContent = data.message;
       alert.style.display = 'block';
-      if (typeof showToast === 'function') showToast('Profile settings saved successfully');
+      if (typeof showToast === 'function') showToast('Profile updated.');
       setTimeout(() => location.reload(), 1200);
     } else {
       alert.className = 'auth-alert error';
@@ -169,7 +169,7 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
     }
   } catch (err) {
     alert.className = 'auth-alert error';
-    alert.textContent = 'Network error saving settings.';
+    alert.textContent = 'Could not save settings. Check your connection and try again.';
     alert.style.display = 'block';
   } finally {
     btn.disabled = false;

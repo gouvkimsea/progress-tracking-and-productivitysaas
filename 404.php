@@ -99,7 +99,7 @@ include __DIR__ . '/includes/head.php';
     <div class="error-code">404</div>
     <h1 class="error-title">Page Not Found</h1>
     <p class="error-desc">
-      The destination you requested does not exist, has been moved, or is temporarily unavailable.
+      The requested page does not exist or has been moved.
     </p>
 
     <!-- Quick In-Page Search -->

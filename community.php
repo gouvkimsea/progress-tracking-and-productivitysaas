@@ -89,8 +89,8 @@ include __DIR__ . '/includes/head.php';
     <?php include __DIR__ . '/includes/header.php'; ?>
 
     <div class="comm-header">
-      <h2 class="comm-title">Community &amp; Leaderboard</h2>
-      <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">Rankings of all members based on learning streak and course progress</p>
+      <h2 class="comm-title">Community Rankings</h2>
+      <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">Member rankings by study streak and course progress</p>
     </div>
 
     <!-- Top Spotlight Banner -->
@@ -145,7 +145,7 @@ include __DIR__ . '/includes/head.php';
 
       <!-- Study Groups -->
       <div class="card card-block">
-        <h3 style="margin:0 0 16px; font-size:16.5px; font-weight:700;">Active Study Circles</h3>
+        <h3 style="margin:0 0 16px; font-size:16.5px; font-weight:700;">Study Groups</h3>
 
         <div class="leader-item" style="padding:10px 0;">
           <div>
@@ -165,10 +165,10 @@ include __DIR__ . '/includes/head.php';
 
         <div class="leader-item" style="padding:10px 0;">
           <div>
-            <div style="font-size:14px; font-weight:700;">Data Science &amp; AI Group</div>
+            <div style="font-size:14px; font-weight:700;">Data Science &amp; Machine Learning</div>
             <div class="circle-count" style="font-size:12px; color:var(--muted);"><span class="cnt"><?= count($leaderboard); ?></span> members active</div>
           </div>
-          <button type="button" class="btn-join" data-group="Data Science & AI Group" onclick="toggleJoinGroup(this, 'Data Science & AI Group')">Join</button>
+          <button type="button" class="btn-join" data-group="Data Science & Machine Learning" onclick="toggleJoinGroup(this, 'Data Science & Machine Learning')">Join</button>
         </div>
       </div>
     </div>
@@ -236,13 +236,13 @@ window.toggleJoinGroup = function(btn, groupName) {
     if (typeof showToast === 'function') showToast(`Left ${groupName}`);
   } else {
     btn.classList.add('joined');
-    btn.textContent = 'Joined ✓';
+    btn.textContent = 'Joined';
     btn.style.background = '#10B981';
     btn.style.borderColor = '#10B981';
     btn.style.color = '#FFFFFF';
     if (countSpan) countSpan.textContent = currentCnt + 1;
     localStorage.setItem('joined_group_' + groupName, '1');
-    if (typeof showToast === 'function') showToast(`🎉 Welcome to ${groupName}!`);
+    if (typeof showToast === 'function') showToast(`Joined ${groupName}`);
   }
 };
 
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gName = btn.getAttribute('data-group');
     if (localStorage.getItem('joined_group_' + gName) === '1') {
       btn.classList.add('joined');
-      btn.textContent = 'Joined ✓';
+      btn.textContent = 'Joined';
       btn.style.background = '#10B981';
       btn.style.borderColor = '#10B981';
       btn.style.color = '#FFFFFF';
