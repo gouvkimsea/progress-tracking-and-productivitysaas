@@ -32,68 +32,55 @@ include __DIR__ . '/includes/head.php';
 <style>
   .gantt-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
   .gantt-title-wrap { display: flex; align-items: center; gap: 10px; }
-  .gantt-title { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
+  .gantt-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
 
   .gantt-controls-bar {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: #FAFAFA;
-    padding: 10px 16px; border-radius: 8px; border: 1px solid #E5E7EB;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: var(--panel-bg);
+    padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border);
   }
   .zoom-btn-group { display: flex; align-items: center; gap: 4px; }
   .zoom-btn {
-    padding: 6px 12px; font-size: 13px; font-weight: 600; color: #374151; background: #FFF; border: 1px solid #E5E7EB;
-    border-radius: 6px; cursor: pointer; transition: all 0.15s ease;
+    padding: 5px 10px; font-size: 12px; font-weight: 500; color: var(--muted); background: var(--white); border: 1px solid var(--border);
+    border-radius: 4px; cursor: pointer; transition: all 0.15s ease;
   }
-  .zoom-btn.active { background: #0E65C7; color: #FFF; border-color: #0E65C7; font-weight: 700; }
+  .zoom-btn.active { background: var(--blue); color: #FFF; border-color: var(--blue); font-weight: 600; }
 
   .gantt-container-wrap {
-    display: flex; width: 100%; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; background: #FFFFFF;
+    display: flex; width: 100%; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--white);
   }
-  .gantt-sidebar-col { width: 280px; flex-shrink: 0; border-right: 1px solid #E5E7EB; background: #FAFAFA; }
-  .gantt-sidebar-head { padding: 12px 16px; font-weight: 700; font-size: 13px; color: #374151; border-bottom: 1px solid #E5E7EB; }
-  .gantt-task-row { padding: 12px 16px; font-size: 13.5px; font-weight: 600; color: #111827; border-bottom: 1px solid #F0F1F3; }
+  .gantt-sidebar-col { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--panel-bg); }
+  .gantt-sidebar-head { padding: 10px 14px; font-weight: 600; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .gantt-task-row { padding: 10px 14px; font-size: 13px; font-weight: 500; color: var(--ink); border-bottom: 1px solid var(--border); }
 
   .gantt-timeline-col { flex: 1; overflow-x: auto; position: relative; }
-  .gantt-dates-head { display: flex; border-bottom: 1px solid #E5E7EB; background: #FAFAFA; }
-  .gantt-date-cell { width: 44px; min-width: 44px; text-align: center; padding: 10px 0; font-size: 11.5px; font-weight: 600; color: #6B7280; border-right: 1px solid #F0F1F3; }
+  .gantt-dates-head { display: flex; border-bottom: 1px solid var(--border); background: var(--panel-bg); }
+  .gantt-date-cell { width: 44px; min-width: 44px; text-align: center; padding: 8px 0; font-size: 11px; font-weight: 500; color: var(--muted); border-right: 1px solid var(--border); }
   
-  .gantt-bar-row { display: flex; align-items: center; height: 45px; border-bottom: 1px solid #F0F1F3; position: relative; }
+  .gantt-bar-row { display: flex; align-items: center; height: 45px; border-bottom: 1px solid var(--border); position: relative; }
   .gantt-task-bar {
-    position: absolute; height: 26px; border-radius: 6px; background: linear-gradient(135deg, #0E65C7, #0076B6);
-    color: #FFF; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; padding: 0 10px;
-    box-shadow: 0 2px 6px rgba(14,101,199,0.28); cursor: grab; user-select: none; z-index: 5;
-    transition: box-shadow 0.15s ease, background 0.15s ease;
+    position: absolute; height: 24px; border-radius: 4px; background: var(--blue);
+    color: #FFF; font-size: 11.5px; font-weight: 600; display: flex; align-items: center; padding: 0 8px;
+    box-shadow: none; cursor: grab; user-select: none; z-index: 5;
+    transition: background 0.15s ease;
   }
   .gantt-task-bar.dragging {
-    cursor: grabbing; opacity: 0.88; z-index: 20; box-shadow: 0 8px 22px rgba(14,101,199,0.45);
-    background: linear-gradient(135deg, #6366F1, #4F46E5);
+    cursor: grabbing; opacity: 0.9; z-index: 20;
+    background: var(--blue-hover);
   }
   .gantt-resize-handle {
-    position: absolute; right: 0; top: 0; bottom: 0; width: 10px; cursor: ew-resize;
-    background: rgba(255,255,255,0.25); border-radius: 0 6px 6px 0; transition: background 0.15s ease;
+    position: absolute; right: 0; top: 0; bottom: 0; width: 8px; cursor: ew-resize;
+    background: rgba(255,255,255,0.3); border-radius: 0 4px 4px 0; transition: background 0.15s ease;
   }
   .gantt-resize-handle:hover {
     background: rgba(255,255,255,0.6);
   }
 
   .today-indicator-line {
-    position: absolute; top: 0; bottom: 0; width: 2px; background: #EF4444; z-index: 10; pointer-events: none;
+    position: absolute; top: 0; bottom: 0; width: 2px; background: var(--red); z-index: 10; pointer-events: none;
   }
   .today-badge-tag {
-    position: absolute; top: 2px; left: -18px; background: #EF4444; color: #FFF; font-size: 9px; font-weight: 800; padding: 1px 4px; border-radius: 3px;
+    position: absolute; top: 2px; left: -16px; background: var(--red); color: #FFF; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px;
   }
-
-  /* Dark Theme Support */
-  [data-theme="dark"] .gantt-title { color: var(--ink); }
-  [data-theme="dark"] .gantt-container-wrap { background: #111827; border-color: #1F293D; }
-  [data-theme="dark"] .gantt-sidebar-col { background: #0D1526; border-color: #1F293D; }
-  [data-theme="dark"] .gantt-sidebar-head { color: #9CA3AF; border-color: #1F293D; }
-  [data-theme="dark"] .gantt-task-row { color: #F9FAFB; border-color: #1F293D; }
-  [data-theme="dark"] .gantt-dates-head { background: #0D1526; border-color: #1F293D; }
-  [data-theme="dark"] .gantt-date-cell { color: #9CA3AF; border-color: #1F293D; }
-  [data-theme="dark"] .gantt-bar-row { border-color: #1F293D; }
-  [data-theme="dark"] .zoom-level-toggle { background: #1F293D; }
-  [data-theme="dark"] .zoom-btn { color: #9CA3AF; }
-  [data-theme="dark"] .zoom-btn.active { background: #111827; color: #F9FAFB; }
 </style>
 </head>
 <body>
@@ -292,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.style.background = '#F59E0B';
         btn.style.color = '#FFFFFF';
         btn.style.borderColor = '#D97706';
-        if (typeof showToast === 'function') showToast('⚡ Critical Path illuminated!');
+        if (typeof showToast === 'function') showToast('Critical path highlighted');
       } else {
         btn.style.background = '';
         btn.style.color = '';

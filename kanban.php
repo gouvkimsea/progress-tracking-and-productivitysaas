@@ -1,12 +1,11 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/config/db.php';
+startSecureSession();
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
-require_once __DIR__ . '/config/db.php';
 $db = getDbConnection();
 $userId = (int)$_SESSION['user_id'];
 
@@ -50,42 +49,31 @@ include __DIR__ . '/includes/head.php';
 <style>
   .kanban-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
   .kanban-title-wrap { display: flex; align-items: center; gap: 10px; }
-  .kanban-title { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
+  .kanban-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
 
-  .kanban-board-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; align-items: start; }
-  .kanban-column { background: #FAFAFA; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px; min-height: 500px; }
+  .kanban-board-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
+  .kanban-column { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; min-height: 500px; }
   
-  .column-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .column-title-flex { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: #111827; }
-  .column-count-badge { background: #E5E7EB; color: #374151; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+  .column-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .column-title-flex { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .column-count-badge { background: var(--border); color: var(--muted); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 10px; }
 
-  .kanban-card-list { display: flex; flex-direction: column; gap: 10px; }
+  .kanban-card-list { display: flex; flex-direction: column; gap: 8px; }
   .kanban-card {
-    background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04); cursor: grab; transition: all 0.15s ease;
+    background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 12px;
+    box-shadow: var(--shadow-sm); cursor: grab; transition: border-color 0.15s ease;
   }
-  .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: #0E65C7; }
-  .kanban-card.dragging { opacity: 0.45; border: 2px dashed #0E65C7; }
-  .kanban-column.drag-over { background: #EEF4FC; border-color: #0E65C7; }
+  .kanban-card:hover { border-color: var(--blue); }
+  .kanban-card.dragging { opacity: 0.5; border: 1px dashed var(--blue); }
+  .kanban-column.drag-over { background: rgba(37, 99, 235, 0.04); border-color: var(--blue); }
 
-  .card-project-tag { font-size: 11px; font-weight: 700; color: #0E65C7; text-transform: uppercase; margin-bottom: 4px; }
-  .card-task-title { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: #111827; }
-  .card-footer-flex { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #6B7280; }
+  .card-project-tag { font-size: 11px; font-weight: 600; color: var(--blue); text-transform: uppercase; margin-bottom: 4px; }
+  .card-task-title { margin: 0 0 8px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .card-footer-flex { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
 
   .move-status-select {
-    font-size: 11.5px; font-weight: 600; padding: 3px 6px; border-radius: 4px; border: 1px solid #E5E7EB; background: #FFF; cursor: pointer;
+    font-size: 11.5px; font-weight: 500; padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--panel-bg); color: var(--ink); cursor: pointer;
   }
-
-  /* Dark Theme Support */
-  [data-theme="dark"] .kanban-title { color: var(--ink); }
-  [data-theme="dark"] .kanban-column { background: #0D1526; border-color: #1F293D; }
-  [data-theme="dark"] .column-title-flex { color: #F9FAFB; }
-  [data-theme="dark"] .column-count-badge { background: #1E293B; color: #94A3B8; }
-  [data-theme="dark"] .kanban-card { background: #111827; border-color: #1F293D; }
-  [data-theme="dark"] .card-task-title { color: #F9FAFB; }
-  [data-theme="dark"] .card-footer-flex { color: #9CA3AF; }
-  [data-theme="dark"] .move-status-select { background: #1E293B; border-color: #334155; color: #E2E8F0; }
-  [data-theme="dark"] .kanban-column.drag-over { background: #162032; border-color: #38BDF8; }
 </style>
 </head>
 <body>
@@ -129,7 +117,7 @@ include __DIR__ . '/includes/head.php';
                 </div>
                 <h4 class="card-task-title"><?= htmlspecialchars($t['task_name']); ?></h4>
                 <div class="card-footer-flex">
-                  <span>📅 <?= htmlspecialchars($t['due_date'] ?? $t['start_date']); ?></span>
+                  <span><?= htmlspecialchars($t['due_date'] ?? $t['start_date']); ?></span>
                   <select class="move-status-select" onchange="moveKanbanTask(<?= $t['id']; ?>, this.value)">
                     <?php foreach (['Open', 'In Progress', 'Review', 'Done'] as $opt): ?>
                       <option value="<?= $opt; ?>" <?= ($opt === $colName) ? 'selected' : ''; ?>><?= $opt; ?></option>
@@ -168,10 +156,10 @@ include __DIR__ . '/includes/head.php';
           <div class="form-group">
             <label class="form-label" for="kanbanTaskPriority">Priority</label>
             <select id="kanbanTaskPriority" class="form-input">
-              <option value="Urgent">🔥 Urgent</option>
-              <option value="High">⚡ High</option>
-              <option value="Medium" selected>📌 Medium</option>
-              <option value="Low">☕ Low</option>
+              <option value="Urgent">Urgent</option>
+              <option value="High">High</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Low">Low</option>
             </select>
           </div>
           <div class="form-group">

@@ -465,23 +465,6 @@
       });
     });
 
-    // 2. Sidebar collapse toggle button
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const appEl = document.getElementById('app');
-    if (sidebarToggle && appEl) {
-      sidebarToggle.addEventListener('click', () => {
-        appEl.classList.toggle('collapsed');
-      });
-    }
-
-    // 3. Mobile menu button toggle
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    if (mobileMenuBtn && appEl) {
-      mobileMenuBtn.addEventListener('click', () => {
-        appEl.classList.toggle('mobile-open');
-      });
-    }
-
     // 4. Live Sessions accordion expand button
     const liveToggle = document.getElementById('liveSessionsToggle');
     const liveSub = document.getElementById('liveSessionsSub');
@@ -492,61 +475,7 @@
       });
     }
 
-    // Sidebar Collapse Toggle (Desktop)
-    const sidebar = document.getElementById('sidebar');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    if (sidebar) {
-      if (localStorage.getItem('sidebar_collapsed') === 'true') {
-        sidebar.classList.add('collapsed');
-      }
-      if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', () => {
-          sidebar.classList.toggle('collapsed');
-          localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
-        });
-      }
-    }
 
-    // Mobile Menu Drawer Toggle
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const appContainer = document.getElementById('app');
-    if (mobileMenuBtn && appContainer) {
-      mobileMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        appContainer.classList.toggle('mobile-open');
-      });
-      document.addEventListener('click', (e) => {
-        if (appContainer.classList.contains('mobile-open')) {
-          if (!sidebar || (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target))) {
-            appContainer.classList.remove('mobile-open');
-          }
-        }
-      });
-    }
-
-    // 5. Timeline Filter Menu Toggle & Option Click
-    const filterBtn = document.getElementById('filterBtn');
-    const filterMenu = document.getElementById('filterMenu');
-    if (filterBtn && filterMenu) {
-      filterBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        filterMenu.classList.toggle('open');
-      });
-      document.addEventListener('click', () => filterMenu.classList.remove('open'));
-
-      const filterButtons = filterMenu.querySelectorAll('button');
-      filterButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          filterButtons.forEach(b => b.classList.remove('sel'));
-          btn.classList.add('sel');
-          const category = btn.getAttribute('data-cat') || 'all';
-          buildHeatmap(category);
-          filterMenu.classList.remove('open');
-          showToast(`Filtered view: ${btn.textContent}`);
-        });
-      });
-    }
 
     // 6. Smooth Scroll Links
     const scrollLinks = document.querySelectorAll('[data-scroll]');
@@ -561,14 +490,7 @@
       });
     });
 
-    // 7. Kebab Options Dropdowns
-    const kebabs = document.querySelectorAll('.kebab');
-    kebabs.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        showToast('Options menu clicked');
-      });
-    });
+
 
     // 8. Log Activity Modal Control Buttons
     const btnOpenLogModal = document.getElementById('btnOpenLogModal');
@@ -719,33 +641,7 @@
     let pomoSessionsCount = parseInt(localStorage.getItem('pomo_today_count') || '0', 10);
 
     if (pomoSessionsBadge) {
-      pomoSessionsBadge.textContent = `🍅 ${pomoSessionsCount} today`;
-    }
-
-    function playChime(type = 'finish') {
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        if (type === 'finish') {
-          osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-          osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
-          gain.gain.setValueAtTime(0.25, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-          osc.start(ctx.currentTime);
-          osc.stop(ctx.currentTime + 0.8);
-        } else {
-          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-          gain.gain.setValueAtTime(0.15, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-          osc.start(ctx.currentTime);
-          osc.stop(ctx.currentTime + 0.25);
-        }
-      } catch (e) {}
+      pomoSessionsBadge.textContent = `${pomoSessionsCount} completed today`;
     }
 
     function updatePomoDisplay() {
@@ -758,7 +654,7 @@
         pomoProgressBar.style.width = `${pct}%`;
       }
       if (pomoInterval) {
-        document.title = `(${timerDisplay.textContent}) 🍅 ${pomoMode.toUpperCase()} — Mindrift`;
+        document.title = `(${timerDisplay.textContent}) ${pomoMode.toUpperCase()} — Mindrift`;
       }
     }
 
@@ -769,18 +665,11 @@
             clearInterval(pomoInterval);
             pomoInterval = null;
             if (btnToggleTimer) {
-              btnToggleTimer.textContent = '▶ Start';
-              btnToggleTimer.style.background = '#10B981';
+              btnToggleTimer.textContent = 'Start';
             }
           }
-          pomoTabs.forEach(t => {
-            t.classList.remove('active');
-            t.style.background = 'transparent';
-            t.style.color = 'var(--muted)';
-          });
+          pomoTabs.forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          tab.style.background = 'var(--blue)';
-          tab.style.color = '#fff';
 
           pomoMode = tab.dataset.mode;
           pomoDuration = parseInt(tab.dataset.mins, 10) * 60;
@@ -797,13 +686,11 @@
           pomoInterval = null;
         }
         if (btnToggleTimer) {
-          btnToggleTimer.textContent = '▶ Start';
-          btnToggleTimer.style.background = '#10B981';
+          btnToggleTimer.textContent = 'Start';
         }
         pomoRemaining = pomoDuration;
         document.title = 'Mindrift — Project & Learning Tracker';
         updatePomoDisplay();
-        if (typeof stopAmbientSoundscapes === 'function') stopAmbientSoundscapes();
         showToast('Session timer reset');
       });
     }
@@ -812,7 +699,6 @@
       btnToggleTimer.addEventListener('click', async () => {
         if (!pomoInterval) {
           // Start Timer
-          playChime('start');
           pomoInterval = setInterval(async () => {
             pomoRemaining--;
             updatePomoDisplay();
@@ -820,18 +706,15 @@
             if (pomoRemaining <= 0) {
               clearInterval(pomoInterval);
               pomoInterval = null;
-              playChime('finish');
-              if (typeof stopAmbientSoundscapes === 'function') stopAmbientSoundscapes();
-              document.title = 'Mindrift — Session Complete!';
-              btnToggleTimer.textContent = '▶ Start';
-              btnToggleTimer.style.background = '#10B981';
+              document.title = 'Mindrift — Session Complete';
+              btnToggleTimer.textContent = 'Start';
 
               if (pomoMode === 'focus') {
                 pomoSessionsCount++;
                 localStorage.setItem('pomo_today_count', pomoSessionsCount);
-                if (pomoSessionsBadge) pomoSessionsBadge.textContent = `🍅 ${pomoSessionsCount} today`;
+                if (pomoSessionsBadge) pomoSessionsBadge.textContent = `${pomoSessionsCount} completed today`;
                 const mins = Math.round(pomoDuration / 60);
-                showToast(`🎉 Focus session complete! Logged ${mins} mins.`);
+                showToast(`Focus session complete. Logged ${mins} mins.`);
                 try {
                   await secureFetch('api/timer.php', {
                     method: 'POST',
@@ -840,228 +723,22 @@
                   });
                 } catch (err) { console.error(err); }
               } else {
-                showToast('Break finished! Ready to refocus?');
+                showToast('Break finished. Ready to refocus?');
               }
               pomoRemaining = pomoDuration;
               updatePomoDisplay();
             }
           }, 1000);
 
-          btnToggleTimer.textContent = '⏸ Pause';
-          btnToggleTimer.style.background = '#EF4444';
-          showToast(`${pomoMode.charAt(0).toUpperCase() + pomoMode.slice(1)} session started!`);
+          btnToggleTimer.textContent = 'Pause';
+          showToast(`${pomoMode.charAt(0).toUpperCase() + pomoMode.slice(1)} session started`);
         } else {
           // Pause Timer
           clearInterval(pomoInterval);
           pomoInterval = null;
-          btnToggleTimer.textContent = '▶ Resume';
-          btnToggleTimer.style.background = '#10B981';
+          btnToggleTimer.textContent = 'Resume';
           document.title = 'Mindrift — Project & Learning Tracker';
           showToast('Session paused');
-        }
-      });
-    }
-
-    // 11b. Ambient Focus Soundscapes Engine (Procedural Web Audio)
-    const btnToggleAmbientSound = document.getElementById('btnToggleAmbientSound');
-    const ambientSoundName = document.getElementById('ambientSoundName');
-    const ambientSoundSelect = document.getElementById('ambientSoundSelect');
-    const ambientVolume = document.getElementById('ambientVolume');
-
-    let ambientAudioCtx = null;
-    let ambientNodes = [];
-    let ambientMasterGain = null;
-    let isAmbientActive = false;
-
-    function getAmbientContext() {
-      if (!ambientAudioCtx) {
-        ambientAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        ambientMasterGain = ambientAudioCtx.createGain();
-        const vol = ambientVolume ? parseFloat(ambientVolume.value) : 0.3;
-        ambientMasterGain.gain.setValueAtTime(vol, ambientAudioCtx.currentTime);
-        ambientMasterGain.connect(ambientAudioCtx.destination);
-      }
-      if (ambientAudioCtx.state === 'suspended') {
-        ambientAudioCtx.resume();
-      }
-      return ambientAudioCtx;
-    }
-
-    function stopAmbientSoundscapes() {
-      ambientNodes.forEach(node => {
-        try {
-          if (node.stop) node.stop();
-          node.disconnect();
-        } catch (e) {}
-      });
-      ambientNodes = [];
-      isAmbientActive = false;
-      if (btnToggleAmbientSound) {
-        btnToggleAmbientSound.style.background = 'transparent';
-        btnToggleAmbientSound.style.borderColor = 'var(--border)';
-        btnToggleAmbientSound.style.boxShadow = 'none';
-      }
-      if (ambientSoundName) ambientSoundName.textContent = 'Ambient Sounds: Off';
-    }
-
-    function playAmbientSoundscapes(type) {
-      const ctx = getAmbientContext();
-      stopAmbientSoundscapes();
-      isAmbientActive = true;
-
-      if (ambientVolume && ambientMasterGain) {
-        ambientMasterGain.gain.setValueAtTime(parseFloat(ambientVolume.value), ctx.currentTime);
-      }
-
-      if (btnToggleAmbientSound) {
-        btnToggleAmbientSound.style.background = 'rgba(108, 92, 231, 0.15)';
-        btnToggleAmbientSound.style.borderColor = 'var(--purple)';
-        btnToggleAmbientSound.style.boxShadow = '0 0 12px rgba(108, 92, 231, 0.3)';
-      }
-
-      const soundTitles = {
-        rain: '🌧️ Gentle Rain',
-        waves: '🌊 Ocean Waves',
-        brown: '📻 Deep Brown Noise',
-        binaural: '🧠 Alpha Waves (432Hz)'
-      };
-      if (ambientSoundName) {
-        ambientSoundName.textContent = soundTitles[type] || 'Playing Ambient Sound';
-      }
-
-      try {
-        if (type === 'rain') {
-          // Pink noise through lowpass filter
-          const bufferSize = ctx.sampleRate * 2;
-          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-          for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * 2 - 1;
-            b0 = 0.99886 * b0 + white * 0.0555179;
-            b1 = 0.99332 * b1 + white * 0.0750759;
-            b2 = 0.96900 * b2 + white * 0.1538520;
-            b3 = 0.86650 * b3 + white * 0.3104856;
-            b4 = 0.55000 * b4 + white * 0.5329522;
-            b5 = -0.7616 * b5 - white * 0.0168980;
-            data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.12;
-            b6 = white * 0.115926;
-          }
-          const noise = ctx.createBufferSource();
-          noise.buffer = buffer;
-          noise.loop = true;
-
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(1100, ctx.currentTime);
-
-          noise.connect(filter);
-          filter.connect(ambientMasterGain);
-          noise.start();
-          ambientNodes.push(noise, filter);
-        } else if (type === 'waves') {
-          // Modulated brown noise with slow 0.12Hz LFO swell
-          const bufferSize = ctx.sampleRate * 2;
-          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          let lastOut = 0.0;
-          for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * 2 - 1;
-            data[i] = (lastOut + (0.02 * white)) / 1.02;
-            lastOut = data[i];
-            data[i] *= 3.5;
-          }
-          const noise = ctx.createBufferSource();
-          noise.buffer = buffer;
-          noise.loop = true;
-
-          const lfo = ctx.createOscillator();
-          lfo.frequency.setValueAtTime(0.12, ctx.currentTime);
-          const lfoGain = ctx.createGain();
-          lfoGain.gain.setValueAtTime(320, ctx.currentTime);
-
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(450, ctx.currentTime);
-
-          lfo.connect(lfoGain);
-          lfoGain.connect(filter.frequency);
-
-          noise.connect(filter);
-          filter.connect(ambientMasterGain);
-          lfo.start();
-          noise.start();
-          ambientNodes.push(noise, filter, lfo, lfoGain);
-        } else if (type === 'brown') {
-          // Deep Brown Noise
-          const bufferSize = ctx.sampleRate * 2;
-          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          let last = 0.0;
-          for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * 2 - 1;
-            data[i] = (last + (0.02 * white)) / 1.02;
-            last = data[i];
-            data[i] *= 3.0;
-          }
-          const noise = ctx.createBufferSource();
-          noise.buffer = buffer;
-          noise.loop = true;
-          noise.connect(ambientMasterGain);
-          noise.start();
-          ambientNodes.push(noise);
-        } else if (type === 'binaural') {
-          // 432 Hz carrier + 10 Hz alpha wave (442 Hz) in stereo
-          const oscL = ctx.createOscillator();
-          const oscR = ctx.createOscillator();
-          oscL.frequency.setValueAtTime(432, ctx.currentTime);
-          oscR.frequency.setValueAtTime(442, ctx.currentTime);
-
-          const merger = ctx.createChannelMerger(2);
-          oscL.connect(merger, 0, 0);
-          oscR.connect(merger, 0, 1);
-
-          const subGain = ctx.createGain();
-          subGain.gain.setValueAtTime(0.25, ctx.currentTime);
-
-          merger.connect(subGain);
-          subGain.connect(ambientMasterGain);
-
-          oscL.start();
-          oscR.start();
-          ambientNodes.push(oscL, oscR, merger, subGain);
-        }
-      } catch (err) {
-        console.error('Ambient sound error:', err);
-      }
-    }
-
-    if (btnToggleAmbientSound) {
-      btnToggleAmbientSound.addEventListener('click', () => {
-        if (isAmbientActive) {
-          stopAmbientSoundscapes();
-          showToast('🎧 Ambient sounds paused');
-        } else {
-          const type = ambientSoundSelect ? ambientSoundSelect.value : 'rain';
-          playAmbientSoundscapes(type);
-          showToast(`🎧 Started ${type} focus sound`);
-        }
-      });
-    }
-
-    if (ambientSoundSelect) {
-      ambientSoundSelect.addEventListener('change', (e) => {
-        if (isAmbientActive) {
-          playAmbientSoundscapes(e.target.value);
-        }
-      });
-    }
-
-    if (ambientVolume) {
-      ambientVolume.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        if (ambientMasterGain && ambientAudioCtx) {
-          ambientMasterGain.gain.setValueAtTime(val, ambientAudioCtx.currentTime);
         }
       });
     }
@@ -1081,12 +758,12 @@
         deferredPrompt.prompt();
         const choice = await deferredPrompt.userChoice;
         if (choice.outcome === 'accepted') {
-          showToast('🎉 Mindrift App installed successfully!');
+          showToast('Mindrift App installed successfully.');
           if (pwaContainer) pwaContainer.style.display = 'none';
         }
         deferredPrompt = null;
       } else {
-        showToast('💡 To install, open your browser menu and choose "Install App" or "Add to Home Screen"');
+        showToast('To install, open your browser menu and choose "Install App" or "Add to Home Screen".');
       }
     };
 
@@ -1113,7 +790,7 @@
               const targetUrl = r.type === 'project' ? 'courses.php' : (r.type === 'task' ? 'assignments.php' : 'community.php');
               return `
                 <div class="search-result-row" onclick="window.location.href='${targetUrl}'">
-                  <span style="font-size:10px; font-weight:800; text-transform:uppercase; color:#0E65C7;">[${safeType}]</span>
+                  <span style="font-size:10px; font-weight:700; text-transform:uppercase; color:var(--blue);">[${safeType}]</span>
                   <span class="search-result-title">${safeTitle}</span>
                   <span class="search-result-sub">(${safeSub})</span>
                 </div>
@@ -1199,7 +876,7 @@
           });
           const data = await res.json();
           if (data.success) {
-            showToast('Project created successfully!');
+            showToast('Project created successfully.');
             projModal.classList.remove('active');
             createProjForm.reset();
             setTimeout(() => {
@@ -1271,26 +948,26 @@
 
         const menu = document.createElement('div');
         menu.className = 'kebab-menu-dropdown';
-        menu.style.cssText = 'position:absolute; right:0; top:30px; background:var(--panel-bg); border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:999; width:160px; overflow:hidden; animation:modalZoomIn 0.15s ease-out;';
+        menu.style.cssText = 'position:absolute; right:0; top:30px; background:var(--panel-bg); border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.08); z-index:999; width:160px; overflow:hidden;';
 
         let itemsHtml = '';
         if (idx === 0) { // Weekly streak
           itemsHtml = `
-            <div class="kebab-menu-item" onclick="handleStreakReset()">↺ Reset Week</div>
-            <div class="kebab-menu-item" onclick="window.location.href='goals.php'">🎯 Set 7-Day Goal</div>
-            <div class="kebab-menu-item" onclick="window.location.href='api/export.php?type=tasks'">📥 Export Streak</div>
+            <div class="kebab-menu-item" onclick="handleStreakReset()">Reset Week</div>
+            <div class="kebab-menu-item" onclick="window.location.href='goals.php'">Set 7-Day Goal</div>
+            <div class="kebab-menu-item" onclick="window.location.href='api/export.php?type=tasks'">Export Streak</div>
           `;
         } else if (idx === 1) { // Learning progress
           itemsHtml = `
-            <div class="kebab-menu-item" onclick="window.location.href='courses.php'">📚 View All Courses</div>
-            <div class="kebab-menu-item" onclick="handleSortCoursesProgress()">📊 Sort by Progress</div>
-            <div class="kebab-menu-item" onclick="window.location.href='api/export.php?type=tasks'">📥 Export CSV</div>
+            <div class="kebab-menu-item" onclick="window.location.href='courses.php'">View All Courses</div>
+            <div class="kebab-menu-item" onclick="handleSortCoursesProgress()">Sort by Progress</div>
+            <div class="kebab-menu-item" onclick="window.location.href='api/export.php?type=tasks'">Export CSV</div>
           `;
         } else { // Skills breakdown
           itemsHtml = `
-            <div class="kebab-menu-item" onclick="window.location.href='goals.php'">🎯 View Objectives</div>
-            <div class="kebab-menu-item" onclick="window.location.href='workload.php'">👥 View Workload</div>
-            <div class="kebab-menu-item" onclick="window.location.href='reports.php'">📑 View Reports</div>
+            <div class="kebab-menu-item" onclick="window.location.href='goals.php'">View Objectives</div>
+            <div class="kebab-menu-item" onclick="window.location.href='workload.php'">View Workload</div>
+            <div class="kebab-menu-item" onclick="window.location.href='reports.php'">View Reports</div>
           `;
         }
         menu.innerHTML = itemsHtml;
@@ -1387,127 +1064,6 @@
     }
   }
 
-  // 12. Productivity Copilot Controller
-  function initCopilot() {
-    const copilotDrawer = document.getElementById('copilotDrawer');
-    const btnCloseCopilot = document.getElementById('btnCloseCopilot');
-    const floatingChatBtns = document.querySelectorAll('.floating-chat-btn');
-    const copilotTabs = document.querySelectorAll('.copilot-tab');
-    const tabGenerator = document.getElementById('copilotTabGenerator');
-    const tabCoaching = document.getElementById('copilotTabCoaching');
-    const breakdownForm = document.getElementById('copilotBreakdownForm');
-    const goalInput = document.getElementById('copilotGoalInput');
-    const resultsArea = document.getElementById('copilotResultsArea');
-    const taskList = document.getElementById('copilotTaskList');
-    const btnAddTasks = document.getElementById('btnAddCopilotTasks');
-
-    let currentGeneratedTasks = [];
-
-    floatingChatBtns.forEach(btn => {
-      btn.removeAttribute('onclick');
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (copilotDrawer) {
-          copilotDrawer.classList.toggle('active');
-          if (copilotDrawer.classList.contains('active') && goalInput) {
-            setTimeout(() => goalInput.focus(), 150);
-          }
-        }
-      });
-    });
-
-    if (btnCloseCopilot && copilotDrawer) {
-      btnCloseCopilot.addEventListener('click', () => {
-        copilotDrawer.classList.remove('active');
-      });
-    }
-
-    if (copilotTabs) {
-      copilotTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          copilotTabs.forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          const target = tab.dataset.copilotTab;
-          if (target === 'generator') {
-            if (tabGenerator) tabGenerator.style.display = 'block';
-            if (tabCoaching) tabCoaching.style.display = 'none';
-          } else {
-            if (tabGenerator) tabGenerator.style.display = 'none';
-            if (tabCoaching) tabCoaching.style.display = 'block';
-          }
-        });
-      });
-    }
-
-    if (breakdownForm && goalInput) {
-      breakdownForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const goal = goalInput.value.trim();
-        if (!goal) return;
-
-        const btnGen = document.getElementById('btnCopilotGenerate');
-        if (btnGen) { btnGen.disabled = true; btnGen.textContent = 'Analyzing & Generating...'; }
-
-        try {
-          const res = await secureFetch('api/copilot.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'breakdown', goal })
-          });
-          const data = await res.json();
-          if (data.success && data.subtasks) {
-            currentGeneratedTasks = data.subtasks;
-            if (taskList) {
-              taskList.innerHTML = data.subtasks.map(t => `
-                <div class="copilot-task-item">
-                  <div>
-                    <div style="font-weight:600; color:var(--ink);">${escapeHtml(t.task_name)}</div>
-                    <div style="font-size:11px; color:var(--muted); margin-top:2px;">Due: ${escapeHtml(t.due_date)} • Est: ${t.time_log}h</div>
-                  </div>
-                  <span class="priority-badge priority-${t.priority.toLowerCase()}">${escapeHtml(t.priority)}</span>
-                </div>
-              `).join('');
-            }
-            if (resultsArea) resultsArea.style.display = 'block';
-            showToast('Goal broken down into subtasks!');
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
-          if (btnGen) { btnGen.disabled = false; btnGen.textContent = '⚡ Break Down Goal'; }
-        }
-      });
-    }
-
-    if (btnAddTasks) {
-      btnAddTasks.addEventListener('click', async () => {
-        if (!currentGeneratedTasks.length) return;
-        btnAddTasks.disabled = true;
-        btnAddTasks.textContent = 'Adding...';
-
-        try {
-          const res = await secureFetch('api/copilot.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'add_subtasks', tasks: currentGeneratedTasks, project_name: goalInput.value.trim() })
-          });
-          const data = await res.json();
-          if (data.success) {
-            showToast(data.message);
-            if (copilotDrawer) copilotDrawer.classList.remove('active');
-            if (window.location.pathname.includes('assignments') || window.location.pathname.includes('kanban')) {
-              setTimeout(() => location.reload(), 600);
-            }
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
-          btnAddTasks.disabled = false;
-          btnAddTasks.textContent = '+ Add All to Board';
-        }
-      });
-    }
   // ==========================================
   // COMMAND PALETTE (CMD+K / CTRL+K) CONTROLLER
   // ==========================================
@@ -1580,13 +1136,6 @@
         } else {
           window.location.href = 'index.php';
         }
-      } else if (action === 'copilot') {
-        const drawer = document.getElementById('copilotDrawer');
-        if (drawer) {
-          drawer.classList.add('active');
-          const goalIn = document.getElementById('copilotGoalInput');
-          if (goalIn) goalIn.focus();
-        }
       } else if (action === 'theme') {
         const tBtn = document.getElementById('themeToggleBtn');
         if (tBtn) tBtn.click();
@@ -1652,11 +1201,11 @@
                 <div class="notif-item-title">${n.title}</div>
                 <div class="notif-item-desc">${n.message}</div>
               </div>
-              ${n.is_read ? '' : '<span style="width:7px; height:7px; background:#6C5CE7; border-radius:50%; margin-top:4px; flex-shrink:0;"></span>'}
+              ${n.is_read ? '' : '<span style="width:6px; height:6px; background:var(--blue); border-radius:50%; margin-top:5px; flex-shrink:0;"></span>'}
             </div>
           `).join('');
         } else {
-          list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">🎉 All caught up! No active alerts.</div>';
+          list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:12px;">No unread notifications</div>';
         }
       }
     } catch (err) {
@@ -1720,37 +1269,6 @@
     const chipAssigneeVal = document.getElementById('chipAssigneeVal');
     const chipDueDate = document.getElementById('chipDueDate');
     const chipDueDateVal = document.getElementById('chipDueDateVal');
-
-    function playSuccessChime() {
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        const now = ctx.currentTime;
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(587.33, now); // D5
-        osc1.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
-
-        osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(880, now + 0.08);
-
-        gain.gain.setValueAtTime(0.06, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc1.start(now);
-        osc2.start(now + 0.08);
-        osc1.stop(now + 0.32);
-        osc2.stop(now + 0.32);
-      } catch (e) {}
-    }
 
     function formatDdMmYyyy(dateObj) {
       const dd = String(dateObj.getDate()).padStart(2, '0');
@@ -2112,8 +1630,7 @@
         const data = await res.json();
 
         if (data.success) {
-          playSuccessChime();
-          showToast(`✨ Task "${parsed.title}" created successfully!`);
+          showToast(`Task "${parsed.title}" created successfully!`);
           closeQuickTaskModal();
 
           // If currently on tasks, kanban, calendar, or gantt, smoothly reload after a short delay
@@ -2144,7 +1661,6 @@
   // Execute on DOM Ready
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
-    initCopilot();
     initCommandPalette();
     initNotifications();
     initOmniQuickTask();

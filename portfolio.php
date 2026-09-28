@@ -67,19 +67,18 @@ include __DIR__ . '/includes/head.php';
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: var(--purple);
+    background: var(--blue);
     color: #FFFFFF;
     border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-size: 13.5px;
-    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease;
   }
   .btn-print:hover {
-    background: var(--purple-deep);
-    transform: translateY(-1px);
+    background: var(--blue-hover);
   }
   .btn-back {
     display: inline-flex;
@@ -88,7 +87,7 @@ include __DIR__ . '/includes/head.php';
     color: var(--muted);
     text-decoration: none;
     font-size: 13.5px;
-    font-weight: 600;
+    font-weight: 500;
   }
   .btn-back:hover {
     color: var(--ink);
@@ -98,45 +97,30 @@ include __DIR__ . '/includes/head.php';
   .cert-paper {
     background: var(--panel-bg);
     border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: 48px;
+    border-radius: var(--radius-md);
+    padding: 40px;
     box-shadow: var(--shadow-shell);
     position: relative;
-    overflow: hidden;
-  }
-  .cert-watermark {
-    position: absolute;
-    right: -40px;
-    bottom: -40px;
-    font-size: 260px;
-    font-weight: 900;
-    opacity: 0.025;
-    pointer-events: none;
-    user-select: none;
-    line-height: 1;
-    color: var(--ink);
   }
   .cert-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 24px;
-    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
   }
   .cert-brand {
-    font-size: 26px;
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    background: linear-gradient(135deg, #6C5CE7, #4FA3E0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--ink);
   }
   .cert-sub {
-    font-size: 12px;
-    font-weight: 800;
+    font-size: 11.5px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     color: var(--muted);
     margin-top: 4px;
   }
@@ -151,24 +135,24 @@ include __DIR__ . '/includes/head.php';
   }
 
   .student-hero {
-    margin-bottom: 32px;
+    margin-bottom: 28px;
   }
   .student-label {
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--purple);
+    letter-spacing: 0.05em;
+    color: var(--blue);
   }
   .student-name {
-    font-size: 32px;
-    font-weight: 900;
-    letter-spacing: -0.03em;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     color: var(--ink);
     margin: 4px 0 8px;
   }
   .student-bio {
-    font-size: 14.5px;
+    font-size: 13.5px;
     color: var(--muted);
     max-width: 680px;
     line-height: 1.5;
@@ -178,25 +162,25 @@ include __DIR__ . '/includes/head.php';
   .metrics-bento {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 36px;
+    gap: 12px;
+    margin-bottom: 32px;
   }
   .metric-card {
-    background: rgba(108, 92, 231, 0.04);
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
+    border-radius: var(--radius-sm);
+    padding: 14px;
     text-align: center;
   }
   .metric-val {
-    font-size: 24px;
-    font-weight: 800;
+    font-size: 20px;
+    font-weight: 700;
     color: var(--ink);
     line-height: 1.2;
   }
   .metric-lbl {
-    font-size: 11.5px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -207,29 +191,29 @@ include __DIR__ . '/includes/head.php';
   .portfolio-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 36px;
+    margin-bottom: 32px;
   }
   .portfolio-table th {
     text-align: left;
     font-size: 11.5px;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 10px 14px;
-    border-bottom: 2px solid var(--border);
+    letter-spacing: 0.04em;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
   }
   .portfolio-table td {
-    padding: 14px;
+    padding: 12px;
     border-bottom: 1px solid var(--border);
-    font-size: 13.5px;
+    font-size: 13px;
     color: var(--ink);
   }
   .progress-pill-track {
     background: var(--border);
-    border-radius: 10px;
-    height: 8px;
-    width: 100px;
+    border-radius: var(--radius-xs);
+    height: 6px;
+    width: 90px;
     overflow: hidden;
     display: inline-block;
     vertical-align: middle;
@@ -237,27 +221,27 @@ include __DIR__ . '/includes/head.php';
   }
   .progress-pill-fill {
     height: 100%;
-    background: linear-gradient(90deg, #6C5CE7, #4FA3E0);
-    border-radius: 10px;
+    background: var(--blue);
+    border-radius: var(--radius-xs);
   }
 
   /* Skill Badges */
   .skills-strip {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 40px;
+    gap: 8px;
+    margin-bottom: 32px;
   }
   .skill-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
-    background: var(--panel-bg);
+    padding: 5px 10px;
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    font-size: 12.5px;
-    font-weight: 700;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
     color: var(--ink);
   }
 
@@ -267,25 +251,25 @@ include __DIR__ . '/includes/head.php';
     align-items: center;
     justify-content: space-between;
     border-top: 1px solid var(--border);
-    padding-top: 24px;
+    padding-top: 20px;
     margin-top: 20px;
   }
   .seal-wrap {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
   .seal-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #10B981, #059669);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: #10B981;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #FFFFFF;
-    font-size: 20px;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    font-size: 16px;
+    font-weight: 700;
   }
   .seal-text {
     font-size: 12px;
@@ -349,7 +333,6 @@ include __DIR__ . '/includes/head.php';
 
   <!-- Official Executive Certificate Paper -->
   <div class="cert-paper">
-    <div class="cert-watermark">M</div>
 
     <!-- Header -->
     <div class="cert-header">
@@ -384,7 +367,7 @@ include __DIR__ . '/includes/head.php';
         <div class="metric-lbl">Active Projects</div>
       </div>
       <div class="metric-card">
-        <div class="metric-val"><?= (int)$stats['current_streak']; ?> Days</div>
+        <div class="metric-val"><?= (int)($stats['learning_streak'] ?? $stats['current_streak'] ?? 1); ?> Days</div>
         <div class="metric-lbl">Daily Streak Milestone</div>
       </div>
       <div class="metric-card">
@@ -394,7 +377,7 @@ include __DIR__ . '/includes/head.php';
     </div>
 
     <!-- Course Projects Performance Table -->
-    <h3 style="font-size:16px; font-weight:800; color:var(--ink); margin:0 0 14px;">Curriculum &amp; Course Mastery</h3>
+    <h3 style="font-size:15px; font-weight:700; color:var(--ink); margin:0 0 14px;">Curriculum &amp; Course Mastery</h3>
     <table class="portfolio-table">
       <thead>
         <tr>
@@ -408,25 +391,25 @@ include __DIR__ . '/includes/head.php';
       <tbody>
         <?php foreach ($courses as $c): ?>
           <tr>
-            <td style="font-weight:700;">
-              <span style="display:inline-block; width:28px; height:28px; line-height:28px; text-align:center; background:rgba(108,92,231,0.1); color:var(--purple); border-radius:6px; font-size:11px; margin-right:8px;">
+            <td style="font-weight:600;">
+              <span style="display:inline-block; width:26px; height:26px; line-height:26px; text-align:center; background:var(--bg); border:1px solid var(--border); color:var(--ink); border-radius:var(--radius-xs); font-size:11px; margin-right:8px; font-weight:700;">
                 <?= htmlspecialchars($c['code'] ?? 'M'); ?>
               </span>
               <?= htmlspecialchars($c['name']); ?>
             </td>
             <td><?= htmlspecialchars($c['category']); ?></td>
-            <td><span style="font-size:12px; font-weight:600; color:var(--muted);"><?= htmlspecialchars($c['level']); ?></span></td>
+            <td><span style="font-size:12px; font-weight:500; color:var(--muted);"><?= htmlspecialchars($c['level']); ?></span></td>
             <td>
               <div class="progress-pill-track">
                 <div class="progress-pill-fill" style="width: <?= (int)$c['progress_pct']; ?>%;"></div>
               </div>
-              <span style="font-weight:700; font-size:12px;"><?= (int)$c['progress_pct']; ?>%</span>
+              <span style="font-weight:600; font-size:12px;"><?= (int)$c['progress_pct']; ?>%</span>
             </td>
             <td style="text-align:right;">
               <?php if ((int)$c['progress_pct'] >= 100 || strtolower($c['status'] ?? '') === 'completed'): ?>
-                <span style="color:#10B981; font-weight:800; font-size:12px;">✓ Completed</span>
+                <span style="color:#10B981; font-weight:600; font-size:12px;">Completed</span>
               <?php else: ?>
-                <span style="color:#F59E0B; font-weight:700; font-size:12px;">⏳ In Progress</span>
+                <span style="color:#F59E0B; font-weight:600; font-size:12px;">In Progress</span>
               <?php endif; ?>
             </td>
           </tr>
@@ -436,12 +419,12 @@ include __DIR__ . '/includes/head.php';
 
     <!-- Verified Competencies -->
     <?php if (!empty($skills)): ?>
-      <h3 style="font-size:16px; font-weight:800; color:var(--ink); margin:0 0 12px;">Evaluated Technical Competencies</h3>
+      <h3 style="font-size:15px; font-weight:700; color:var(--ink); margin:0 0 12px;">Evaluated Technical Competencies</h3>
       <div class="skills-strip">
         <?php foreach ($skills as $sk): ?>
           <div class="skill-badge">
-            <span>⚡ <?= htmlspecialchars($sk['skill_name']); ?></span>
-            <span style="color:var(--purple); font-weight:800;"><?= (int)$sk['rating']; ?>%</span>
+            <span><?= htmlspecialchars($sk['skill_name']); ?></span>
+            <span style="color:var(--blue); font-weight:700;"><?= (int)$sk['rating']; ?>%</span>
           </div>
         <?php endforeach; ?>
       </div>

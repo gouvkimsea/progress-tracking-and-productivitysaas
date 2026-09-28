@@ -199,8 +199,8 @@ include __DIR__ . '/includes/head.php';
             <span style="color:var(--muted);">Utilized: $14,200</span>
             <span style="color:var(--ink);">Budget: $20,000 (71%)</span>
           </div>
-          <div style="width:100%; height:12px; background:rgba(0,0,0,0.06); border-radius:6px; overflow:hidden;">
-            <div style="height:100%; width:71%; background:linear-gradient(90deg, #10B981, #059669); border-radius:6px;"></div>
+          <div style="width:100%; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+            <div style="height:100%; width:71%; background:var(--green); border-radius:4px;"></div>
           </div>
         </div>
       </div>
@@ -209,17 +209,17 @@ include __DIR__ . '/includes/head.php';
       <div class="report-card" data-cat="time">
         <div class="report-card-head">
           <h3 class="report-card-title">Time on Tasks Logged</h3>
-          <a href="analytics.php" style="color:#0E65C7; text-decoration:none; font-size:13px; font-weight:700;">View Logs →</a>
+          <a href="analytics.php" style="color:var(--blue); text-decoration:none; font-size:13px; font-weight:600;">View Logs →</a>
         </div>
         <p class="report-card-desc">Compare estimated vs logged hours across all active team task assignments.</p>
-        <div style="display:flex; align-items:center; gap:20px; margin-top:14px;">
-          <div style="flex:1; background:rgba(108,92,231,0.08); padding:12px; border-radius:8px; text-align:center;">
-            <div style="font-size:22px; font-weight:800; color:var(--purple);">184h</div>
-            <div style="font-size:11px; font-weight:700; color:var(--muted);">Total Hours Logged</div>
+        <div style="display:flex; align-items:center; gap:16px; margin-top:14px;">
+          <div style="flex:1; background:var(--panel-bg); border:1px solid var(--border); padding:12px; border-radius:6px; text-align:center;">
+            <div style="font-size:22px; font-weight:700; color:var(--ink);">184h</div>
+            <div style="font-size:11px; font-weight:500; color:var(--muted);">Total Hours Logged</div>
           </div>
-          <div style="flex:1; background:rgba(16,185,129,0.08); padding:12px; border-radius:8px; text-align:center;">
-            <div style="font-size:22px; font-weight:800; color:#10B981;">32h</div>
-            <div style="font-size:11px; font-weight:700; color:var(--muted);">Logged This Week</div>
+          <div style="flex:1; background:var(--panel-bg); border:1px solid var(--border); padding:12px; border-radius:6px; text-align:center;">
+            <div style="font-size:22px; font-weight:700; color:var(--green);">32h</div>
+            <div style="font-size:11px; font-weight:500; color:var(--muted);">Logged This Week</div>
           </div>
         </div>
       </div>
@@ -228,11 +228,6 @@ include __DIR__ . '/includes/head.php';
 
   </main>
 </div>
-
-<!-- Floating Chat Button -->
-<button class="floating-chat-btn" title="Help &amp; Assistant" onclick="if(document.getElementById('copilotDrawer')) document.getElementById('copilotDrawer').classList.add('active');">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-</button>
 
 <div class="tooltip" id="tooltip"></div>
 

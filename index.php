@@ -89,56 +89,34 @@ include __DIR__ . '/includes/head.php';
           <div class="stat-head" style="display:flex; align-items:center; justify-content:space-between;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="dash" style="background:var(--blue)"></span>
-              <span>Focus &amp; Study Timer</span>
+              <span>Focus timer</span>
             </div>
-            <span id="pomoSessionsBadge" style="font-size:11px; font-weight:700; background:#FEE2E2; color:#DC2626; padding:2px 8px; border-radius:10px;">🍅 0 today</span>
+            <span id="pomoSessionsBadge" class="badge badge-neutral">0 completed today</span>
           </div>
 
           <!-- Pomodoro Mode Tabs -->
-          <div class="pomo-mode-tabs" style="display:flex; gap:4px; margin-top:10px; background:var(--panel-bg); padding:3px; border-radius:8px; border:1px solid var(--border);">
-            <button type="button" class="pomo-tab active" data-mode="focus" data-mins="25" style="flex:1; border:none; background:var(--blue); color:#fff; font-size:11.5px; font-weight:700; padding:4px 0; border-radius:6px; cursor:pointer;">25m Focus</button>
-            <button type="button" class="pomo-tab" data-mode="short" data-mins="5" style="flex:1; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:600; padding:4px 0; border-radius:6px; cursor:pointer;">5m Break</button>
-            <button type="button" class="pomo-tab" data-mode="long" data-mins="15" style="flex:1; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:600; padding:4px 0; border-radius:6px; cursor:pointer;">15m Long</button>
+          <div class="pomo-mode-tabs" style="display:flex; gap:4px; margin-top:10px; background:var(--panel-bg); padding:3px; border-radius:6px; border:1px solid var(--border);">
+            <button type="button" class="pomo-tab active" data-mode="focus" data-mins="25" style="flex:1; border:none; background:var(--blue); color:#fff; font-size:11.5px; font-weight:600; padding:5px 0; border-radius:4px; cursor:pointer;">25m Focus</button>
+            <button type="button" class="pomo-tab" data-mode="short" data-mins="5" style="flex:1; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:500; padding:5px 0; border-radius:4px; cursor:pointer;">5m Break</button>
+            <button type="button" class="pomo-tab" data-mode="long" data-mins="15" style="flex:1; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:500; padding:5px 0; border-radius:4px; cursor:pointer;">15m Long</button>
           </div>
 
-          <!-- Giant Timer Display & Controls -->
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+          <!-- Timer Display & Controls -->
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
             <div>
-              <div id="timerDisplay" style="font-size:32px; font-weight:900; letter-spacing:-0.03em; color:var(--ink); font-family:monospace; line-height:1;">25:00</div>
-              <div style="font-size:11.5px; color:var(--muted); margin-top:4px;">Total study: <b id="statTimeVal"><?= (int)$stats['study_hours']; ?>h <?= (int)$stats['study_minutes']; ?>m</b></div>
+              <div id="timerDisplay" style="font-size:32px; font-weight:700; letter-spacing:-0.03em; color:var(--ink); font-family:ui-monospace, SFMono-Regular, Menlo, monospace; line-height:1;">25:00</div>
+              <div style="font-size:11.5px; color:var(--muted); margin-top:6px;">Total study: <b id="statTimeVal"><?= (int)$stats['study_hours']; ?>h <?= (int)$stats['study_minutes']; ?>m</b></div>
             </div>
             <div style="display:flex; gap:6px;">
-              <button id="btnToggleTimer" style="background:#10B981; color:#fff; border:none; padding:8px 18px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all 0.15s ease;">▶ Start</button>
-              <button id="btnResetTimer" title="Reset Session" style="background:var(--panel-bg); color:var(--muted); border:1px solid var(--border); padding:8px 10px; border-radius:8px; font-size:13px; cursor:pointer;">↺</button>
+              <button id="btnToggleTimer" class="btn btn-primary" style="padding:6px 14px; font-size:12px;">Start</button>
+              <button id="btnResetTimer" class="btn btn-secondary" title="Reset Session" style="padding:6px 10px; font-size:12px;">Reset</button>
             </div>
           </div>
         </div>
 
         <!-- Mini Progress Bar -->
-        <div style="margin-top:14px; background:var(--border); border-radius:4px; height:6px; overflow:hidden;">
+        <div style="margin-top:16px; background:var(--border); border-radius:3px; height:4px; overflow:hidden;">
           <div id="pomoProgressBar" style="width:0%; height:100%; background:var(--blue); transition:width 0.3s ease;"></div>
-        </div>
-
-        <!-- Ambient Soundscapes Focus Bar -->
-        <div class="ambient-sound-bar" style="margin-top:12px; padding:10px 12px; background:var(--panel-bg); border:1px solid var(--border); border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <button type="button" id="btnToggleAmbientSound" title="Toggle Ambient Focus Sounds" style="background:transparent; border:1px solid var(--border); border-radius:8px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; color:var(--ink); transition:all 0.15s ease;">
-              🎧
-            </button>
-            <div style="display:flex; flex-direction:column;">
-              <span style="font-size:11.5px; font-weight:700; color:var(--ink);" id="ambientSoundName">Ambient Sounds: Off</span>
-              <span style="font-size:10px; color:var(--muted);">Procedural Web Audio • Zero lag</span>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <select id="ambientSoundSelect" style="font-size:11px; font-weight:600; background:var(--white); border:1px solid var(--border); color:var(--ink); border-radius:6px; padding:4px 6px; cursor:pointer;">
-              <option value="rain">🌧️ Gentle Rain</option>
-              <option value="waves">🌊 Ocean Waves</option>
-              <option value="brown">📻 Brown Noise</option>
-              <option value="binaural">🧠 Alpha Waves (432Hz)</option>
-            </select>
-            <input type="range" id="ambientVolume" min="0" max="1" step="0.05" value="0.3" style="width:55px; cursor:pointer;" title="Ambient Volume" />
-          </div>
         </div>
       </div>
 

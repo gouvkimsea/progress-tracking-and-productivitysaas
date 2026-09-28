@@ -61,8 +61,8 @@ include __DIR__ . '/includes/head.php';
         <div class="form-group" style="margin-top:20px;">
           <label class="form-label">Theme Preference</label>
           <div style="display:flex; gap:10px; margin-top:6px;">
-            <button type="button" class="btn-step" id="btnSetLight" onclick="setAppTheme('light')" style="flex:1; padding:8px; font-weight:700;">☀️ Light Mode</button>
-            <button type="button" class="btn-step" id="btnSetDark" onclick="setAppTheme('dark')" style="flex:1; padding:8px; font-weight:700;">🌙 Dark Mode</button>
+            <button type="button" class="btn btn-secondary" id="btnSetLight" onclick="setAppTheme('light')" style="flex:1; padding:6px 12px; font-size:12.5px;">Light</button>
+            <button type="button" class="btn btn-secondary" id="btnSetDark" onclick="setAppTheme('dark')" style="flex:1; padding:6px 12px; font-size:12.5px;">Dark</button>
           </div>
         </div>
 

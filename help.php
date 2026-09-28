@@ -19,15 +19,14 @@ $pageTitle = 'Mindrift — Help Center & Support';
 include __DIR__ . '/includes/head.php';
 ?>
 <style>
-  .help-header { margin-bottom: 24px; }
-  .help-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--ink); }
-  .faq-item { padding: 18px 24px; margin-bottom: 14px; }
-  .faq-item { margin-bottom: 12px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  .faq-item:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
-  .faq-q { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; display: flex; align-items: center; justify-content: space-between; }
-  .faq-chevron { transition: transform 0.2s ease; font-size: 12px; color: var(--muted); }
+  .help-header { margin-bottom: 20px; }
+  .help-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .faq-item { padding: 16px 20px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s ease; }
+  .faq-item:hover { border-color: var(--blue); }
+  .faq-q { font-size: 14px; font-weight: 600; color: var(--ink); margin: 0; display: flex; align-items: center; justify-content: space-between; }
+  .faq-chevron { transition: transform 0.2s ease; font-size: 11px; color: var(--muted); }
   .faq-item.open .faq-chevron { transform: rotate(180deg); }
-  .faq-a { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; margin-top: 10px; display: none; }
+  .faq-a { font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 8px; display: none; }
   .faq-item.open .faq-a { display: block; }
 </style>
 </head>
@@ -42,31 +41,28 @@ include __DIR__ . '/includes/head.php';
     <div class="help-header">
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
         <div>
-          <h2 class="help-title">Help Center &amp; Platform Guides</h2>
-          <p style="margin:4px 0 0; color:var(--muted); font-size:14px; font-weight:500;">Frequently asked questions and platform support</p>
+          <h2 class="help-title">Help &amp; Guides</h2>
+          <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">Frequently asked questions and platform usage</p>
         </div>
-        <button type="button" class="btn-save" onclick="document.getElementById('supportModalOverlay').classList.add('active')" style="display:inline-flex; align-items:center; gap:6px;">
-          ✉️ Contact Support
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('supportModalOverlay').classList.add('active')" style="display:inline-flex; align-items:center; gap:6px;">
+          Contact Support
         </button>
       </div>
     </div>
 
     <!-- Quick Action Power Shortcuts -->
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:24px;">
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:20px;">
       <div class="card" style="padding:14px; cursor:pointer;" onclick="if(typeof openCmdPalette==='function')openCmdPalette();">
-        <div style="font-size:18px; margin-bottom:4px;">⌨️</div>
-        <div style="font-weight:700; font-size:13.5px; color:var(--ink);">Command Palette</div>
-        <div style="font-size:11.5px; color:var(--muted);">Press ⌘K or click here</div>
+        <div style="font-weight:600; font-size:13.5px; color:var(--ink);">Command Palette</div>
+        <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">Press ⌘K or click here</div>
       </div>
       <div class="card" style="padding:14px; cursor:pointer;" onclick="window.location.href='index.php';">
-        <div style="font-size:18px; margin-bottom:4px;">🍅</div>
-        <div style="font-weight:700; font-size:13.5px; color:var(--ink);">Focus Studio</div>
-        <div style="font-size:11.5px; color:var(--muted);">Start 25m Pomodoro</div>
+        <div style="font-weight:600; font-size:13.5px; color:var(--ink);">Focus Timer</div>
+        <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">Start a 25m focus session</div>
       </div>
       <div class="card" style="padding:14px; cursor:pointer;" onclick="window.location.href='api/calendar_export.php';">
-        <div style="font-size:18px; margin-bottom:4px;">📅</div>
-        <div style="font-weight:700; font-size:13.5px; color:var(--ink);">iCal Feed Export</div>
-        <div style="font-size:11.5px; color:var(--muted);">Sync to Apple / Google Cal</div>
+        <div style="font-weight:600; font-size:13.5px; color:var(--ink);">Calendar Feed</div>
+        <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">Download .ics feed</div>
       </div>
     </div>
 
@@ -84,7 +80,7 @@ include __DIR__ . '/includes/head.php';
           <span>How do course progress calculations work?</span>
           <span class="faq-chevron">▼</span>
         </h3>
-        <p class="faq-a">Each course tracks completed modules versus total modules. Clicking the <b>"+ Module"</b> button on any course card advances your completed count and updates your database records automatically.</p>
+        <p class="faq-a">Each course tracks completed modules versus total modules. Clicking the <b>"+ Module"</b> button on any course card advances your completed count and updates your records automatically.</p>
       </div>
 
       <div class="card faq-item" onclick="toggleFaq(this)">
@@ -92,7 +88,7 @@ include __DIR__ . '/includes/head.php';
           <span>Can I update my profile details and password?</span>
           <span class="faq-chevron">▼</span>
         </h3>
-        <p class="faq-a">Yes! Navigate to <a href="settings.php" style="color:var(--purple-deep); font-weight:700;">Settings</a> in the silver sidebar to change your full name, email, or set a new password.</p>
+        <p class="faq-a">Yes. Navigate to <a href="settings.php" style="color:var(--blue); font-weight:600;">Settings</a> to update your name, email, or password.</p>
       </div>
 
       <div class="card faq-item" onclick="toggleFaq(this)">

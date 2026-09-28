@@ -24,24 +24,23 @@ include __DIR__ . '/includes/head.php';
 ?>
 <style>
   .goals-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-  .goals-title-wrap { display: flex; align-items: center; gap: 10px; }
-  .goals-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--ink); }
-  .goals-subtitle { margin: 4px 0 0; color: var(--muted); font-size: 14px; font-weight: 500; }
+  .goals-title { margin: 0; font-size: 20px; font-weight: 700; color: var(--ink); }
+  .goals-subtitle { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; font-weight: 400; }
 
-  .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+  .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .goal-card {
-    background: var(--panel-bg); border: 1px solid var(--border-soft); border-radius: 14px; padding: 22px;
-    display: flex; flex-direction: column; transition: all 0.2s ease; box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px;
+    display: flex; flex-direction: column; transition: border-color 0.15s ease;
   }
-  .goal-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); border-color: var(--border); }
+  .goal-card:hover { border-color: var(--border-focus); }
   
   .goal-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .goal-category {
-    font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 6px;
-    background: rgba(108, 92, 231, 0.1); color: var(--purple); letter-spacing: 0.03em;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: var(--radius-xs);
+    background: var(--bg); border: 1px solid var(--border); color: var(--ink); letter-spacing: 0.03em;
   }
   .goal-status-badge {
-    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-xs);
   }
   .status-on-track { background: #DCFCE7; color: #16A34A; }
   .status-at-risk { background: #FEF9C3; color: #CA8A04; }
@@ -50,32 +49,31 @@ include __DIR__ . '/includes/head.php';
   [data-theme="dark"] .status-at-risk { background: #713F12; color: #FACC15; }
   [data-theme="dark"] .status-behind { background: #7F1D1D; color: #F87171; }
 
-  .goal-title { margin: 0 0 8px; font-size: 16.5px; font-weight: 700; color: var(--ink); line-height: 1.35; }
-  .goal-due { font-size: 12.5px; color: var(--muted); font-weight: 500; margin-bottom: 18px; }
+  .goal-title { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+  .goal-due { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 16px; }
 
   .goal-progress-wrap { margin-top: auto; }
-  .goal-progress-nums { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
-  .goal-bar-bg { width: 100%; height: 8px; background: rgba(0,0,0,0.06); border-radius: 4px; overflow: hidden; }
-  [data-theme="dark"] .goal-bar-bg { background: rgba(255,255,255,0.08); }
-  .goal-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #6C5CE7, #8B7CF0); transition: width 0.3s ease; }
-  .goal-bar-fill.warning { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+  .goal-progress-nums { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  .goal-bar-bg { width: 100%; height: 6px; background: var(--border); border-radius: var(--radius-xs); overflow: hidden; }
+  .goal-bar-fill { height: 100%; border-radius: var(--radius-xs); background: var(--blue); transition: width 0.3s ease; }
+  .goal-bar-fill.warning { background: #F59E0B; }
 
-  .goal-actions { display: flex; gap: 8px; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+  .goal-actions { display: flex; gap: 8px; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
   .btn-step {
-    padding: 4px 10px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--card-bg);
-    border-radius: 6px; cursor: pointer; color: var(--ink); transition: all 0.15s ease;
+    padding: 3px 8px; font-size: 11.5px; font-weight: 600; border: 1px solid var(--border); background: var(--panel-bg);
+    border-radius: var(--radius-xs); cursor: pointer; color: var(--ink); transition: background 0.15s ease;
   }
-  .btn-step:hover { background: rgba(108, 92, 231, 0.08); border-color: var(--purple); color: var(--purple); }
+  .btn-step:hover { background: var(--bg); border-color: var(--border-focus); }
 
   /* Modal Styles */
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 9999;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9999;
     display: none; align-items: center; justify-content: center;
   }
   .modal-overlay.active { display: flex; }
   .modal-card {
-    background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px; width: 460px; max-width: 90vw;
-    padding: 24px; box-shadow: 0 20px 48px rgba(0,0,0,0.2); animation: fadeInUp 0.2s ease-out;
+    background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-md); width: 440px; max-width: 90vw;
+    padding: 24px; box-shadow: var(--shadow-shell);
   }
 </style>
 </head>
@@ -89,11 +87,8 @@ include __DIR__ . '/includes/head.php';
 
     <div class="goals-header-row">
       <div>
-        <div class="goals-title-wrap">
-          <span style="font-size:24px;">🎯</span>
-          <h2 class="goals-title">Objectives &amp; Key Results (OKRs)</h2>
-        </div>
-        <p class="goals-subtitle">Align high-level targets with daily execution and automated project deliverables</p>
+        <h2 class="goals-title">Objectives &amp; Key Results</h2>
+        <p class="goals-subtitle">Track high-level quarterly targets and project deliverables</p>
       </div>
       <button type="button" class="btn-save" style="display:inline-flex; align-items:center; gap:6px;" onclick="openGoalModal()">
         + New Objective
@@ -103,11 +98,10 @@ include __DIR__ . '/includes/head.php';
     <!-- Goals Grid -->
     <div class="goals-grid">
       <?php if (empty($goals)): ?>
-        <div style="grid-column:1/-1; text-align:center; padding:60px 20px; background:var(--panel-bg); border:1px dashed var(--border); border-radius:14px;">
-          <div style="font-size:36px; margin-bottom:8px;">🎯</div>
-          <div style="font-size:16px; font-weight:700; color:var(--ink);">No goals created yet</div>
-          <p style="color:var(--muted); font-size:13px; margin:4px 0 16px;">Define your quarterly targets and track progress automatically.</p>
-          <button type="button" class="btn-save" onclick="openGoalModal()">+ Create First Goal</button>
+        <div style="grid-column:1/-1; text-align:center; padding:48px 20px; background:var(--panel-bg); border:1px solid var(--border); border-radius:var(--radius-sm);">
+          <div style="font-size:15px; font-weight:600; color:var(--ink); margin-bottom:4px;">No goals created yet</div>
+          <p style="color:var(--muted); font-size:13px; margin:0 0 16px;">Define your quarterly targets and track progress.</p>
+          <button type="button" class="btn-save" onclick="openGoalModal()">+ Create Objective</button>
         </div>
       <?php else: ?>
         <?php foreach ($goals as $g): 
@@ -123,7 +117,7 @@ include __DIR__ . '/includes/head.php';
             </div>
             
             <h3 class="goal-title"><?= htmlspecialchars($g['title']); ?></h3>
-            <div class="goal-due">📅 Target: <?= htmlspecialchars($g['due_date'] ?? 'End of Quarter'); ?></div>
+            <div class="goal-due">Target: <?= htmlspecialchars($g['due_date'] ?? 'End of Quarter'); ?></div>
 
             <div class="goal-progress-wrap">
               <div class="goal-progress-nums">
@@ -139,8 +133,10 @@ include __DIR__ . '/includes/head.php';
               <span style="font-size:11.5px; color:var(--muted); font-weight:600;">Log:</span>
               <button type="button" class="btn-step" onclick="updateGoalProgress(<?= $g['id']; ?>, <?= min($target, $curr + 5); ?>, '<?= $g['status']; ?>')">+5</button>
               <button type="button" class="btn-step" onclick="updateGoalProgress(<?= $g['id']; ?>, <?= min($target, $curr + 10); ?>, '<?= $g['status']; ?>')">+10</button>
-              <button type="button" class="btn-step" onclick="updateGoalProgress(<?= $g['id']; ?>, <?= $target; ?>, 'Completed')" style="color:var(--green); font-weight:700;">✓ Max</button>
-              <button type="button" title="Delete Goal" onclick="deleteGoal(<?= $g['id']; ?>)" style="margin-left:auto; background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px;">🗑️</button>
+              <button type="button" class="btn-step" onclick="updateGoalProgress(<?= $g['id']; ?>, <?= $target; ?>, 'Completed')" style="color:#10B981; font-weight:600;">Max</button>
+              <button type="button" title="Delete Goal" onclick="deleteGoal(<?= $g['id']; ?>)" style="margin-left:auto; background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; display:inline-flex; align-items:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
             </div>
           </div>
         <?php endforeach; ?>
@@ -154,7 +150,7 @@ include __DIR__ . '/includes/head.php';
 <div class="modal-overlay" id="goalModal">
   <div class="modal-card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-      <h3 style="margin:0; font-size:18px; font-weight:800; color:var(--ink);">🎯 Create New Goal / OKR</h3>
+      <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--ink);">Create Objective</h3>
       <button type="button" onclick="closeGoalModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted);">&times;</button>
     </div>
     

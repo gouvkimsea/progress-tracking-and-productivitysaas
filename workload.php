@@ -115,8 +115,6 @@ include __DIR__ . '/includes/head.php';
           Range: <b id="rangeLabel">3 months</b>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
         </button>
-        <span style="color:#D1D5DB;">|</span>
-        <a href="javascript:void(0)" onclick="if(typeof openCmdPalette==='function')openCmdPalette();" style="color:#4B5563; text-decoration:none; font-weight:500;">Missing a feature? (Suggest in Copilot)</a>
       </div>
 
       <div class="workload-toolbar-right">
@@ -232,7 +230,7 @@ include __DIR__ . '/includes/head.php';
           <!-- Member 2 Breakdown Sub-row -->
           <tr id="breakdown-2" style="display:none; background:rgba(0,0,0,0.02);">
             <td colspan="28" style="padding:10px 16px; font-size:12px; color:var(--muted);">
-              💡 0 tasks currently unassigned. All sprint assignments are allocated.
+              0 tasks currently unassigned. All sprint assignments are allocated.
             </td>
           </tr>
         </tbody>
@@ -241,11 +239,6 @@ include __DIR__ . '/includes/head.php';
 
   </main>
 </div>
-
-<!-- Floating Chat Button -->
-<button class="floating-chat-btn" title="Help &amp; Assistant" onclick="if(document.getElementById('copilotDrawer')) document.getElementById('copilotDrawer').classList.add('active');">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-</button>
 
 <div class="tooltip" id="tooltip"></div>
 

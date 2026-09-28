@@ -47,56 +47,27 @@ if (!function_exists('renderPriorityBadge')) {
 
 if (!function_exists('renderDueBadge')) {
     function renderDueBadge(?string $dueDate): string {
-    if (empty($dueDate)) return '<span style="color:#9CA3AF; font-size:12px;">No deadline</span>';
-    $ts = strtotime(str_replace('/', '-', $dueDate));
-    if (!$ts) return '<span class="due-badge normal">' . htmlspecialchars($dueDate) . '</span>';
-    $diffDays = (int)round(($ts - time()) / 86400);
-    if ($diffDays < 0) {
-        return '<span class="due-badge overdue">⚠️ ' . abs($diffDays) . 'd overdue</span>';
-    } elseif ($diffDays === 0) {
-        return '<span class="due-badge today">🔥 Due today</span>';
-    } elseif ($diffDays === 1) {
-        return '<span class="due-badge soon">⏰ Tomorrow</span>';
-    } else {
-        return '<span class="due-badge normal">📅 ' . date('M j', $ts) . ' (' . $diffDays . 'd)</span>';
+        if (empty($dueDate)) return '<span style="color:var(--muted); font-size:12px;">No deadline</span>';
+        $ts = strtotime(str_replace('/', '-', $dueDate));
+        if (!$ts) return '<span class="due-badge normal">' . htmlspecialchars($dueDate) . '</span>';
+        $diffDays = (int)round(($ts - time()) / 86400);
+        if ($diffDays < 0) {
+            return '<span class="due-badge overdue">' . abs($diffDays) . 'd overdue</span>';
+        } elseif ($diffDays === 0) {
+            return '<span class="due-badge today">Due today</span>';
+        } elseif ($diffDays === 1) {
+            return '<span class="due-badge soon">Tomorrow</span>';
+        } else {
+            return '<span class="due-badge normal">' . date('M j', $ts) . ' (' . $diffDays . 'd)</span>';
+        }
     }
-}
 }
 
 $pageTitle = 'Mindrift — My Tasks';
 include __DIR__ . '/includes/head.php';
 ?>
 <style>
-  /* Priority Badges */
-  .priority-badge {
-    display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px;
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
-  }
-  .priority-urgent { background: #FEE2E2; color: #DC2626; border: 1px solid #FCA5A5; }
-  .priority-high { background: #FFEDD5; color: #EA580C; border: 1px solid #FDBA74; }
-  .priority-medium { background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD; }
-  .priority-low { background: #F3F4F6; color: #4B5563; border: 1px solid #E5E7EB; }
-
-  /* Due Date Countdown Badges */
-  .due-badge {
-    display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px;
-    font-size: 11.5px; font-weight: 600;
-  }
-  .due-badge.overdue { background: #FEF2F2; color: #DC2626; border: 1px solid #F87171; }
-  .due-badge.today { background: #FFFBEB; color: #D97706; border: 1px solid #FCD34D; }
-  .due-badge.soon { background: #EFF6FF; color: #2563EB; border: 1px solid #93C5FD; }
-  .due-badge.normal { background: #F9FAFB; color: #4B5563; border: 1px solid #E5E7EB; }
-
-  [data-theme="dark"] .priority-urgent { background: #3B1212; color: #F87171; border-color: #7F1D1D; }
-  [data-theme="dark"] .priority-high { background: #381A08; color: #FB923C; border-color: #7C2D12; }
-  [data-theme="dark"] .priority-medium { background: #082F49; color: #38BDF8; border-color: #0369A1; }
-  [data-theme="dark"] .priority-low { background: #1E293B; color: #94A3B8; border-color: #334155; }
-  [data-theme="dark"] .due-badge.overdue { background: #3B1212; color: #F87171; border-color: #7F1D1D; }
-  [data-theme="dark"] .due-badge.today { background: #382405; color: #FBBF24; border-color: #78350F; }
-  [data-theme="dark"] .due-badge.soon { background: #0E2A47; color: #60A5FA; border-color: #1E3A8A; }
-  [data-theme="dark"] .due-badge.normal { background: #162032; color: #94A3B8; border-color: #1F293D; }
-
-  /* My Tasks View (GanttPRO Screenshot 1 Design) */
+  /* My Tasks View */
   .my-tasks-page-header {
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
   }
@@ -222,8 +193,6 @@ include __DIR__ . '/includes/head.php';
         <span>Number of tasks: <b><?= $taskCount; ?></b></span>
         <span style="color:#D1D5DB;">|</span>
         <a href="javascript:void(0)" class="toolbar-link" id="btnToggleIncomplete" onclick="toggleIncompleteFilter()">My incomplete tasks</a>
-        <span style="color:#D1D5DB;">|</span>
-        <a href="javascript:void(0)" class="toolbar-link" onclick="if(typeof openCmdPalette==='function')openCmdPalette();">Missing a feature? (Suggest in Copilot)</a>
       </div>
 
       <div class="toolbar-right">
@@ -448,10 +417,7 @@ include __DIR__ . '/includes/head.php';
   </div>
 </div>
 
-<!-- Floating Copilot Button -->
-<button type="button" class="floating-chat-btn" title="Help &amp; Assistant" onclick="if(document.getElementById('copilotDrawer')) document.getElementById('copilotDrawer').classList.add('active');">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-</button>
+
 
 <div class="tooltip" id="tooltip"></div>
 
@@ -565,61 +531,7 @@ include __DIR__ . '/includes/head.php';
 
 <script src="assets/js/app.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  // Add Task Modal Controls
-  const btnOpenAddTask = document.getElementById('btnOpenAddTaskFromHeader');
-  const btnCloseAddTask = document.getElementById('btnCloseAddTaskModal');
-  const btnCancelAddTask = document.getElementById('btnCancelAddTaskModal');
-  const addTaskModalOverlay = document.getElementById('addTaskModalOverlay');
-  const addTaskForm = document.getElementById('addTaskForm');
 
-  function openTaskModal() { if (addTaskModalOverlay) addTaskModalOverlay.classList.add('active'); }
-  function closeTaskModal() { if (addTaskModalOverlay) addTaskModalOverlay.classList.remove('active'); }
-
-  if (btnOpenAddTask) btnOpenAddTask.addEventListener('click', openTaskModal);
-  if (btnCloseAddTask) btnCloseAddTask.addEventListener('click', closeTaskModal);
-  if (btnCancelAddTask) btnCancelAddTask.addEventListener('click', closeTaskModal);
-
-  if (addTaskForm) {
-    addTaskForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const task_name = document.getElementById('taskNameInput').value.trim();
-      const project_name = document.getElementById('taskProjectInput').value.trim();
-      const priority = document.getElementById('taskPriorityInput').value;
-      const due_date = document.getElementById('taskDueDateInput').value.trim();
-      const start_date = document.getElementById('taskStartDateInput').value.trim();
-      const assigned_to = document.getElementById('taskAssignedInput').value.trim();
-
-      const btnSubmit = document.getElementById('btnSubmitAddTask');
-      btnSubmit.disabled = true;
-      btnSubmit.textContent = 'Adding...';
-
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-      try {
-        const res = await fetch('api/tasks.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken
-          },
-          body: JSON.stringify({ action: 'create', task_name, project_name, priority, due_date, start_date, assigned_to })
-        });
-        const data = await res.json();
-        if (data.success) {
-          closeTaskModal();
-          location.reload();
-        } else {
-          alert('Error adding task: ' + data.message);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = 'Add Task';
-      }
-    });
-  }
-});
 
 // Tab Switching Controller
 window.switchTaskTab = function(tab) {

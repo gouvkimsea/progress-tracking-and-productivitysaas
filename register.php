@@ -46,90 +46,100 @@ $isDark = ($initialTheme === 'dark');
     align-items: center;
     justify-content: center;
     padding: 20px;
+    background: var(--bg);
+    color: var(--ink);
   }
   .auth-card {
     width: 100%;
-    max-width: 460px;
-    background: var(--white);
-    border-radius: 24px;
-    box-shadow: 0 30px 80px -20px rgba(60,40,110,0.35), 0 10px 30px -10px rgba(60,40,110,0.15);
-    padding: 40px;
+    max-width: 420px;
+    background: var(--panel-bg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-shell);
+    padding: 36px 32px;
     border: 1px solid var(--border);
   }
   .auth-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 28px;
+    gap: 10px;
+    margin-bottom: 24px;
   }
   .auth-logo {
-    width: 42px; height: 42px; border-radius: 12px;
-    background: linear-gradient(145deg, #8B7CF0, #5A46E0);
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    background: var(--blue);
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 16px -2px rgba(90,70,224,0.5);
+    color: #fff;
+  }
+  .brand-name {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
   }
   .auth-title {
-    font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px;
+    font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px;
+    color: var(--ink);
   }
   .auth-subtitle {
-    font-size: 14px; color: var(--muted); margin: 0 0 28px; font-weight: 500;
+    font-size: 13.5px; color: var(--muted); margin: 0 0 24px; font-weight: 400;
   }
   .form-group {
-    margin-bottom: 18px;
+    margin-bottom: 16px;
   }
   .form-label {
-    display: block; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 8px;
+    display: block; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 6px;
   }
   .form-input {
     width: 100%;
-    padding: 13px 16px;
-    font-size: 14px;
+    padding: 10px 14px;
+    font-size: 13.5px;
     font-family: inherit;
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    background: #FDFDFE;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel-bg);
     color: var(--ink);
     outline: none;
-    transition: all 0.2s ease;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
   }
   .form-input:focus {
-    border-color: var(--purple);
-    background: var(--white);
-    box-shadow: 0 0 0 4px rgba(108,92,231,0.12);
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
   }
   .btn-submit {
     width: 100%;
-    padding: 14px;
-    font-size: 15px;
-    font-weight: 700;
+    padding: 11px 16px;
+    font-size: 14px;
+    font-weight: 600;
     font-family: inherit;
     color: #fff;
-    background: linear-gradient(145deg, #7C6CF0, #5A46E0);
+    background: var(--blue);
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    box-shadow: 0 8px 20px -4px rgba(90,70,224,0.4);
-    transition: all 0.2s ease;
+    transition: background 0.15s ease;
     margin-top: 8px;
   }
   .btn-submit:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 12px 24px -4px rgba(90,70,224,0.5);
+    background: var(--blue-hover);
   }
-  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
   .auth-footer {
-    text-align: center; margin-top: 24px; font-size: 13.5px; color: var(--ink-soft); font-weight: 500;
+    text-align: center; margin-top: 20px; font-size: 13px; color: var(--muted);
   }
   .auth-footer a {
-    color: var(--purple-deep); font-weight: 700; text-decoration: none;
+    color: var(--blue); font-weight: 600; text-decoration: none;
   }
   .auth-footer a:hover { text-decoration: underline; }
   .alert-box {
-    padding: 12px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 600;
-    margin-bottom: 20px; display: none;
+    padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+    margin-bottom: 18px; display: none;
   }
-  .alert-error { background: #FDE8E8; color: var(--red); border: 1px solid #F8B4B4; }
-  .alert-success { background: #EAF8F1; color: var(--green); border: 1px solid #9AE6C4; }
+  .alert-error { background: #FEF2F2; color: var(--red); border: 1px solid #FCA5A5; }
+  .alert-success { background: #F0FDF4; color: var(--green); border: 1px solid #86EFAC; }
 </style>
 </head>
 <body>
@@ -137,15 +147,15 @@ $isDark = ($initialTheme === 'dark');
 <div class="auth-card">
   <div class="auth-brand">
     <div class="auth-logo">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
         <path d="M12 3 L13.6 9.2 L20 12 L13.6 14.8 L12 21 L10.4 14.8 L4 12 L10.4 9.2 Z" fill="#fff"/>
       </svg>
     </div>
-    <span class="brand-name">Mindrift<span class="tm">™</span></span>
+    <span class="brand-name">Mindrift</span>
   </div>
 
   <h1 class="auth-title">Create an account</h1>
-  <p class="auth-subtitle">Start tracking your personal learning journey</p>
+  <p class="auth-subtitle">Get started with your personal productivity workspace</p>
 
   <div class="alert-box alert-error" id="alertBox"></div>
 

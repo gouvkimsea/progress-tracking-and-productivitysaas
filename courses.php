@@ -166,9 +166,13 @@ include __DIR__ . '/includes/head.php';
               <span class="status-txt"><?= $statusLabel; ?></span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <button class="action-icon-btn" title="Project Details" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)">ⓘ</button>
+            <button class="action-icon-btn" title="Project Details" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
             <div style="position:relative; display:inline-block;">
-              <button class="action-icon-btn btn-proj-opts" title="Options" onclick="toggleProjectOptions(event, <?= $c['id']; ?>, '<?= addslashes($c['name']); ?>')">···</button>
+              <button class="action-icon-btn btn-proj-opts" title="Options" onclick="toggleProjectOptions(event, <?= $c['id']; ?>, '<?= addslashes($c['name']); ?>')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+              </button>
             </div>
           </div>
         </div>
@@ -187,29 +191,29 @@ include __DIR__ . '/includes/head.php';
     </div>
     <div class="modal-body">
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-        <div id="infoModalBadge" style="width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">PR</div>
+        <div id="infoModalBadge" style="width:40px; height:40px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:700; background:var(--blue);">PR</div>
         <div>
-          <h3 id="infoModalName" style="margin:0; font-size:18px; font-weight:800; color:var(--ink);">Project Name</h3>
-          <span id="infoModalCategory" style="font-size:12.5px; color:var(--muted); font-weight:600;">Design · Intermediate</span>
+          <h3 id="infoModalName" style="margin:0; font-size:16px; font-weight:700; color:var(--ink);">Project Name</h3>
+          <span id="infoModalCategory" style="font-size:12px; color:var(--muted); font-weight:500;">Design · Intermediate</span>
         </div>
       </div>
 
-      <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:18px;">
-        <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:6px;">
+      <div style="background:var(--panel-bg); border:1px solid var(--border); border-radius:6px; padding:14px; margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:6px;">
           <span style="color:var(--muted);">Modules Progress</span>
           <span id="infoModalProgressTxt" style="color:var(--ink);">0 / 10 (0%)</span>
         </div>
-        <div style="width:100%; height:8px; background:rgba(0,0,0,0.06); border-radius:4px; overflow:hidden;">
-          <div id="infoModalProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg, #6C5CE7, #8B7CF0); border-radius:4px; transition:width 0.3s ease;"></div>
+        <div style="width:100%; height:6px; background:var(--border); border-radius:3px; overflow:hidden;">
+          <div id="infoModalProgressBar" style="height:100%; width:0%; background:var(--blue); border-radius:3px; transition:width 0.3s ease;"></div>
         </div>
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <a id="infoModalGanttBtn" href="gantt.php" class="btn-step" style="text-align:center; padding:10px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; font-weight:700;">
-          📈 View in Gantt
+        <a id="infoModalGanttBtn" href="gantt.php" class="btn btn-secondary" style="text-align:center; padding:8px 12px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; font-weight:600;">
+          View in Gantt
         </a>
-        <a id="infoModalKanbanBtn" href="kanban.php" class="btn-step" style="text-align:center; padding:10px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13px; font-weight:700;">
-          📋 View in Kanban
+        <a id="infoModalKanbanBtn" href="kanban.php" class="btn btn-secondary" style="text-align:center; padding:8px 12px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; font-weight:600;">
+          View in Kanban
         </a>
       </div>
     </div>

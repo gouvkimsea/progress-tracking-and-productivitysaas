@@ -37,57 +37,47 @@ $pageTitle = 'Mindrift — Community & Leaderboards';
 include __DIR__ . '/includes/head.php';
 ?>
 <style>
-  .comm-header { margin-bottom: 24px; }
-  .comm-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--ink); }
+  .comm-header { margin-bottom: 20px; }
+  .comm-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
   
   /* Top Spot Spotlight */
   .top-spotlight-card {
-    background: linear-gradient(135deg, #FFF9E6 0%, #FFF3CC 100%);
-    border: 1.5px solid #FFE082; padding: 24px; border-radius: var(--radius-lg);
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
-    box-shadow: 0 10px 30px rgba(255, 193, 7, 0.15);
+    background: var(--panel-bg);
+    border: 1px solid var(--border); padding: 18px 20px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
   }
-  .top-spotlight-left { display: flex; align-items: center; gap: 16px; }
-  .crown-badge {
-    width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(145deg, #FFB300, #F57F17);
-    color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px;
-    box-shadow: 0 4px 14px rgba(245, 127, 23, 0.4); flex-shrink: 0;
+  .top-spotlight-left { display: flex; align-items: center; gap: 14px; }
+  .spotlight-rank-badge {
+    width: 40px; height: 40px; border-radius: 6px; background: var(--blue);
+    color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
   }
-  .spotlight-rank { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #B78103; letter-spacing: 0.06em; }
-  .spotlight-name { font-size: 19px; font-weight: 800; color: #422F00; margin: 2px 0 4px; }
-  .spotlight-meta { font-size: 13px; color: #7A5C05; font-weight: 600; }
+  .spotlight-rank { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--blue); letter-spacing: 0.04em; }
+  .spotlight-name { font-size: 16px; font-weight: 700; color: var(--ink); margin: 2px 0 4px; }
+  .spotlight-meta { font-size: 12.5px; color: var(--muted); font-weight: 500; }
 
-  .comm-grid { display: grid; grid-template-columns: 7fr 4fr; gap: 20px; }
+  .comm-grid { display: grid; grid-template-columns: 7fr 4fr; gap: 16px; }
   .leader-item {
-    display: flex; align-items: center; justify-content: space-between; padding: 14px 16px;
-    border-bottom: 1px solid var(--border-soft); border-radius: 12px; transition: background 0.15s ease;
+    display: flex; align-items: center; justify-content: space-between; padding: 10px 12px;
+    border-bottom: 1px solid var(--border); border-radius: 6px; transition: background 0.15s ease;
   }
   .leader-item:hover { background: var(--panel-bg); }
-  .leader-item.is-me { background: var(--purple-light); border-color: var(--purple-soft); }
+  .leader-item.is-me { background: rgba(37, 99, 235, 0.05); }
   
   .rank-badge {
-    width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 800; flex-shrink: 0;
+    width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    font-size: 11.5px; font-weight: 600; flex-shrink: 0;
   }
-  .rank-1 { background: #FFD700; color: #5C4B00; box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4); }
-  .rank-2 { background: #E0E0E0; color: #424242; }
-  .rank-3 { background: #CD7F32; color: #fff; }
-  .rank-other { background: var(--panel-bg); color: var(--muted); border: 1px solid var(--border); }
+  .rank-1 { background: var(--blue); color: #fff; }
+  .rank-2 { background: var(--border); color: var(--ink); }
+  .rank-3 { background: var(--border); color: var(--muted); }
+  .rank-other { background: transparent; color: var(--muted); }
 
-  .user-stats-pill { display: flex; align-items: center; gap: 16px; }
-  .stat-badge { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
-  .stat-badge b { color: var(--purple-deep); }
-  .btn-join { background: var(--purple-light); color: var(--purple-deep); border: none; padding: 6px 14px; border-radius: 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-
-  /* Dark Theme Support */
-  [data-theme="dark"] .top-spotlight-card {
-    background: linear-gradient(135deg, #2D2200 0%, #3D2D00 100%);
-    border-color: #B45309;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  }
-  [data-theme="dark"] .spotlight-rank { color: #FCD34D; }
-  [data-theme="dark"] .spotlight-name { color: #FDE68A; }
-  [data-theme="dark"] .spotlight-meta { color: #F59E0B; }
+  .user-stats-pill { display: flex; align-items: center; gap: 14px; }
+  .stat-badge { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .stat-badge b { color: var(--ink); font-weight: 600; }
+  .btn-join { background: var(--panel-bg); color: var(--ink); border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; }
+  .btn-join:hover { border-color: var(--blue); color: var(--blue); }
 </style>
 </head>
 <body>
@@ -99,19 +89,19 @@ include __DIR__ . '/includes/head.php';
     <?php include __DIR__ . '/includes/header.php'; ?>
 
     <div class="comm-header">
-      <h2 class="comm-title">Student Community &amp; Leaderboard</h2>
-      <p style="margin:4px 0 0; color:var(--muted); font-size:14px; font-weight:500;">Live rankings of all users based on learning streak and course progress</p>
+      <h2 class="comm-title">Community &amp; Leaderboard</h2>
+      <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">Rankings of all members based on learning streak and course progress</p>
     </div>
 
     <!-- Top Spotlight Banner -->
     <?php if ($topUser): ?>
       <div class="top-spotlight-card">
         <div class="top-spotlight-left">
-          <div class="crown-badge">👑</div>
+          <div class="spotlight-rank-badge">#1</div>
           <div>
-            <span class="spotlight-rank">🏆 Top Learner (#1 Rank)</span>
+            <span class="spotlight-rank">Top Learner</span>
             <h3 class="spotlight-name"><?= htmlspecialchars($topUser['name']); ?> <?= ($topUser['id'] == $userId) ? '(You)' : ''; ?></h3>
-            <span class="spotlight-meta">🔥 <b><?= (int)$topUser['learning_streak']; ?> days streak</b> · 📚 <b><?= round($topUser['course_progress_pct']); ?>% course progress</b> · ⏱️ <b><?= (int)$topUser['study_hours']; ?>h <?= (int)$topUser['study_minutes']; ?>m study time</b></span>
+            <span class="spotlight-meta"><b><?= (int)$topUser['learning_streak']; ?> days streak</b> · <b><?= round($topUser['course_progress_pct']); ?>% progress</b> · <b><?= (int)$topUser['study_hours']; ?>h <?= (int)$topUser['study_minutes']; ?>m study time</b></span>
           </div>
         </div>
       </div>
@@ -120,7 +110,7 @@ include __DIR__ . '/includes/head.php';
     <div class="comm-grid">
       <!-- Full Leaderboard -->
       <div class="card card-block">
-        <h3 style="margin:0 0 16px; font-size:16.5px; font-weight:700;">All Active Learners</h3>
+        <h3 style="margin:0 0 14px; font-size:15px; font-weight:600;">All Active Members</h3>
         
         <?php 
         $rank = 1;
@@ -130,21 +120,21 @@ include __DIR__ . '/includes/head.php';
           $initial = strtoupper(substr($member['name'], 0, 1));
         ?>
           <div class="leader-item <?= $isMe ? 'is-me' : ''; ?>">
-            <div style="display:flex; align-items:center; gap:14px;">
+            <div style="display:flex; align-items:center; gap:12px;">
               <span class="rank-badge <?= $rankClass; ?>"><?= $rank; ?></span>
-              <div class="avatar-circle" style="width:34px; height:34px; font-size:13px;"><?= $initial; ?></div>
+              <div class="avatar-circle" style="width:28px; height:28px; font-size:11px;"><?= $initial; ?></div>
               <div>
-                <div style="font-size:14px; font-weight:700; color:var(--ink);">
-                  <?= htmlspecialchars($member['name']); ?> <?= $isMe ? '<span style="color:var(--purple-deep); font-weight:800;">(You)</span>' : ''; ?>
+                <div style="font-size:13.5px; font-weight:600; color:var(--ink);">
+                  <?= htmlspecialchars($member['name']); ?> <?= $isMe ? '<span style="color:var(--blue); font-weight:600;">(You)</span>' : ''; ?>
                 </div>
-                <div style="font-size:11.5px; color:var(--muted);"><?= htmlspecialchars($member['email']); ?></div>
+                <div style="font-size:11px; color:var(--muted);"><?= htmlspecialchars($member['email']); ?></div>
               </div>
             </div>
 
             <div class="user-stats-pill">
-              <span class="stat-badge">🔥 <b><?= (int)$member['learning_streak']; ?></b> days</span>
-              <span class="stat-badge">📊 <b><?= round($member['course_progress_pct']); ?>%</b></span>
-              <span class="stat-badge">⏱️ <b><?= (int)$member['study_hours']; ?>h</b></span>
+              <span class="stat-badge"><b><?= (int)$member['learning_streak']; ?></b> days</span>
+              <span class="stat-badge"><b><?= round($member['course_progress_pct']); ?>%</b></span>
+              <span class="stat-badge"><b><?= (int)$member['study_hours']; ?>h</b></span>
             </div>
           </div>
         <?php 

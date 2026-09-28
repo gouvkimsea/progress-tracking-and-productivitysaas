@@ -61,16 +61,15 @@ $pageTitle = 'Mindrift — Study Calendar & Schedule';
 include __DIR__ . '/includes/head.php';
 ?>
 <style>
-  .cal-header { margin-bottom: 24px; }
-  .cal-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--ink); }
-  .cal-grid { display: grid; grid-template-columns: 7fr 4fr; gap: 20px; }
-  .calendar-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 16px; }
-  .cal-day-head { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; padding: 8px 0; }
-  .cal-day-box { background: var(--panel-bg); border: 1px solid var(--border-soft); border-radius: 12px; min-height: 78px; padding: 8px; font-size: 13px; font-weight: 700; display: flex; flex-direction: column; }
-  .cal-day-box.today { background: var(--purple-light); border-color: var(--purple-soft); color: var(--purple-deep); }
-  [data-theme="dark"] .cal-day-box.today { background: #1E1B4B; border-color: #4338CA; color: #A5B4FC; }
-  .event-dot { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px; color: #fff; margin-top: 4px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .upcoming-item { padding: 12px 0; border-bottom: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: 2px; }
+  .cal-header { margin-bottom: 20px; }
+  .cal-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .cal-grid { display: grid; grid-template-columns: 7fr 4fr; gap: 16px; }
+  .calendar-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 14px; }
+  .cal-day-head { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; padding: 6px 0; }
+  .cal-day-box { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 6px; min-height: 72px; padding: 6px; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; }
+  .cal-day-box.today { background: rgba(37, 99, 235, 0.05); border-color: var(--blue); color: var(--blue); }
+  .event-dot { font-size: 10px; font-weight: 600; padding: 2px 4px; border-radius: 3px; color: #fff; margin-top: 3px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .upcoming-item { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; }
   .upcoming-item:last-child { border-bottom: none; }
 </style>
 </head>
@@ -85,10 +84,11 @@ include __DIR__ . '/includes/head.php';
     <div class="cal-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
       <div>
         <h2 class="cal-title">Study Calendar &amp; Project Deadlines</h2>
-        <p style="margin:4px 0 0; color:var(--muted); font-size:14px; font-weight:500;">Track real task due dates and synchronize your learning roadmap</p>
+        <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">Track task due dates and synchronize your learning roadmap</p>
       </div>
-      <a href="api/calendar_export.php" class="btn-save" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none; font-size:13px; padding:8px 16px;">
-        📅 Download .ics Calendar Feed
+      <a href="api/calendar_export.php" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-size:12.5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Export .ics Feed
       </a>
     </div>
 
@@ -155,9 +155,8 @@ include __DIR__ . '/includes/head.php';
         <h3 style="margin:0 0 16px; font-size:16.5px; font-weight:700;">Upcoming Task Deadlines</h3>
         
         <?php if (empty($upcomingDeadlines)): ?>
-          <div style="text-align:center; padding:30px 10px; color:var(--muted); font-size:13px;">
-            <div style="font-size:28px; margin-bottom:6px;">🎉</div>
-            No pending task deadlines!
+          <div style="text-align:center; padding:24px 10px; color:var(--muted); font-size:13px;">
+            No pending task deadlines
           </div>
         <?php else: ?>
           <?php foreach (array_slice($upcomingDeadlines, 0, 5) as $ud): 
