@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: mindrift_app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - DB_DRIVER=sqlite
+      - APP_ENV=production
+    volumes:
+      - ./uploads:/var/www/html/uploads
+      - ./mindrift.sqlite:/var/www/html/mindrift.sqlite
+    networks:
+      - mindrift-net
+
+networks:
+  mindrift-net:
+    driver: bridge

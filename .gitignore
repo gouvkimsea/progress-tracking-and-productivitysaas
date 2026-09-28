@@ -1,0 +1,29 @@
+# Environment & Local Configuration
+.env
+.env.local
+*.env
+
+# SQLite Databases & Local DBs
+*.sqlite
+*.sqlite3
+*.db
+!db_setup.sql
+
+# Uploads & Temp files (keep directory and protection)
+uploads/*
+!uploads/.htaccess
+!uploads/.gitkeep
+scratch/*
+!scratch/.gitkeep
+
+# Logs & System artifacts
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

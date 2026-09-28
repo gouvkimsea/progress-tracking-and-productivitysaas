@@ -1,0 +1,7 @@
+# Block PHP and script execution in uploads
+<FilesMatch "(?i)\.(php|phtml|phar|cgi|pl|exe|sh|py|asp|aspx)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+Options -ExecCGI -Indexes

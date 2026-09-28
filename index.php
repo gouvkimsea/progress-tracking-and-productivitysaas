@@ -1,0 +1,286 @@
+<?php
+require_once __DIR__ . '/config/db.php';
+startSecureSession();
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+$db = getDbConnection();
+$userId = (int)$_SESSION['user_id'];
+
+// Fetch User Info
+$stmtUser = $db->prepare("SELECT * FROM users WHERE id = :uid");
+$stmtUser->execute(['uid' => $userId]);
+$user = $stmtUser->fetch();
+if (!$user) {
+    session_destroy();
+    header('Location: login.php');
+    exit;
+}
+
+// Fetch Stats
+$stmtStats = $db->prepare("SELECT * FROM user_stats WHERE user_id = :uid");
+$stmtStats->execute(['uid' => $userId]);
+$stats = $stmtStats->fetch() ?: [
+    'learning_streak' => 0,
+    'longest_streak' => 0,
+    'missed_days' => 0,
+    'inactive_pct' => 0,
+    'course_progress_pct' => 0.00,
+    'study_hours' => 0,
+    'study_minutes' => 0
+];
+
+// Fetch Weekly Streaks
+$stmtStreaks = $db->prepare("SELECT * FROM weekly_streaks WHERE user_id = :uid ORDER BY day_index ASC");
+$stmtStreaks->execute(['uid' => $userId]);
+$weeklyStreaks = $stmtStreaks->fetchAll();
+
+$pageTitle = 'Mindrift — Progress Tracking Dashboard';
+include __DIR__ . '/includes/head.php';
+?>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <?php include __DIR__ . '/includes/sidebar.php'; ?>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <?php include __DIR__ . '/includes/header.php'; ?>
+
+    <!-- Stat cards -->
+    <section class="stat-grid">
+
+      <div class="card stat-card">
+        <div class="stat-head"><span class="dash" style="background:var(--purple)"></span><span>Learning streak</span></div>
+        <div class="stat-value-row"><span class="stat-value" id="statStreakVal"><?= (int)$stats['learning_streak']; ?></span></div>
+        <div class="stat-delta-label"><span class="stat-delta up">+<?= (int)$stats['streak_delta']; ?> days</span> vs last week</div>
+        <div class="stat-sub">
+          <div><p class="k">Longest streak</p><p class="v" id="longestStreakVal"><?= (int)$stats['longest_streak']; ?> days</p></div>
+          <div><p class="k">Missed days</p><p class="v" id="missedDaysVal"><?= (int)$stats['missed_days']; ?> day</p></div>
+          <div><p class="k">Inactive</p><p class="v" id="inactiveVal"><?= (int)$stats['inactive_pct']; ?>%</p></div>
+        </div>
+        <div class="sparkbars" id="bars-streak"></div>
+        <button class="view-link" data-scroll="timeline">View all details
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-head"><span class="dash" style="background:var(--orange)"></span><span>Course progress</span></div>
+        <div class="stat-value-row"><span class="stat-value" id="statProgressVal"><?= round($stats['course_progress_pct']); ?>%</span></div>
+        <div class="stat-delta-label"><span class="stat-delta up">+<?= number_format($stats['progress_delta_pct'], 1); ?>%</span> this week</div>
+        <div class="stat-sub">
+          <div><p class="k">This week</p><p class="v" id="weeklyLessonsCurr"><?= (int)$stats['weekly_lessons_current']; ?> lessons</p></div>
+          <div><p class="k">Last week</p><p class="v" id="weeklyLessonsLast"><?= (int)$stats['weekly_lessons_last']; ?> lessons</p></div>
+        </div>
+        <div class="sparkbars" id="bars-progress"></div>
+        <button class="view-link" data-scroll="timeline">View all details
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="card stat-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div class="stat-head" style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="dash" style="background:var(--blue)"></span>
+              <span>Focus &amp; Study Timer</span>
+            </div>
+            <span id="pomoSessionsBadge" style="font-size:11px; font-weight:700; background:#FEE2E2; color:#DC2626; padding:2px 8px; border-radius:10px;">🍅 0 today</span>
+          </div>
+
+          <!-- Pomodoro Mode Tabs -->
+          <div class="pomo-mode-tabs" style="display:flex; gap:4px; margin-top:10px; background:var(--panel-bg); padding:3px; border-radius:8px; border:1px solid var(--border);">
+            <button type="button" class="pomo-tab active" data-mode="focus" data-mins="25" style="flex:1; border:none; background:var(--blue); color:#fff; font-size:11.5px; font-weight:700; padding:4px 0; border-radius:6px; cursor:pointer;">25m Focus</button>
+            <button type="button" class="pomo-tab" data-mode="short" data-mins="5" style="flex:1; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:600; padding:4px 0; border-radius:6px; cursor:pointer;">5m Break</button>
+            <button type="button" class="pomo-tab" data-mode="long" data-mins="15" style="flex:1; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:600; padding:4px 0; border-radius:6px; cursor:pointer;">15m Long</button>
+          </div>
+
+          <!-- Giant Timer Display & Controls -->
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+            <div>
+              <div id="timerDisplay" style="font-size:32px; font-weight:900; letter-spacing:-0.03em; color:var(--ink); font-family:monospace; line-height:1;">25:00</div>
+              <div style="font-size:11.5px; color:var(--muted); margin-top:4px;">Total study: <b id="statTimeVal"><?= (int)$stats['study_hours']; ?>h <?= (int)$stats['study_minutes']; ?>m</b></div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button id="btnToggleTimer" style="background:#10B981; color:#fff; border:none; padding:8px 18px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all 0.15s ease;">▶ Start</button>
+              <button id="btnResetTimer" title="Reset Session" style="background:var(--panel-bg); color:var(--muted); border:1px solid var(--border); padding:8px 10px; border-radius:8px; font-size:13px; cursor:pointer;">↺</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini Progress Bar -->
+        <div style="margin-top:14px; background:var(--border); border-radius:4px; height:6px; overflow:hidden;">
+          <div id="pomoProgressBar" style="width:0%; height:100%; background:var(--blue); transition:width 0.3s ease;"></div>
+        </div>
+
+        <!-- Ambient Soundscapes Focus Bar -->
+        <div class="ambient-sound-bar" style="margin-top:12px; padding:10px 12px; background:var(--panel-bg); border:1px solid var(--border); border-radius:10px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button type="button" id="btnToggleAmbientSound" title="Toggle Ambient Focus Sounds" style="background:transparent; border:1px solid var(--border); border-radius:8px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; color:var(--ink); transition:all 0.15s ease;">
+              🎧
+            </button>
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-size:11.5px; font-weight:700; color:var(--ink);" id="ambientSoundName">Ambient Sounds: Off</span>
+              <span style="font-size:10px; color:var(--muted);">Procedural Web Audio • Zero lag</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <select id="ambientSoundSelect" style="font-size:11px; font-weight:600; background:var(--white); border:1px solid var(--border); color:var(--ink); border-radius:6px; padding:4px 6px; cursor:pointer;">
+              <option value="rain">🌧️ Gentle Rain</option>
+              <option value="waves">🌊 Ocean Waves</option>
+              <option value="brown">📻 Brown Noise</option>
+              <option value="binaural">🧠 Alpha Waves (432Hz)</option>
+            </select>
+            <input type="range" id="ambientVolume" min="0" max="1" step="0.05" value="0.3" style="width:55px; cursor:pointer;" title="Ambient Volume" />
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Timeline Heatmap -->
+    <section class="card timeline-card" id="timeline">
+      <div class="timeline-head">
+        <h2>Learning activity timeline</h2>
+        <div style="position:relative;">
+          <button class="filter-btn" id="filterBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Filter view
+          </button>
+          <div class="filter-menu" id="filterMenu">
+            <button class="sel" data-cat="all">All courses</button>
+            <button data-cat="Design">Design mastery</button>
+            <button data-cat="Programming">JavaScript</button>
+            <button data-cat="Design">Photoshop</button>
+            <button data-cat="Data Science">Python for Data</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="heatmap-scroll">
+        <div class="heatmap-months" id="heatmap"></div>
+      </div>
+
+      <div class="timeline-foot">
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Total hours: <b id="totalHoursFooter"><?= (int)$stats['study_hours']; ?>h</b></div>
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Lessons finished: <b id="totalLessonsFooter"><?= (int)$stats['weekly_lessons_current']; ?></b></div>
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> Quiz score: <b>100%</b></div>
+      </div>
+    </section>
+
+    <!-- Bottom 3 Grid -->
+    <section class="bottom-grid">
+
+      <!-- Weekly streak -->
+      <div class="card card-block">
+        <div class="card-block-head">
+          <div class="card-title">
+            <div class="ic" style="background:var(--purple-light); color:var(--purple-deep)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5Z"/></svg>
+            </div>
+            <span>Weekly streak</span>
+          </div>
+          <button class="kebab" title="Options">
+            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+
+        <div class="streak-big" id="streakBig"><?= (int)$stats['learning_streak']; ?> days</div>
+        <div class="week-days" id="weekDays"></div>
+
+        <div class="streak-foot">
+          <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Current: <b id="streakCount">4</b>/7</div>
+          <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Goal: <b>7 days</b></div>
+        </div>
+      </div>
+
+      <!-- Learning progress -->
+      <div class="card card-block">
+        <div class="card-block-head">
+          <div class="card-title">
+            <div class="ic" style="background:var(--orange-light); color:var(--orange)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <span>Learning progress</span>
+          </div>
+          <button class="kebab" title="Options">
+            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+
+        <div id="lessonList"></div>
+      </div>
+
+      <!-- Skill breakdown -->
+      <div class="card card-block skill-card">
+        <div class="card-block-head">
+          <div class="card-title">
+            <div class="ic" style="background:var(--blue-light); color:var(--blue)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 0 14 7 7 0 0 0 0-14z"/></svg>
+            </div>
+            <span>Skill breakdown</span>
+          </div>
+          <button class="kebab" title="Options">
+            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+
+        <div class="radar-wrap" id="radarWrap"></div>
+      </div>
+
+    </section>
+  </main>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Log Activity Modal -->
+<div class="modal-overlay" id="logModalOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title">Log Study Activity</h3>
+      <button class="modal-close-btn" id="btnCloseLogModal">&times;</button>
+    </div>
+    <form id="logActivityForm">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="logLessons">Lessons Completed</label>
+          <input type="number" id="logLessons" class="form-input" min="1" max="50" value="1" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="logMinutes">Study Time (Minutes)</label>
+          <input type="number" id="logMinutes" class="form-input" min="5" max="600" step="5" value="30" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="logCategory">Category</label>
+          <select id="logCategory" class="form-input">
+            <option value="General">General Study</option>
+            <option value="Design">Design</option>
+            <option value="Programming">Programming</option>
+            <option value="Data Science">Data Science</option>
+            <option value="Business">Business</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="logDate">Date</label>
+          <input type="date" id="logDate" class="form-input" value="<?= date('Y-m-d'); ?>" required />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" id="btnCancelLogModal">Cancel</button>
+        <button type="submit" class="btn-save" id="btnSubmitLogModal">Save Activity</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>

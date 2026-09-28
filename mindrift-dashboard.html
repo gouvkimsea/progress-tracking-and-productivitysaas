@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mindrift — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --purple:#6C5CE7;
+    --purple-deep:#5A46E0;
+    --purple-light:#EFEBFD;
+    --purple-soft:#B9AEF3;
+    --orange:#F2994A;
+    --orange-light:#FDECDD;
+    --orange-soft:#F7C595;
+    --blue:#4FA3E0;
+    --blue-light:#E9F4FC;
+    --blue-soft:#A7D3F0;
+    --green:#1DA463;
+    --red:#E5484D;
+    --ink:#15151A;
+    --ink-soft:#54545E;
+    --muted:#9A9BA6;
+    --faint:#C9CAD3;
+    --border:#EFEFF3;
+    --border-soft:#F4F4F7;
+    --panel-bg:#FBFBFD;
+    --white:#FFFFFF;
+    --radius-xl:22px;
+    --radius-lg:18px;
+    --radius-md:14px;
+    --radius-sm:10px;
+    --shadow-card:0 1px 2px rgba(20,20,30,0.03), 0 1px 1px rgba(20,20,30,0.03);
+    --shadow-shell:0 30px 80px -20px rgba(60,40,110,0.35), 0 10px 30px -10px rgba(60,40,110,0.15);
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 12% 12%, rgba(120,100,235,0.55) 0%, rgba(120,100,235,0) 42%),
+      radial-gradient(circle at 62% 6%, rgba(206,190,247,0.65) 0%, rgba(206,190,247,0) 40%),
+      radial-gradient(circle at 6% 92%, rgba(255,138,101,0.55) 0%, rgba(255,138,101,0) 38%),
+      radial-gradient(circle at 26% 100%, rgba(244,143,177,0.55) 0%, rgba(244,143,177,0) 42%),
+      radial-gradient(circle at 92% 60%, rgba(150,190,245,0.35) 0%, rgba(150,190,245,0) 45%),
+      linear-gradient(160deg, #eef0fb 0%, #f6eef7 55%, #eef2fb 100%);
+    background-attachment:fixed;
+    padding:36px;
+  }
+
+  .app{
+    max-width:1580px;
+    margin:0 auto;
+    display:flex;
+    align-items:stretch;
+    background:var(--white);
+    border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-shell);
+    overflow:hidden;
+    min-height:calc(100vh - 72px);
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    width:272px;
+    flex-shrink:0;
+    border-right:1px solid var(--border);
+    padding:22px 18px 24px;
+    display:flex;
+    flex-direction:column;
+    transition:width .25s ease, padding .25s ease;
+    overflow:hidden;
+  }
+  .app.collapsed .sidebar{ width:84px; padding:22px 14px 24px; }
+  .app.collapsed .sidebar .label-text,
+  .app.collapsed .sidebar .nav-label,
+  .app.collapsed .sidebar .brand-name,
+  .app.collapsed .sidebar .count-pill,
+  .app.collapsed .sidebar .new-pill,
+  .app.collapsed .sidebar .chevron,
+  .app.collapsed .sidebar .nav-subitems{ display:none; }
+  .app.collapsed .nav-item, .app.collapsed .nav-expand{ justify-content:center; padding:11px; }
+  .app.collapsed .brand{ justify-content:center; }
+  .app.collapsed .brand .icon-btn{ display:none; }
+
+  .brand{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:4px 6px 22px;
+  }
+  .brand-left{ display:flex; align-items:center; gap:10px; }
+  .logo-mark{
+    width:34px; height:34px; border-radius:10px; flex-shrink:0;
+    background:linear-gradient(145deg,#8B7CF0,#5A46E0);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 10px -2px rgba(90,70,224,0.5);
+  }
+  .brand-name{ font-size:17px; font-weight:800; letter-spacing:-0.02em; white-space:nowrap; }
+  .tm{ font-size:10px; font-weight:700; vertical-align:super; }
+
+  .icon-btn{
+    width:32px; height:32px; border-radius:9px; border:1px solid var(--border);
+    background:var(--white); display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); cursor:pointer; flex-shrink:0; transition:background .15s, border-color .15s;
+  }
+  .icon-btn:hover{ background:var(--panel-bg); border-color:#e4e4ea; }
+  .icon-btn svg{ width:16px; height:16px; }
+
+  .nav-section{ margin-bottom:6px; }
+  .nav-section-scroll{ flex:1; overflow-y:auto; }
+  .nav-label{
+    font-size:10.5px; font-weight:700; letter-spacing:.08em; color:var(--faint);
+    text-transform:uppercase; margin:14px 10px 8px; white-space:nowrap;
+  }
+  .nav-item, .nav-expand{
+    display:flex; align-items:center; gap:11px; padding:9.5px 12px;
+    border-radius:11px; color:var(--ink-soft); font-size:14px; font-weight:500;
+    cursor:pointer; text-decoration:none; margin-bottom:2px; white-space:nowrap;
+    border:none; background:transparent; width:100%; text-align:left;
+    transition:background .15s, color .15s;
+  }
+  .nav-item svg, .nav-expand svg{ width:17px; height:17px; flex-shrink:0; }
+  .nav-item:hover, .nav-expand:hover{ background:var(--panel-bg); color:var(--ink); }
+  .nav-item.active{ background:var(--purple-light); color:var(--purple-deep); font-weight:700; }
+  .nav-item.active svg{ stroke:var(--purple-deep); }
+  .label-text{ flex:1; }
+  .new-pill{
+    background:var(--purple); color:#fff; font-size:10.5px; font-weight:700;
+    padding:2.5px 7px; border-radius:20px; display:inline-flex; align-items:center; gap:3px;
+  }
+  .new-pill svg{ width:9px; height:9px; }
+
+  .nav-expand{ justify-content:space-between; }
+  .nav-expand .expand-left{ display:flex; align-items:center; gap:11px; }
+  .chevron{ width:14px !important; height:14px !important; transition:transform .2s; color:var(--faint); }
+  .nav-expand.open .chevron{ transform:rotate(90deg); }
+
+  .nav-subitems{
+    max-height:0; overflow:hidden; transition:max-height .25s ease;
+    padding-left:30px; display:flex; flex-direction:column;
+  }
+  .nav-subitems.open{ max-height:200px; }
+  .nav-subitem{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 12px; border-radius:9px; font-size:13.5px; color:var(--ink-soft);
+    cursor:pointer; margin-bottom:1px;
+  }
+  .nav-subitem:hover{ background:var(--panel-bg); color:var(--ink); }
+  .count-pill{
+    background:var(--panel-bg); border:1px solid var(--border); color:var(--ink-soft);
+    font-size:11.5px; font-weight:600; padding:1.5px 7px; border-radius:20px;
+  }
+
+  .nav-section-bottom{ margin-top:auto; padding-top:14px; border-top:1px solid var(--border-soft); }
+
+  /* ---------- MAIN ---------- */
+  .main{ flex:1; min-width:0; padding:30px 38px 40px; background:var(--white); }
+
+  .topbar{ margin-bottom:26px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .greeting{ margin:0 0 4px; font-size:14px; color:var(--muted); font-weight:500; }
+  .date{ margin:0; font-size:26px; font-weight:800; letter-spacing:-0.02em; }
+  .mobile-menu-btn{ display:none; }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:20px; }
+
+  .card{
+    background:var(--white); border:1px solid var(--border); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-card);
+  }
+  .stat-card{ padding:20px 22px 18px; }
+  .stat-head{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .dash{ width:14px; height:3px; border-radius:3px; flex-shrink:0; }
+  .stat-head span{ font-size:13.5px; font-weight:600; color:var(--ink-soft); }
+
+  .stat-value-row{ display:flex; align-items:baseline; gap:10px; margin-bottom:2px; }
+  .stat-value{ font-size:32px; font-weight:800; letter-spacing:-0.02em; }
+  .stat-delta{ font-size:12.5px; font-weight:700; }
+  .stat-delta.up{ color:var(--green); }
+  .stat-delta.down{ color:var(--red); }
+  .stat-delta-label{ font-size:12.5px; color:var(--muted); font-weight:500; }
+
+  .stat-sub{ display:flex; gap:22px; margin:16px 0 12px; padding-top:14px; border-top:1px solid var(--border-soft); }
+  .stat-sub div p{ margin:0; }
+  .stat-sub .k{ font-size:12px; color:var(--muted); margin-bottom:4px !important; font-weight:500; }
+  .stat-sub .v{ font-size:15px; font-weight:700; }
+
+  .legend-row{ display:flex; gap:16px; margin:14px 0 10px; padding-top:14px; border-top:1px solid var(--border-soft); flex-wrap:wrap; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft); font-weight:500; }
+  .legend-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+  .sparkbars{ display:flex; align-items:flex-end; gap:2px; height:34px; margin:2px 0 14px; }
+  .sparkbars i{ flex:1; border-radius:2px; display:block; }
+
+  .view-link{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    font-size:13px; font-weight:600; color:var(--ink-soft); text-decoration:none;
+    padding-top:2px; cursor:pointer; background:none; border:none; width:100%; text-align:left;
+  }
+  .view-link svg{ width:15px; height:15px; transition:transform .15s; }
+  .view-link:hover{ color:var(--ink); }
+  .view-link:hover svg{ transform:translateX(3px); }
+
+  /* Timeline */
+  .timeline-card{ padding:24px 26px 20px; margin-bottom:20px; }
+  .timeline-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .timeline-head h2{ margin:0; font-size:16.5px; font-weight:700; letter-spacing:-0.01em; }
+  .filter-btn{
+    display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--ink-soft);
+    border:1px solid var(--border); background:var(--white); padding:7px 13px; border-radius:10px; cursor:pointer;
+    position:relative;
+  }
+  .filter-btn:hover{ background:var(--panel-bg); }
+  .filter-btn svg{ width:14px; height:14px; }
+  .filter-menu{
+    position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1px solid var(--border);
+    border-radius:12px; box-shadow:0 12px 30px -8px rgba(20,20,30,0.18); padding:6px; width:168px;
+    display:none; z-index:20;
+  }
+  .filter-menu.open{ display:block; }
+  .filter-menu button{
+    width:100%; text-align:left; background:none; border:none; padding:8px 10px; border-radius:8px;
+    font-size:13px; font-weight:500; color:var(--ink-soft); cursor:pointer;
+  }
+  .filter-menu button:hover{ background:var(--panel-bg); color:var(--ink); }
+  .filter-menu button.sel{ color:var(--purple-deep); font-weight:700; background:var(--purple-light); }
+
+  .heatmap-scroll{ overflow-x:auto; padding-bottom:4px; }
+  .heatmap-months{ display:flex; gap:14px; min-width:max-content; margin-bottom:8px; }
+  .month-col{ display:flex; flex-direction:column; gap:3px; }
+  .month-label{ font-size:11.5px; color:var(--muted); font-weight:600; margin-bottom:5px; height:14px; }
+  .week-row{ display:flex; gap:3px; }
+  .cell{
+    width:15px; height:15px; border-radius:4px; background:var(--border-soft); cursor:pointer;
+    transition:transform .1s;
+  }
+  .cell:hover{ transform:scale(1.25); outline:1.5px solid rgba(0,0,0,0.15); }
+  .cell.l0{ background:#EFEFF3; }
+  .cell.l1{ background:var(--purple-soft); opacity:.45; }
+  .cell.l2{ background:var(--purple-soft); opacity:.75; }
+  .cell.l3{ background:var(--purple); }
+  .cell.l4{ background:var(--purple-deep); }
+
+  .timeline-foot{ display:flex; gap:22px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-soft); flex-wrap:wrap; }
+  .timeline-foot .fi{ display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-soft); font-weight:600; }
+  .timeline-foot svg{ width:15px; height:15px; color:var(--muted); }
+  .timeline-foot b{ color:var(--ink); font-weight:700; }
+
+  .tooltip{
+    position:fixed; background:#1c1c22; color:#fff; font-size:12px; font-weight:600;
+    padding:6px 10px; border-radius:8px; pointer-events:none; opacity:0; transform:translate(-50%,-8px);
+    transition:opacity .1s; z-index:100; white-space:nowrap;
+  }
+  .tooltip.show{ opacity:1; }
+  .tooltip::after{
+    content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:#1c1c22;
+  }
+
+  /* Bottom grid */
+  .bottom-grid{ display:grid; grid-template-columns:1.05fr 1.15fr 1fr; gap:18px; }
+  .card-block{ padding:20px 22px; }
+  .card-block-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card-title{ display:flex; align-items:center; gap:9px; font-size:14.5px; font-weight:700; }
+  .card-title .ic{
+    width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .card-title .ic svg{ width:15px; height:15px; }
+  .kebab{ background:none; border:none; color:var(--muted); cursor:pointer; padding:4px; border-radius:6px; position:relative; }
+  .kebab:hover{ background:var(--panel-bg); color:var(--ink); }
+  .kebab svg{ width:17px; height:17px; }
+  .kebab-menu{
+    position:absolute; top:calc(100% + 6px); right:0; background:#fff; border:1px solid var(--border);
+    border-radius:11px; box-shadow:0 12px 30px -8px rgba(20,20,30,0.18); padding:6px; width:150px; display:none; z-index:20;
+  }
+  .kebab-menu.open{ display:block; }
+  .kebab-menu button{
+    width:100%; text-align:left; background:none; border:none; padding:7.5px 10px; border-radius:8px;
+    font-size:12.5px; font-weight:500; color:var(--ink-soft); cursor:pointer;
+  }
+  .kebab-menu button:hover{ background:var(--panel-bg); color:var(--ink); }
+
+  /* Weekly streak */
+  .streak-big{ font-size:34px; font-weight:800; letter-spacing:-0.02em; margin:2px 0 18px; }
+  .week-days{ display:flex; justify-content:space-between; margin-bottom:16px; }
+  .day-col{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .day-name{ font-size:11.5px; color:var(--muted); font-weight:600; }
+  .day-circle{
+    width:32px; height:32px; border-radius:50%; border:1.8px solid var(--border); background:var(--white);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; flex-shrink:0;
+  }
+  .day-circle svg{ width:14px; height:14px; color:#fff; opacity:0; transition:opacity .1s; }
+  .day-circle.checked{ background:var(--purple); border-color:var(--purple); }
+  .day-circle.checked svg{ opacity:1; }
+  .day-circle:hover{ border-color:var(--purple-soft); }
+  .streak-foot{ display:flex; gap:20px; padding-top:14px; border-top:1px solid var(--border-soft); }
+  .streak-foot .fi{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft); font-weight:600; }
+  .streak-foot svg{ width:14px; height:14px; color:var(--muted); }
+
+  /* Learning progress */
+  .lesson-row{ display:flex; align-items:center; gap:12px; padding:10px 0; }
+  .lesson-row + .lesson-row{ border-top:1px solid var(--border-soft); }
+  .lesson-icon{
+    width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-size:12.5px; font-weight:800; color:#fff; flex-shrink:0;
+  }
+  .lesson-info{ flex:1; min-width:0; }
+  .lesson-name{ font-size:13.5px; font-weight:700; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lesson-meta{ font-size:12px; color:var(--muted); font-weight:500; }
+  .ring-wrap{ position:relative; width:44px; height:44px; flex-shrink:0; }
+  .ring-wrap svg{ width:44px; height:44px; transform:rotate(-90deg); }
+  .ring-wrap span{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:10.5px; font-weight:800; color:var(--ink);
+  }
+
+  /* Skill breakdown */
+  .radar-wrap{ display:flex; align-items:center; justify-content:center; padding:4px 0 2px; }
+  .radar-wrap svg{ width:100%; height:auto; max-width:230px; overflow:visible; }
+  .radar-label{ font-size:10.5px; font-weight:700; fill:var(--ink-soft); }
+  .radar-value{ font-size:9.5px; font-weight:700; fill:var(--purple-deep); }
+
+  a{ color:inherit; }
+
+  ::-webkit-scrollbar{ height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#e2e2ea; border-radius:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  @media (max-width:1180px){
+    .bottom-grid{ grid-template-columns:1fr 1fr; }
+    .skill-card{ grid-column:1 / -1; }
+  }
+  @media (max-width:980px){
+    .stat-grid{ grid-template-columns:1fr; }
+    .bottom-grid{ grid-template-columns:1fr; }
+    .skill-card{ grid-column:auto; }
+    body{ padding:0; }
+    .app{ border-radius:0; min-height:100vh; }
+    .sidebar{
+      position:fixed; z-index:50; top:0; left:0; bottom:0; width:270px; padding:22px 18px 24px;
+      transform:translateX(-100%); transition:transform .25s ease; box-shadow:20px 0 60px rgba(0,0,0,.15);
+      background:#fff;
+    }
+    .app.mobile-open .sidebar{ transform:translateX(0); }
+    .main{ padding:20px; }
+    .mobile-menu-btn{ display:flex; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-left">
+        <div class="logo-mark">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3 L13.6 9.2 L20 12 L13.6 14.8 L12 21 L10.4 14.8 L4 12 L10.4 9.2 Z" fill="#fff"/>
+          </svg>
+        </div>
+        <span class="brand-name">Mindrift<span class="tm">™</span></span>
+      </div>
+      <button class="icon-btn" id="sidebarToggle" title="Collapse sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><line x1="9.5" y1="4" x2="9.5" y2="20"/></svg>
+      </button>
+    </div>
+
+    <div class="nav-section-scroll">
+      <div class="nav-section">
+        <p class="nav-label">General</p>
+        <a class="nav-item active" data-nav="Dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V9.5"/></svg>
+          <span class="label-text">Dashboard</span>
+        </a>
+        <a class="nav-item" data-nav="Course">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5Z"/><path d="M4 5.5v15"/></svg>
+          <span class="label-text">Course</span>
+        </a>
+        <a class="nav-item" data-nav="Analytics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-6"/></svg>
+          <span class="label-text">Analytics</span>
+        </a>
+        <a class="nav-item" data-nav="Community">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6"/><circle cx="17" cy="8.5" r="2.6"/><path d="M15.5 14.2c2.9.4 5 2.7 5 5.8"/></svg>
+          <span class="label-text">Community</span>
+          <span class="new-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.6L20 10l-6.2 1.4L12 18l-1.8-6.6L4 10l6.2-1.4Z"/></svg>New</span>
+        </a>
+        <a class="nav-item" data-nav="Assignments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5 18.5 7.5 8 18l-4.5 1L4.5 14.5Z"/></svg>
+          <span class="label-text">Assignments</span>
+        </a>
+        <a class="nav-item" data-nav="Calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>
+          <span class="label-text">Calendar</span>
+        </a>
+        <a class="nav-item" data-nav="Announcements">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M16 9a3.5 3.5 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+          <span class="label-text">Announcements</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <p class="nav-label">Learning tools</p>
+        <a class="nav-item" data-nav="Resources Library">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.2C4 4 5 3.5 6.5 3.5c2.2 0 4 .8 5.5 2 1.5-1.2 3.3-2 5.5-2C19 3.5 20 4 20 5.2v13.6c0 1-1 1.4-2.3 1.2-1.6-.2-3.3.2-5.7 1.9-2.4-1.7-4.1-2.1-5.7-1.9C5 20.2 4 19.8 4 18.8Z"/><path d="M12 5.5v15"/></svg>
+          <span class="label-text">Resources Library</span>
+        </a>
+        <div class="nav-expand open" id="liveSessionsToggle">
+          <div class="expand-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 1 16 0"/><path d="M4 13v4a2 2 0 0 0 2 2h1v-6H5a1 1 0 0 0-1 1Z"/><path d="M20 13v4a2 2 0 0 1-2 2h-1v-6h1a1 1 0 0 1 1 1Z"/></svg>
+            <span class="label-text">Live Sessions</span>
+          </div>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+        <div class="nav-subitems open" id="liveSessionsSub">
+          <div class="nav-subitem">Upcoming <span class="count-pill">15</span></div>
+          <div class="nav-subitem">Ongoing <span class="count-pill">8</span></div>
+          <div class="nav-subitem">Recorded <span class="count-pill">4</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-section nav-section-bottom">
+      <p class="nav-label">Settings &amp; support</p>
+      <a class="nav-item" data-nav="Integrations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/><rect x="7" y="7" width="10" height="10" rx="2.5"/></svg>
+        <span class="label-text">Integrations</span>
+      </a>
+      <a class="nav-item" data-nav="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H4a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.6V4a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.6 1H20a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1Z"/></svg>
+        <span class="label-text">Settings</span>
+      </a>
+      <a class="nav-item" data-nav="Help Center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v-6a8 8 0 0 1 16 0v6"/><path d="M4 18a2 2 0 0 0 2 2h1v-6H5a1 1 0 0 0-1 1Z"/><path d="M20 18a2 2 0 0 1-2 2h-1v-6h1a1 1 0 0 1 1 1Z"/></svg>
+        <span class="label-text">Help Center</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <p class="greeting">Welcome back!</p>
+        <h1 class="date" id="todayDate">Thu, Feb 26</h1>
+      </div>
+      <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+      </button>
+    </header>
+
+    <!-- Stat cards -->
+    <section class="stat-grid">
+
+      <div class="card stat-card">
+        <div class="stat-head"><span class="dash" style="background:var(--purple)"></span><span>Learning streak</span></div>
+        <div class="stat-value-row"><span class="stat-value">628</span></div>
+        <div class="stat-delta-label"><span class="stat-delta up">+2 days</span> vs last week</div>
+        <div class="stat-sub">
+          <div><p class="k">Longest streak</p><p class="v">21 days</p></div>
+          <div><p class="k">Missed days</p><p class="v">1 day</p></div>
+          <div><p class="k">Inactive</p><p class="v">7%</p></div>
+        </div>
+        <div class="sparkbars" id="bars-streak"></div>
+        <button class="view-link" data-scroll="timeline">View all details
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-head"><span class="dash" style="background:var(--orange)"></span><span>Course progress</span></div>
+        <div class="stat-value-row"><span class="stat-value">68%</span></div>
+        <div class="stat-delta-label"><span class="stat-delta up">+4.1%</span> this week</div>
+        <div class="stat-sub">
+          <div><p class="k">This week</p><p class="v">8 lessons</p></div>
+          <div><p class="k">Last week</p><p class="v">3 lessons</p></div>
+        </div>
+        <div class="sparkbars" id="bars-progress"></div>
+        <button class="view-link" data-scroll="timeline">View all details
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-head"><span class="dash" style="background:var(--blue)"></span><span>Study time</span></div>
+        <div class="stat-value-row"><span class="stat-value">3h 42m</span></div>
+        <div class="stat-delta-label"><span class="stat-delta down">-2.3%</span> vs last week</div>
+        <div class="sparkbars" id="bars-time" style="margin-top:16px"></div>
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span>Design</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span>Programming</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>Business</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Timeline -->
+    <section class="card timeline-card" id="timeline">
+      <div class="timeline-head">
+        <h2>Your progress timeline</h2>
+        <div style="position:relative">
+          <button class="filter-btn" id="filterBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6 7.5V19l-4 2v-8.5Z"/></svg>
+            <span id="filterLabel">2026</span>
+          </button>
+          <div class="filter-menu" id="filterMenu">
+            <button data-year="2026" class="sel">2026</button>
+            <button data-year="2025">2025</button>
+            <button data-year="2024">2024</button>
+          </div>
+        </div>
+      </div>
+      <div class="heatmap-scroll">
+        <div class="heatmap-months" id="heatmap"></div>
+      </div>
+      <div class="timeline-foot">
+        <span class="fi">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 5-5"/></svg>
+          <b id="activeDays">76</b>&nbsp;Active Days in 2026
+        </span>
+        <span class="fi">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>
+          Best Month: <b>September (52% activity)</b>
+        </span>
+      </div>
+    </section>
+
+    <!-- Bottom row -->
+    <section class="bottom-grid">
+
+      <div class="card card-block">
+        <div class="card-block-head">
+          <div class="card-title">
+            <span class="ic" style="background:var(--blue-light);color:var(--blue)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5s5.5 6 5.5 10.5a5.5 5.5 0 1 1-11 0C6.5 8.5 12 2.5 12 2.5Z"/></svg>
+            </span>
+            Weekly streak
+          </div>
+          <button class="kebab" data-menu="m1">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+            <div class="kebab-menu" id="m1"><button>Reset week</button><button>Set goal</button><button>Export data</button></div>
+          </button>
+        </div>
+        <div class="streak-big" id="streakBig">5 days</div>
+        <div class="week-days" id="weekDays"></div>
+        <div class="streak-foot">
+          <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15V9M12 15V5M6 15v-3"/></svg><span id="streakCount">4</span> day streak</span>
+          <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Best: 21 days</span>
+        </div>
+      </div>
+
+      <div class="card card-block">
+        <div class="card-block-head">
+          <div class="card-title">
+            <span class="ic" style="background:var(--purple-light);color:var(--purple)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+            </span>
+            Learning progress
+          </div>
+          <button class="kebab" data-menu="m2">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+            <div class="kebab-menu" id="m2"><button>View all courses</button><button>Sort by progress</button><button>Export data</button></div>
+          </button>
+        </div>
+        <div id="lessonList"></div>
+      </div>
+
+      <div class="card card-block skill-card">
+        <div class="card-block-head">
+          <div class="card-title">
+            <span class="ic" style="background:var(--orange-light);color:var(--orange)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1"/></svg>
+            </span>
+            Skill breakdown
+          </div>
+          <button class="kebab" data-menu="m3">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+            <div class="kebab-menu" id="m3"><button>Retake assessment</button><button>Compare to peers</button></div>
+          </button>
+        </div>
+        <div class="radar-wrap" id="radarWrap"></div>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function(){
+
+  /* ---------- Sidebar collapse ---------- */
+  const app = document.getElementById('app');
+  document.getElementById('sidebarToggle').addEventListener('click', ()=> app.classList.toggle('collapsed'));
+  document.getElementById('mobileMenuBtn').addEventListener('click', ()=> app.classList.toggle('mobile-open'));
+
+  /* ---------- Nav active state ---------- */
+  document.querySelectorAll('.nav-item[data-nav]').forEach(item=>{
+    item.addEventListener('click', (e)=>{
+      e.preventDefault();
+      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+      item.classList.add('active');
+      app.classList.remove('mobile-open');
+    });
+  });
+
+  /* ---------- Live sessions expand ---------- */
+  const lsToggle = document.getElementById('liveSessionsToggle');
+  const lsSub = document.getElementById('liveSessionsSub');
+  lsToggle.addEventListener('click', ()=>{
+    lsToggle.classList.toggle('open');
+    lsSub.classList.toggle('open');
+  });
+  document.querySelectorAll('.nav-subitem').forEach(sub=>{
+    sub.addEventListener('click', ()=>{ /* placeholder for future routing */ });
+  });
+
+  /* ---------- Scroll to timeline ---------- */
+  document.querySelectorAll('[data-scroll]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.getElementById(btn.dataset.scroll).scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+
+  /* ---------- Kebab + filter menus ---------- */
+  function closeAllMenus(except){
+    document.querySelectorAll('.kebab-menu.open, .filter-menu.open').forEach(m=>{
+      if(m !== except) m.classList.remove('open');
+    });
+  }
+  document.querySelectorAll('.kebab').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const menu = document.getElementById(btn.dataset.menu);
+      const willOpen = !menu.classList.contains('open');
+      closeAllMenus();
+      if(willOpen) menu.classList.add('open');
+    });
+  });
+  const filterBtn = document.getElementById('filterBtn');
+  const filterMenu = document.getElementById('filterMenu');
+  filterBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const willOpen = !filterMenu.classList.contains('open');
+    closeAllMenus();
+    if(willOpen) filterMenu.classList.add('open');
+  });
+  filterMenu.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      filterMenu.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+      document.getElementById('filterLabel').textContent = b.dataset.year;
+      document.getElementById('activeDays').textContent = b.dataset.year === '2026' ? '76' : (b.dataset.year === '2025' ? '212' : '188');
+      filterMenu.classList.remove('open');
+      buildHeatmap();
+    });
+  });
+  document.addEventListener('click', ()=> closeAllMenus());
+
+  /* ---------- Sparkbars ---------- */
+  function makeBars(el, color, count, solidRatio, seed){
+    let s = seed;
+    function rand(){ s = (s * 9301 + 49297) % 233280; return s / 233280; }
+    el.innerHTML = '';
+    for(let i=0;i<count;i++){
+      const bar = document.createElement('i');
+      const h = 18 + rand()*16;
+      bar.style.height = h + 'px';
+      const solid = i < count * solidRatio;
+      bar.style.background = color;
+      bar.style.opacity = solid ? (0.55 + rand()*0.45) : (0.12 + rand()*0.12);
+      el.appendChild(bar);
+    }
+  }
+  makeBars(document.getElementById('bars-streak'), 'var(--purple)', 46, 0.82, 11);
+  makeBars(document.getElementById('bars-progress'), 'var(--orange)', 46, 0.68, 27);
+  (function(){
+    const el = document.getElementById('bars-time');
+    const colors = ['var(--purple)','var(--orange)','var(--blue)'];
+    let s = 5;
+    function rand(){ s = (s*9301+49297)%233280; return s/233280; }
+    el.innerHTML = '';
+    for(let i=0;i<46;i++){
+      const bar = document.createElement('i');
+      bar.style.height = (16 + rand()*18) + 'px';
+      bar.style.background = colors[i % 3];
+      bar.style.opacity = 0.35 + rand()*0.55;
+      el.appendChild(bar);
+    }
+  })();
+
+  /* ---------- Heatmap ---------- */
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const daysInMonth = [31,28,31,30,31,30,31,31,30,31,30,31];
+  const tooltip = document.getElementById('tooltip');
+
+  function levelFor(monthIdx, rand){
+    // Sept = best month, Apr/May sparser, general variety
+    let base = 0.42;
+    if(monthIdx === 8) base = 0.82;
+    if(monthIdx === 3 || monthIdx === 4) base = 0.28;
+    if(monthIdx === 0 || monthIdx === 1) base = 0.6;
+    if(monthIdx === 6 || monthIdx === 9 || monthIdx === 10) base = 0.55;
+    const r = rand();
+    if(r > base + 0.32) return 4;
+    if(r > base + 0.1) return 3;
+    if(r > base - 0.18) return 2;
+    if(r > base - 0.4) return 1;
+    return 0;
+  }
+
+  function buildHeatmap(){
+    const wrap = document.getElementById('heatmap');
+    wrap.innerHTML = '';
+    let seed = 42;
+    function rand(){ seed = (seed*9301+49297)%233280; return seed/233280; }
+
+    months.forEach((m, mi)=>{
+      const col = document.createElement('div');
+      col.className = 'month-col';
+      const label = document.createElement('div');
+      label.className = 'month-label';
+      label.textContent = m;
+      col.appendChild(label);
+
+      const totalDays = daysInMonth[mi];
+      const cols = Math.ceil(totalDays/5);
+      for(let r=0;r<5;r++){
+        const row = document.createElement('div');
+        row.className = 'week-row';
+        for(let c=0;c<cols;c++){
+          const dayNum = c*5 + r + 1;
+          const cell = document.createElement('div');
+          if(dayNum > totalDays){
+            cell.style.visibility = 'hidden';
+            cell.className = 'cell';
+          } else {
+            const lvl = levelFor(mi, rand);
+            cell.className = 'cell l' + lvl;
+            const lessons = lvl === 0 ? 0 : lvl;
+            cell.addEventListener('mouseenter', (ev)=>{
+              const rect = ev.target.getBoundingClientRect();
+              tooltip.textContent = m + ' ' + dayNum + (lvl===0 ? ' — no activity' : ' — ' + lessons + ' lesson' + (lessons>1?'s':'') + ' completed');
+              tooltip.style.left = (rect.left + rect.width/2) + 'px';
+              tooltip.style.top = rect.top + 'px';
+              tooltip.classList.add('show');
+            });
+            cell.addEventListener('mouseleave', ()=> tooltip.classList.remove('show'));
+          }
+          row.appendChild(cell);
+        }
+        col.appendChild(row);
+      }
+      wrap.appendChild(col);
+    });
+  }
+  buildHeatmap();
+
+  /* ---------- Weekly streak days ---------- */
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let dayChecked = [true,true,true,true,false,false,false];
+  const weekDaysEl = document.getElementById('weekDays');
+
+  function renderWeekDays(){
+    weekDaysEl.innerHTML = '';
+    dayNames.forEach((d,i)=>{
+      const col = document.createElement('div');
+      col.className = 'day-col';
+      const name = document.createElement('span');
+      name.className = 'day-name';
+      name.textContent = d;
+      const circle = document.createElement('div');
+      circle.className = 'day-circle' + (dayChecked[i] ? ' checked' : '');
+      circle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17l9-10"/></svg>';
+      circle.addEventListener('click', ()=>{
+        dayChecked[i] = !dayChecked[i];
+        renderWeekDays();
+        updateStreakFoot();
+      });
+      col.appendChild(name);
+      col.appendChild(circle);
+      weekDaysEl.appendChild(col);
+    });
+  }
+  function updateStreakFoot(){
+    let count = 0;
+    for(let i=0;i<7;i++){ if(dayChecked[i]) count++; else break; }
+    document.getElementById('streakCount').textContent = count;
+    document.getElementById('streakBig').textContent = Math.max(count,1) + (count===1?' day':' days');
+  }
+  renderWeekDays();
+  updateStreakFoot();
+
+  /* ---------- Learning progress rings ---------- */
+  const lessons = [
+    {code:'UI', name:'UI Design Mastery', meta:'Intermediate · 12 Modules', pct:40, bg:'linear-gradient(145deg,#8B7CF0,#5A46E0)', ring:'#6C5CE7'},
+    {code:'JS', name:'Learn JavaScript', meta:'Beginner · 8 Modules', pct:65, bg:'linear-gradient(145deg,#FBAE68,#F2994A)', ring:'#F2994A'},
+    {code:'PS', name:'Learn Photoshop', meta:'Advanced · 32 Modules', pct:75, bg:'linear-gradient(145deg,#6FC1F0,#4FA3E0)', ring:'#4FA3E0'},
+    {code:'PY', name:'Python for Data', meta:'Intermediate · 20 Modules', pct:52, bg:'linear-gradient(145deg,#7FD9A5,#2FBE73)', ring:'#2FBE73'}
+  ];
+  const lessonList = document.getElementById('lessonList');
+  const R = 17, C = 2*Math.PI*R;
+  lessons.forEach(l=>{
+    const row = document.createElement('div');
+    row.className = 'lesson-row';
+    row.innerHTML = `
+      <div class="lesson-icon" style="background:${l.bg}">${l.code}</div>
+      <div class="lesson-info">
+        <div class="lesson-name">${l.name}</div>
+        <div class="lesson-meta">${l.meta}</div>
+      </div>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="${R}" fill="none" stroke="#F0F0F4" stroke-width="4"/>
+          <circle class="ring-fg" cx="22" cy="22" r="${R}" fill="none" stroke="${l.ring}" stroke-width="4" stroke-linecap="round"
+            stroke-dasharray="${C}" stroke-dashoffset="${C}"/>
+        </svg>
+        <span>${l.pct}%</span>
+      </div>`;
+    lessonList.appendChild(row);
+    const fg = row.querySelector('.ring-fg');
+    requestAnimationFrame(()=>{
+      setTimeout(()=>{
+        fg.style.transition = 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)';
+        fg.setAttribute('stroke-dashoffset', C - (C * l.pct/100));
+      }, 120);
+    });
+  });
+
+  /* ---------- Radar chart ---------- */
+  const skills = [
+    {label:'Productivity', value:0.8},
+    {label:'Data & Analysis', value:0.55},
+    {label:'Communication', value:0.68},
+    {label:'Creativity', value:0.9},
+    {label:'Technical', value:0.62}
+  ];
+  function buildRadar(){
+    const size = 240, cx = size/2, cy = size/2 - 4, maxR = 78;
+    const n = skills.length;
+    const angle = i => -Math.PI/2 + i * (2*Math.PI/n);
+    const pt = (r, i) => [cx + r*Math.cos(angle(i)), cy + r*Math.sin(angle(i))];
+
+    let grid = '';
+    [0.25,0.5,0.75,1].forEach(f=>{
+      const pts = Array.from({length:n}, (_,i)=> pt(maxR*f, i).join(',')).join(' ');
+      grid += `<polygon points="${pts}" fill="none" stroke="#EFEFF3" stroke-width="1"/>`;
+    });
+    let axes = '';
+    let labels = '';
+    skills.forEach((s,i)=>{
+      const [x,y] = pt(maxR, i);
+      axes += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#EFEFF3" stroke-width="1"/>`;
+      const [lx,ly] = pt(maxR + 22, i);
+      let anchor = 'middle';
+      if(lx > cx + 8) anchor = 'start';
+      else if(lx < cx - 8) anchor = 'end';
+      labels += `<text x="${lx}" y="${ly}" text-anchor="${anchor}" dominant-baseline="middle" class="radar-label">${s.label}</text>`;
+    });
+    const dataPts = skills.map((s,i)=> pt(maxR*s.value, i));
+    const dataPath = dataPts.map(p=>p.join(',')).join(' ');
+    let dots = '';
+    dataPts.forEach((p,i)=>{ dots += `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#fff" stroke="#6C5CE7" stroke-width="2"/>`; });
+
+    return `<svg viewBox="0 0 ${size} ${size}">
+      ${grid}${axes}
+      <polygon points="${dataPath}" fill="rgba(108,92,231,0.28)" stroke="#6C5CE7" stroke-width="2"/>
+      ${dots}
+      ${labels}
+    </svg>`;
+  }
+  document.getElementById('radarWrap').innerHTML = buildRadar();
+
+  /* ---------- Today's date ---------- */
+  (function(){
+    const el = document.getElementById('todayDate');
+    const d = new Date();
+    const opts = { weekday:'short', month:'short', day:'numeric' };
+    el.textContent = d.toLocaleDateString('en-US', opts);
+  })();
+
+})();
+</script>
+</body>
+</html>

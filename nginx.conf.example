@@ -1,0 +1,49 @@
+# ==============================================================================
+# Mindrift Production Nginx Configuration Example
+# Place in /etc/nginx/sites-available/mindrift and symlink to sites-enabled
+# ==============================================================================
+
+server {
+    listen 80;
+    server_name your-domain.com www.your-domain.com;
+    root /var/www/mindrift;
+    index index.php index.html;
+
+    # Security: Block sensitive files (.env, SQLite, .git, SQL dumps)
+    location ~* (\.env|\.git|\.sqlite|\.db|\.sql|\.htaccess|composer\.(json|lock)|package(-lock)?\.json)$ {
+        deny all;
+        return 404;
+    }
+
+    # Block script execution in uploads directory
+    location ~* ^/uploads/.*\.(php|phtml|phar|cgi|pl|exe)$ {
+        deny all;
+        return 403;
+    }
+
+    # Static Assets Caching & Compression
+    location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        access_log off;
+    }
+
+    # Route requests
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Pass PHP scripts to FastCGI server
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+
+        # Security Headers
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    }
+}

@@ -1,0 +1,330 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+require_once __DIR__ . '/config/db.php';
+$db = getDbConnection();
+$userId = (int)$_SESSION['user_id'];
+
+// Fetch User Info
+$stmtUser = $db->prepare("SELECT * FROM users WHERE id = :uid");
+$stmtUser->execute(['uid' => $userId]);
+$user = $stmtUser->fetch();
+
+// Fetch Tasks for Kanban Columns
+$stmtTasks = $db->prepare("SELECT * FROM tasks WHERE user_id = :uid AND (deleted_at IS NULL) ORDER BY id DESC");
+$stmtTasks->execute(['uid' => $userId]);
+$allTasks = $stmtTasks->fetchAll();
+
+$columns = [
+    'Open' => [],
+    'In Progress' => [],
+    'Review' => [],
+    'Done' => []
+];
+
+foreach ($allTasks as $t) {
+    $st = $t['status'] ?? 'Open';
+    if (!isset($columns[$st])) {
+        $columns[$st] = [];
+    }
+    $columns[$st][] = $t;
+}
+
+if (!function_exists('renderPriorityBadge')) {
+    function renderPriorityBadge(?string $prio): string {
+        $p = ucfirst(strtolower($prio ?? 'Medium'));
+        if (!in_array($p, ['Urgent', 'High', 'Medium', 'Low'])) $p = 'Medium';
+        $cls = 'priority-' . strtolower($p);
+        return '<span class="priority-badge ' . $cls . '">' . htmlspecialchars($p) . '</span>';
+    }
+}
+
+$pageTitle = 'Mindrift — Kanban Board';
+include __DIR__ . '/includes/head.php';
+?>
+<style>
+  .kanban-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .kanban-title-wrap { display: flex; align-items: center; gap: 10px; }
+  .kanban-title { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
+
+  .kanban-board-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; align-items: start; }
+  .kanban-column { background: #FAFAFA; border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px; min-height: 500px; }
+  
+  .column-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .column-title-flex { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: #111827; }
+  .column-count-badge { background: #E5E7EB; color: #374151; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+
+  .kanban-card-list { display: flex; flex-direction: column; gap: 10px; }
+  .kanban-card {
+    background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04); cursor: grab; transition: all 0.15s ease;
+  }
+  .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: #0E65C7; }
+  .kanban-card.dragging { opacity: 0.45; border: 2px dashed #0E65C7; }
+  .kanban-column.drag-over { background: #EEF4FC; border-color: #0E65C7; }
+
+  .card-project-tag { font-size: 11px; font-weight: 700; color: #0E65C7; text-transform: uppercase; margin-bottom: 4px; }
+  .card-task-title { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: #111827; }
+  .card-footer-flex { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #6B7280; }
+
+  .move-status-select {
+    font-size: 11.5px; font-weight: 600; padding: 3px 6px; border-radius: 4px; border: 1px solid #E5E7EB; background: #FFF; cursor: pointer;
+  }
+
+  /* Dark Theme Support */
+  [data-theme="dark"] .kanban-title { color: var(--ink); }
+  [data-theme="dark"] .kanban-column { background: #0D1526; border-color: #1F293D; }
+  [data-theme="dark"] .column-title-flex { color: #F9FAFB; }
+  [data-theme="dark"] .column-count-badge { background: #1E293B; color: #94A3B8; }
+  [data-theme="dark"] .kanban-card { background: #111827; border-color: #1F293D; }
+  [data-theme="dark"] .card-task-title { color: #F9FAFB; }
+  [data-theme="dark"] .card-footer-flex { color: #9CA3AF; }
+  [data-theme="dark"] .move-status-select { background: #1E293B; border-color: #334155; color: #E2E8F0; }
+  [data-theme="dark"] .kanban-column.drag-over { background: #162032; border-color: #38BDF8; }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <?php include __DIR__ . '/includes/sidebar.php'; ?>
+
+  <main class="main">
+    <?php include __DIR__ . '/includes/header.php'; ?>
+
+    <div class="kanban-page-header">
+      <div class="kanban-title-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E65C7" stroke-width="2.2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="11" y="3" width="5" height="12" rx="1"/><rect x="19" y="3" width="5" height="15" rx="1"/></svg>
+        <h2 class="kanban-title">Kanban Board</h2>
+      </div>
+      <span style="font-size:13px; color:#6B7280; font-weight:500;">Tip: Drag and drop cards to change status instantly</span>
+    </div>
+
+    <!-- 4 Kanban Columns -->
+    <div class="kanban-board-grid">
+      <?php foreach (['Open', 'In Progress', 'Review', 'Done'] as $colName): 
+        $colTasks = $columns[$colName] ?? [];
+      ?>
+        <div class="kanban-column" data-status="<?= $colName; ?>">
+          <div class="column-head">
+            <div class="column-title-flex" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span><?= $colName; ?></span>
+                <span class="column-count-badge" id="count-<?= preg_replace('/\s+/', '', $colName); ?>"><?= count($colTasks); ?></span>
+              </div>
+              <button type="button" class="btn-step" onclick="openKanbanAddModal('<?= $colName; ?>')" title="Add Task to <?= $colName; ?>" style="padding:1px 7px; font-size:12px; font-weight:800; cursor:pointer; line-height:1.4;">+</button>
+            </div>
+          </div>
+
+          <div class="kanban-card-list">
+            <?php foreach ($colTasks as $t): ?>
+              <div class="kanban-card" draggable="true" data-task-id="<?= $t['id']; ?>">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                  <div class="card-project-tag"><?= htmlspecialchars($t['project_name']); ?></div>
+                  <?= renderPriorityBadge($t['priority'] ?? 'Medium'); ?>
+                </div>
+                <h4 class="card-task-title"><?= htmlspecialchars($t['task_name']); ?></h4>
+                <div class="card-footer-flex">
+                  <span>📅 <?= htmlspecialchars($t['due_date'] ?? $t['start_date']); ?></span>
+                  <select class="move-status-select" onchange="moveKanbanTask(<?= $t['id']; ?>, this.value)">
+                    <?php foreach (['Open', 'In Progress', 'Review', 'Done'] as $opt): ?>
+                      <option value="<?= $opt; ?>" <?= ($opt === $colName) ? 'selected' : ''; ?>><?= $opt; ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal: Add New Task from Kanban -->
+<div class="modal-overlay" id="kanbanAddModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Task (<span id="kanbanColTitle">Open</span>)</h3>
+      <button class="modal-close-btn" onclick="document.getElementById('kanbanAddModal').classList.remove('active')">&times;</button>
+    </div>
+    <form id="kanbanAddTaskForm" onsubmit="handleKanbanAddTask(event)">
+      <input type="hidden" id="kanbanTaskStatus" value="Open" />
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="kanbanTaskName">Task Name</label>
+          <input type="text" id="kanbanTaskName" class="form-input" placeholder="e.g. Wire Navigation Headers" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="kanbanTaskProject">Project</label>
+          <input type="text" id="kanbanTaskProject" class="form-input" value="General" required />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label class="form-label" for="kanbanTaskPriority">Priority</label>
+            <select id="kanbanTaskPriority" class="form-input">
+              <option value="Urgent">🔥 Urgent</option>
+              <option value="High">⚡ High</option>
+              <option value="Medium" selected>📌 Medium</option>
+              <option value="Low">☕ Low</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="kanbanTaskDue">Due Date</label>
+            <input type="text" id="kanbanTaskDue" class="form-input" value="<?= date('d-m-Y', strtotime('+3 days')); ?>" required />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px;">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('kanbanAddModal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn-save">Add Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+async function moveKanbanTask(taskId, newStatus) {
+  try {
+    const res = await secureFetch('api/kanban.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_id: taskId, status: newStatus })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (typeof showToast === 'function') {
+        showToast(`Task updated to ${newStatus}`);
+      }
+      setTimeout(() => location.reload(), 400);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Interactive HTML5 Drag-and-Drop
+document.addEventListener('DOMContentLoaded', () => {
+  let draggedCard = null;
+
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      draggedCard = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.taskId);
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+      draggedCard = null;
+    });
+  });
+
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    col.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      col.classList.add('drag-over');
+    });
+
+    col.addEventListener('dragleave', (e) => {
+      if (!col.contains(e.relatedTarget)) {
+        col.classList.remove('drag-over');
+      }
+    });
+
+    col.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+
+      if (!draggedCard) return;
+
+      const newStatus = col.dataset.status;
+      const taskId = parseInt(draggedCard.dataset.taskId, 10);
+      const targetList = col.querySelector('.kanban-card-list');
+
+      // Update dropdown in card
+      const sel = draggedCard.querySelector('.move-status-select');
+      if (sel) sel.value = newStatus;
+
+      // Move element in DOM immediately
+      targetList.appendChild(draggedCard);
+
+      // Recount column badges
+      document.querySelectorAll('.kanban-column').forEach(c => {
+        const badge = c.querySelector('.column-count-badge');
+        const count = c.querySelectorAll('.kanban-card').length;
+        if (badge) badge.textContent = count;
+      });
+
+      // Persist to backend API
+      try {
+        const res = await secureFetch('api/kanban.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task_id: taskId, status: newStatus })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Task moved to ${newStatus}`);
+        } else {
+          location.reload();
+        }
+      } catch (err) {
+        console.error(err);
+        location.reload();
+      }
+  // Kanban Task Modal Functions
+  window.openKanbanAddModal = function(colStatus) {
+    const modal = document.getElementById('kanbanAddModal');
+    if (!modal) return;
+    document.getElementById('kanbanColTitle').textContent = colStatus;
+    document.getElementById('kanbanTaskStatus').value = colStatus;
+    modal.classList.add('active');
+    setTimeout(() => document.getElementById('kanbanTaskName')?.focus(), 100);
+  };
+
+  window.handleKanbanAddTask = async function(e) {
+    e.preventDefault();
+    const payload = {
+      action: 'create',
+      task_name: document.getElementById('kanbanTaskName').value.trim(),
+      project_name: document.getElementById('kanbanTaskProject').value.trim(),
+      priority: document.getElementById('kanbanTaskPriority').value,
+      due_date: document.getElementById('kanbanTaskDue').value.trim(),
+      start_date: '<?= date('d-m-Y'); ?>',
+      assigned_to: 'Alex Morgan',
+      status: document.getElementById('kanbanTaskStatus').value
+    };
+
+    try {
+      const res = await secureFetch('api/tasks.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Task added to ' + payload.status);
+        document.getElementById('kanbanAddModal').classList.remove('active');
+        document.getElementById('kanbanAddTaskForm').reset();
+        setTimeout(() => location.reload(), 400);
+      } else {
+        alert(data.message || 'Failed to add task');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+});
+</script>
+</body>
+</html>
