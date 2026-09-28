@@ -6,7 +6,7 @@
   </div>
 
   <!-- Global Real-Time Search Bar -->
-  <div style="position:relative; width:240px;">
+  <div class="topbar-search">
     <input type="text" id="globalSearchInput" placeholder="Search tasks, projects..." class="form-input" style="padding-left:32px; border-radius:var(--radius-sm); height:34px;" />
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <div id="globalSearchResults" style="display:none; position:absolute; top:38px; left:0; right:0; background:var(--bg-surface); border:1px solid var(--border-base); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:999; max-height:260px; overflow-y:auto; padding:4px 0;"></div>

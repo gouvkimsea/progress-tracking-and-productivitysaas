@@ -771,6 +771,15 @@
           appContainer.classList.remove('mobile-open');
         }
       });
+      // Close mobile drawer when clicking navigation link on small screens
+      const navLinks = document.querySelectorAll('#sidebar .gantt-nav-item, #sidebar .gantt-pill-btn');
+      navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          if (window.innerWidth <= 768) {
+            appContainer.classList.remove('mobile-open');
+          }
+        });
+      });
     }
 
     // 15. Create Project Modal Controller

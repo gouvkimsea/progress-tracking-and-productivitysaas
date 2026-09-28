@@ -281,6 +281,20 @@ include __DIR__ . '/includes/head.php';
     color: var(--text-primary);
   }
 
+  /* Responsive Mobile Layout */
+  @media (max-width: 768px) {
+    .metrics-bento { grid-template-columns: repeat(2, 1fr); }
+    .portfolio-page { padding: 20px 14px 40px; }
+    .cert-paper { padding: 24px 18px; }
+  }
+  @media (max-width: 500px) {
+    .metrics-bento { grid-template-columns: 1fr; }
+    .cert-header { flex-direction: column; gap: 12px; }
+    .cert-meta { text-align: left; }
+    .portfolio-actions-bar { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .cert-footer { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+
   /* Print Styles */
   @media print {
     body {

@@ -42,42 +42,50 @@ include __DIR__ . '/includes/head.php';
   
   /* Top Spot Spotlight */
   .top-spotlight-card {
-    background: var(--panel-bg);
-    border: 1px solid var(--border); padding: 18px 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-base); padding: 18px 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
   }
   .top-spotlight-left { display: flex; align-items: center; gap: 14px; }
   .spotlight-rank-badge {
-    width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--blue);
+    width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--brand-primary);
     color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
     flex-shrink: 0;
   }
-  .spotlight-rank { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--blue); letter-spacing: 0.04em; }
-  .spotlight-name { font-size: 16px; font-weight: 700; color: var(--ink); margin: 2px 0 4px; }
-  .spotlight-meta { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+  .spotlight-rank { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--brand-primary); letter-spacing: 0.04em; }
+  .spotlight-name { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 2px 0 4px; }
+  .spotlight-meta { font-size: 12.5px; color: var(--text-secondary); font-weight: 500; }
 
   .comm-grid { display: grid; grid-template-columns: 7fr 4fr; gap: 16px; }
   .leader-item {
     display: flex; align-items: center; justify-content: space-between; padding: 10px 12px;
-    border-bottom: 1px solid var(--border); border-radius: var(--radius-sm); transition: background 0.15s ease;
+    border-bottom: 1px solid var(--border-base); border-radius: var(--radius-sm); transition: background 0.15s ease;
   }
-  .leader-item:hover { background: var(--panel-bg); }
+  .leader-item:hover { background: var(--bg-surface); }
   .leader-item.is-me { background: var(--bg-subtle); }
   
   .rank-badge {
     width: 24px; height: 24px; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center;
     font-size: 11.5px; font-weight: 600; flex-shrink: 0;
   }
-  .rank-1 { background: var(--blue); color: #fff; }
-  .rank-2 { background: var(--border); color: var(--ink); }
-  .rank-3 { background: var(--border); color: var(--muted); }
-  .rank-other { background: transparent; color: var(--muted); }
+  .rank-1 { background: var(--brand-primary); color: #fff; }
+  .rank-2 { background: var(--border-base); color: var(--text-primary); }
+  .rank-3 { background: var(--border-base); color: var(--text-secondary); }
+  .rank-other { background: transparent; color: var(--text-muted); }
 
   .user-stats-pill { display: flex; align-items: center; gap: 14px; }
-  .stat-badge { font-size: 12px; font-weight: 500; color: var(--muted); }
-  .stat-badge b { color: var(--ink); font-weight: 600; }
-  .btn-join { background: var(--panel-bg); color: var(--ink); border: 1px solid var(--border); padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; }
-  .btn-join:hover { border-color: var(--blue); color: var(--blue); }
+  .stat-badge { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+  .stat-badge b { color: var(--text-primary); font-weight: 600; }
+  .btn-join { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-base); padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; }
+  .btn-join:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
+
+  @media (max-width: 900px) {
+    .comm-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .top-spotlight-card { flex-direction: column; align-items: flex-start; }
+    .leader-item { padding: 10px 6px; }
+  }
 </style>
 </head>
 <body>

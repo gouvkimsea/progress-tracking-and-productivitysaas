@@ -65,12 +65,21 @@ include __DIR__ . '/includes/head.php';
   .cal-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
   .cal-grid { display: grid; grid-template-columns: 7fr 4fr; gap: 16px; }
   .calendar-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 14px; }
-  .cal-day-head { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; padding: 6px 0; }
-  .cal-day-box { background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); min-height: 72px; padding: 6px; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; }
+  .cal-day-head { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; padding: 6px 0; }
+  .cal-day-box { background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-sm); min-height: 72px; padding: 6px; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; }
   .cal-day-box.today { background: var(--bg-subtle); border-color: var(--brand-primary); color: var(--brand-primary); }
   .event-dot { font-size: 10px; font-weight: 600; padding: 2px 4px; border-radius: var(--radius-xs); color: #fff; margin-top: 3px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .upcoming-item { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; }
+  .upcoming-item { padding: 10px 0; border-bottom: 1px solid var(--border-base); display: flex; flex-direction: column; gap: 2px; }
   .upcoming-item:last-child { border-bottom: none; }
+
+  @media (max-width: 960px) {
+    .cal-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .calendar-days-grid { gap: 3px; }
+    .cal-day-box { min-height: 52px; padding: 4px 2px; font-size: 11px; }
+    .cal-day-head { font-size: 10px; padding: 4px 0; }
+  }
 </style>
 </head>
 <body>
@@ -128,14 +137,14 @@ include __DIR__ . '/includes/head.php';
               <div style="display:flex; align-items:center; justify-content:space-between;">
                 <span><?= $d; ?></span>
                 <?php if ($isToday): ?>
-                  <span style="font-size:9px; background:var(--purple); color:#fff; padding:1px 4px; border-radius:4px;">TODAY</span>
+                  <span style="font-size:9px; background:var(--brand-primary); color:#fff; padding:1px 4px; border-radius:var(--radius-xs);">TODAY</span>
                 <?php endif; ?>
               </div>
 
               <?php if (!empty($tasksByDay[$d])): ?>
                 <?php foreach (array_slice($tasksByDay[$d], 0, 2) as $t): 
                   $prio = strtolower($t['priority'] ?? 'medium');
-                  $color = ($prio === 'urgent') ? '#EF4444' : (($prio === 'high') ? '#F59E0B' : '#3B82F6');
+                  $color = ($prio === 'urgent') ? 'var(--status-urgent-text)' : (($prio === 'high') ? 'var(--status-high-text)' : 'var(--brand-primary)');
                 ?>
                   <span class="event-dot" style="background:<?= $color; ?>;" title="<?= htmlspecialchars($t['task_name']); ?> (<?= htmlspecialchars($t['priority'] ?? 'Medium'); ?>)">
                     <?= htmlspecialchars($t['task_name']); ?>
