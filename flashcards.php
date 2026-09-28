@@ -103,7 +103,7 @@ include __DIR__ . '/includes/head.php';
   .fc-metric-card {
     background: var(--panel-bg);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 18px 16px;
     text-align: center;
     box-shadow: var(--shadow-card);

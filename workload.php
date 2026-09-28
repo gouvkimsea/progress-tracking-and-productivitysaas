@@ -22,70 +22,60 @@ $pageTitle = 'Mindrift — Workload';
 include __DIR__ . '/includes/head.php';
 ?>
 <style>
-  /* Workload Page (GanttPRO Screenshot 5 Design) */
+  /* Workload Page Styling */
   .workload-header-row {
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
   }
   .workload-title-wrap { display: flex; align-items: center; gap: 10px; }
-  .workload-title-ic { color: #10B981; }
-  .workload-title { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
-  .close-icon-btn { background: none; border: none; font-size: 18px; color: #6B7280; cursor: pointer; }
+  .workload-title-ic { color: var(--brand-primary); }
+  .workload-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+  .close-icon-btn { background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; }
 
   /* Toolbar Controls Bar */
   .workload-toolbar-bar {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; font-size: 13.5px; color: #374151;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; font-size: 13px; color: var(--text-secondary);
   }
   .workload-toolbar-left { display: flex; align-items: center; gap: 14px; }
   .btn-mode-select {
-    background: none; border: none; font-size: 13.5px; font-weight: 500; color: #374151; cursor: pointer;
+    background: none; border: none; font-size: 13px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
     display: flex; align-items: center; gap: 4px;
   }
-  .btn-mode-select b { color: #0E65C7; font-weight: 700; }
+  .btn-mode-select b { color: var(--brand-primary); font-weight: 700; }
 
   .workload-toolbar-right { display: flex; align-items: center; gap: 16px; }
   .tool-btn-icon {
-    background: #F3F4F6; border: 1px solid #E5E7EB; color: #4B5563; padding: 6px 10px; border-radius: 6px;
+    background: var(--bg-surface); border: 1px solid var(--border-base); color: var(--text-secondary); padding: 6px 10px; border-radius: var(--radius-sm);
     font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;
   }
-  .tool-btn-icon:hover { background: #E5E7EB; color: #111827; }
+  .tool-btn-icon:hover { background: var(--bg-subtle); color: var(--text-primary); }
 
-  .slider-zoom-control { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #6B7280; font-weight: 500; }
+  .slider-zoom-control { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); font-weight: 500; }
 
   /* Workload Matrix Table */
   .workload-matrix-wrap {
-    width: 100%; border: 1px solid #E5E7EB; border-radius: 6px; overflow-x: auto; background: #FFFFFF;
+    width: 100%; border: 1px solid var(--border-base); border-radius: var(--radius-md); overflow-x: auto; background: var(--bg-surface);
   }
   .workload-matrix-table { border-collapse: collapse; width: 100%; min-width: 1100px; text-align: left; }
   
   .workload-matrix-table th, .workload-matrix-table td {
-    border-bottom: 1px solid #E5E7EB; border-right: 1px solid #F0F1F3; padding: 8px; font-size: 12.5px;
+    border-bottom: 1px solid var(--border-base); border-right: 1px solid var(--border-base); padding: 8px; font-size: 12.5px;
   }
   
-  .resource-th-col { width: 240px; min-width: 240px; background: #F9FAFB; font-weight: 600; color: #4B5563; padding-left: 14px !important; }
-  .date-header-super { background: #F9FAFB; font-weight: 600; color: #4B5563; font-size: 12px; text-align: center; }
-  .date-day-col { background: #F9FAFB; font-weight: 500; color: #6B7280; text-anchor: middle; text-align: center; width: 28px; min-width: 28px; }
+  .resource-th-col { width: 240px; min-width: 240px; background: var(--bg-subtle); font-weight: 600; color: var(--text-secondary); padding-left: 14px !important; }
+  .date-header-super { background: var(--bg-subtle); font-weight: 600; color: var(--text-secondary); font-size: 12px; text-align: center; }
+  .date-day-col { background: var(--bg-subtle); font-weight: 500; color: var(--text-muted); text-anchor: middle; text-align: center; width: 28px; min-width: 28px; }
   
   .resource-td-cell {
-    display: flex; align-items: center; justify-content: space-between; padding: 8px 12px !important; font-weight: 600; color: #111827;
+    display: flex; align-items: center; justify-content: space-between; padding: 8px 12px !important; font-weight: 600; color: var(--text-primary);
   }
   .resource-user-flex { display: flex; align-items: center; gap: 10px; }
   .resource-avatar {
-    width: 26px; height: 26px; border-radius: 50%; background: #10B981; color: #FFFFFF;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--brand-primary); color: #FFFFFF;
     font-size: 10.5px; font-weight: 800; display: flex; align-items: center; justify-content: center;
   }
-  .resource-avatar.unassigned-avatar { background: #9CA3AF; }
+  .resource-avatar.unassigned-avatar { background: var(--text-muted); }
 
-  .hour-cell { text-align: center; font-weight: 700; color: #10B981; font-size: 12px; }
-
-  /* Dark Theme Support */
-  [data-theme="dark"] .workload-title { color: var(--ink); }
-  [data-theme="dark"] .workload-matrix-wrap { background: #111827; border-color: #1F293D; }
-  [data-theme="dark"] .resource-th-col, [data-theme="dark"] .date-header-super, [data-theme="dark"] .date-day-col { background: #0D1526; color: #9CA3AF; border-color: #1F293D; }
-  [data-theme="dark"] .workload-matrix-table th, [data-theme="dark"] .workload-matrix-table td { border-color: #1F293D; }
-  [data-theme="dark"] .resource-td-cell { color: #F9FAFB; }
-  [data-theme="dark"] .tool-btn-icon { background: #1E293B; border-color: #334155; color: #E2E8F0; }
-  [data-theme="dark"] .tool-btn-icon:hover { background: #334155; color: #F9FAFB; }
-  [data-theme="dark"] .btn-mode-select { color: #9CA3AF; }
+  .hour-cell { text-align: center; font-weight: 700; color: var(--brand-primary); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -110,7 +100,7 @@ include __DIR__ . '/includes/head.php';
           Mode: <b id="modeLabel">Hours</b>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
         </button>
-        <span style="color:#D1D5DB;">|</span>
+        <span style="color:var(--border-base);">|</span>
         <button type="button" class="btn-mode-select" id="btnRangeSelect" onclick="cycleWorkloadRange()">
           Range: <b id="rangeLabel">3 months</b>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
@@ -122,12 +112,12 @@ include __DIR__ . '/includes/head.php';
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filter
         </button>
-        <span style="color:#D1D5DB;">|</span>
+        <span style="color:var(--border-base);">|</span>
         <div class="slider-zoom-control" style="cursor:pointer;" onclick="cycleWorkloadMode()" title="Toggle zoom scale">
           <span>●---○---○</span>
           <span id="zoomScaleLabel">Days</span>
         </div>
-        <span style="color:#D1D5DB;">|</span>
+        <span style="color:var(--border-base);">|</span>
         <a href="api/export.php?type=workload" class="tool-btn-icon" style="text-decoration:none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           Export

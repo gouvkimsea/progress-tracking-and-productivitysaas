@@ -49,30 +49,30 @@ include __DIR__ . '/includes/head.php';
 <style>
   .kanban-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
   .kanban-title-wrap { display: flex; align-items: center; gap: 10px; }
-  .kanban-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .kanban-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 
   .kanban-board-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
-  .kanban-column { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; min-height: 500px; }
+  .kanban-column { background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; min-height: 500px; }
   
   .column-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .column-title-flex { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
-  .column-count-badge { background: var(--border); color: var(--muted); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 10px; }
+  .column-count-badge { background: var(--border); color: var(--muted); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-full); }
 
   .kanban-card-list { display: flex; flex-direction: column; gap: 8px; }
   .kanban-card {
-    background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 12px;
+    background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;
     box-shadow: var(--shadow-sm); cursor: grab; transition: border-color 0.15s ease;
   }
-  .kanban-card:hover { border-color: var(--blue); }
+  .kanban-card:hover { border-color: var(--border-focus); }
   .kanban-card.dragging { opacity: 0.5; border: 1px dashed var(--blue); }
-  .kanban-column.drag-over { background: rgba(37, 99, 235, 0.04); border-color: var(--blue); }
+  .kanban-column.drag-over { background: var(--bg-subtle); border-color: var(--border-focus); }
 
   .card-project-tag { font-size: 11px; font-weight: 600; color: var(--blue); text-transform: uppercase; margin-bottom: 4px; }
   .card-task-title { margin: 0 0 8px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
   .card-footer-flex { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
 
   .move-status-select {
-    font-size: 11.5px; font-weight: 500; padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--panel-bg); color: var(--ink); cursor: pointer;
+    font-size: 11.5px; font-weight: 500; padding: 3px 6px; border-radius: var(--radius-xs); border: 1px solid var(--border); background: var(--panel-bg); color: var(--ink); cursor: pointer;
   }
 </style>
 </head>
@@ -86,10 +86,10 @@ include __DIR__ . '/includes/head.php';
 
     <div class="kanban-page-header">
       <div class="kanban-title-wrap">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E65C7" stroke-width="2.2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="11" y="3" width="5" height="12" rx="1"/><rect x="19" y="3" width="5" height="15" rx="1"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2.2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="11" y="3" width="5" height="12" rx="1"/><rect x="19" y="3" width="5" height="15" rx="1"/></svg>
         <h2 class="kanban-title">Kanban Board</h2>
       </div>
-      <span style="font-size:13px; color:#6B7280; font-weight:500;">Drag cards between columns or use the dropdown to change status.</span>
+      <span style="font-size:13px; color:var(--text-secondary); font-weight:500;">Drag cards between columns or use the dropdown to change status.</span>
     </div>
 
     <!-- 4 Kanban Columns -->

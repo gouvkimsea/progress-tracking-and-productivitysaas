@@ -67,7 +67,7 @@ include __DIR__ . '/includes/head.php';
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: var(--blue);
+    background: var(--brand-primary);
     color: #FFFFFF;
     border: none;
     padding: 8px 16px;
@@ -78,35 +78,35 @@ include __DIR__ . '/includes/head.php';
     transition: background 0.15s ease;
   }
   .btn-print:hover {
-    background: var(--blue-hover);
+    background: var(--brand-hover);
   }
   .btn-back {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: var(--muted);
+    color: var(--text-secondary);
     text-decoration: none;
     font-size: 13.5px;
     font-weight: 500;
   }
   .btn-back:hover {
-    color: var(--ink);
+    color: var(--text-primary);
   }
 
   /* Executive Certificate Paper Layout */
   .cert-paper {
-    background: var(--panel-bg);
-    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-base);
     border-radius: var(--radius-md);
     padding: 40px;
-    box-shadow: var(--shadow-shell);
+    box-shadow: var(--shadow-sm);
     position: relative;
   }
   .cert-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-base);
     padding-bottom: 20px;
     margin-bottom: 28px;
   }
@@ -114,24 +114,24 @@ include __DIR__ . '/includes/head.php';
     font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.03em;
-    color: var(--ink);
+    color: var(--text-primary);
   }
   .cert-sub {
     font-size: 11.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--muted);
+    color: var(--text-secondary);
     margin-top: 4px;
   }
   .cert-meta {
     text-align: right;
     font-size: 12.5px;
-    color: var(--muted);
+    color: var(--text-secondary);
     line-height: 1.5;
   }
   .cert-meta b {
-    color: var(--ink);
+    color: var(--text-primary);
   }
 
   .student-hero {
@@ -142,18 +142,18 @@ include __DIR__ . '/includes/head.php';
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--blue);
+    color: var(--brand-primary);
   }
   .student-name {
     font-size: 26px;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: var(--ink);
+    color: var(--text-primary);
     margin: 4px 0 8px;
   }
   .student-bio {
     font-size: 13.5px;
-    color: var(--muted);
+    color: var(--text-secondary);
     max-width: 680px;
     line-height: 1.5;
   }
@@ -166,8 +166,8 @@ include __DIR__ . '/includes/head.php';
     margin-bottom: 32px;
   }
   .metric-card {
-    background: var(--bg);
-    border: 1px solid var(--border);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-base);
     border-radius: var(--radius-sm);
     padding: 14px;
     text-align: center;
@@ -175,13 +175,13 @@ include __DIR__ . '/includes/head.php';
   .metric-val {
     font-size: 20px;
     font-weight: 700;
-    color: var(--ink);
+    color: var(--text-primary);
     line-height: 1.2;
   }
   .metric-lbl {
     font-size: 11px;
     font-weight: 600;
-    color: var(--muted);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-top: 4px;
@@ -197,20 +197,20 @@ include __DIR__ . '/includes/head.php';
     text-align: left;
     font-size: 11.5px;
     font-weight: 700;
-    color: var(--muted);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-base);
   }
   .portfolio-table td {
     padding: 12px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-base);
     font-size: 13px;
-    color: var(--ink);
+    color: var(--text-primary);
   }
   .progress-pill-track {
-    background: var(--border);
+    background: var(--border-base);
     border-radius: var(--radius-xs);
     height: 6px;
     width: 90px;
@@ -221,7 +221,7 @@ include __DIR__ . '/includes/head.php';
   }
   .progress-pill-fill {
     height: 100%;
-    background: var(--blue);
+    background: var(--brand-primary);
     border-radius: var(--radius-xs);
   }
 
@@ -237,12 +237,12 @@ include __DIR__ . '/includes/head.php';
     align-items: center;
     gap: 6px;
     padding: 5px 10px;
-    background: var(--bg);
-    border: 1px solid var(--border);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-base);
     border-radius: var(--radius-sm);
     font-size: 12px;
     font-weight: 600;
-    color: var(--ink);
+    color: var(--text-primary);
   }
 
   /* Official Verification Seal */
@@ -250,7 +250,7 @@ include __DIR__ . '/includes/head.php';
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-base);
     padding-top: 20px;
     margin-top: 20px;
   }
@@ -263,21 +263,22 @@ include __DIR__ . '/includes/head.php';
     width: 32px;
     height: 32px;
     border-radius: var(--radius-sm);
-    background: #10B981;
+    background: var(--status-done-bg);
+    border: 1px solid var(--status-done-border);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #FFFFFF;
+    color: var(--status-done-text);
     font-size: 16px;
     font-weight: 700;
   }
   .seal-text {
     font-size: 12px;
-    color: var(--muted);
+    color: var(--text-secondary);
     line-height: 1.4;
   }
   .seal-text b {
-    color: var(--ink);
+    color: var(--text-primary);
   }
 
   /* Print Styles */
@@ -377,7 +378,7 @@ include __DIR__ . '/includes/head.php';
     </div>
 
     <!-- Course Projects Performance Table -->
-    <h3 style="font-size:15px; font-weight:700; color:var(--ink); margin:0 0 14px;">Courses and Projects</h3>
+    <h3 style="font-size:15px; font-weight:700; color:var(--text-primary); margin:0 0 14px;">Courses and Projects</h3>
     <table class="portfolio-table">
       <thead>
         <tr>
@@ -392,13 +393,13 @@ include __DIR__ . '/includes/head.php';
         <?php foreach ($courses as $c): ?>
           <tr>
             <td style="font-weight:600;">
-              <span style="display:inline-block; width:26px; height:26px; line-height:26px; text-align:center; background:var(--bg); border:1px solid var(--border); color:var(--ink); border-radius:var(--radius-xs); font-size:11px; margin-right:8px; font-weight:700;">
+              <span style="display:inline-block; width:26px; height:26px; line-height:26px; text-align:center; background:var(--bg-subtle); border:1px solid var(--border-base); color:var(--text-primary); border-radius:var(--radius-xs); font-size:11px; margin-right:8px; font-weight:700;">
                 <?= htmlspecialchars($c['code'] ?? 'M'); ?>
               </span>
               <?= htmlspecialchars($c['name']); ?>
             </td>
             <td><?= htmlspecialchars($c['category']); ?></td>
-            <td><span style="font-size:12px; font-weight:500; color:var(--muted);"><?= htmlspecialchars($c['level']); ?></span></td>
+            <td><span style="font-size:12px; font-weight:500; color:var(--text-secondary);"><?= htmlspecialchars($c['level']); ?></span></td>
             <td>
               <div class="progress-pill-track">
                 <div class="progress-pill-fill" style="width: <?= (int)$c['progress_pct']; ?>%;"></div>
@@ -407,9 +408,9 @@ include __DIR__ . '/includes/head.php';
             </td>
             <td style="text-align:right;">
               <?php if ((int)$c['progress_pct'] >= 100 || strtolower($c['status'] ?? '') === 'completed'): ?>
-                <span style="color:#10B981; font-weight:600; font-size:12px;">Completed</span>
+                <span style="color:var(--status-done-text); font-weight:600; font-size:12px;">Completed</span>
               <?php else: ?>
-                <span style="color:#F59E0B; font-weight:600; font-size:12px;">In Progress</span>
+                <span style="color:var(--status-high-text); font-weight:600; font-size:12px;">In Progress</span>
               <?php endif; ?>
             </td>
           </tr>
@@ -419,12 +420,12 @@ include __DIR__ . '/includes/head.php';
 
     <!-- Verified Competencies -->
     <?php if (!empty($skills)): ?>
-      <h3 style="font-size:15px; font-weight:700; color:var(--ink); margin:0 0 12px;">Skills Overview</h3>
+      <h3 style="font-size:15px; font-weight:700; color:var(--text-primary); margin:0 0 12px;">Skills Overview</h3>
       <div class="skills-strip">
         <?php foreach ($skills as $sk): ?>
           <div class="skill-badge">
             <span><?= htmlspecialchars($sk['skill_name']); ?></span>
-            <span style="color:var(--blue); font-weight:700;"><?= (int)$sk['rating']; ?>%</span>
+            <span style="color:var(--brand-primary); font-weight:700;"><?= (int)$sk['rating']; ?>%</span>
           </div>
         <?php endforeach; ?>
       </div>
@@ -439,7 +440,7 @@ include __DIR__ . '/includes/head.php';
           Generated by Mindrift
         </div>
       </div>
-      <div style="text-align:right; font-size:12px; color:var(--muted);">
+      <div style="text-align:right; font-size:12px; color:var(--text-secondary);">
         Reference ID: <b><?= htmlspecialchars(substr($certId, 4)); ?></b>
       </div>
     </div>

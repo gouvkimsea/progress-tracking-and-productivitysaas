@@ -20,9 +20,9 @@ include __DIR__ . '/includes/head.php';
 ?>
 <style>
   .help-header { margin-bottom: 20px; }
-  .help-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
-  .faq-item { padding: 16px 20px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s ease; }
-  .faq-item:hover { border-color: var(--blue); }
+  .help-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+  .faq-item { padding: 16px 20px; margin-bottom: 10px; cursor: pointer; border-radius: var(--radius-md); transition: border-color 0.15s ease; }
+  .faq-item:hover { border-color: var(--border-focus); }
   .faq-q { font-size: 14px; font-weight: 600; color: var(--ink); margin: 0; display: flex; align-items: center; justify-content: space-between; }
   .faq-chevron { transition: transform 0.2s ease; font-size: 11px; color: var(--muted); }
   .faq-item.open .faq-chevron { transform: rotate(180deg); }
@@ -42,9 +42,9 @@ include __DIR__ . '/includes/head.php';
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
         <div>
           <h2 class="help-title">Help &amp; Guides</h2>
-          <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">Answers to common questions and product guides</p>
+          <p style="margin:4px 0 0; color:var(--text-secondary); font-size:13.5px; font-weight:400;">Answers to common questions and product guides</p>
         </div>
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('supportModalOverlay').classList.add('active')" style="display:inline-flex; align-items:center; gap:6px;">
+        <button type="button" class="btn-secondary" onclick="document.getElementById('supportModalOverlay').classList.add('active')" style="display:inline-flex; align-items:center; gap:6px;">
           Contact Support
         </button>
       </div>

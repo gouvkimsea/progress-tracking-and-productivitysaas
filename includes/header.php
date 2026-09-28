@@ -7,9 +7,9 @@
 
   <!-- Global Real-Time Search Bar -->
   <div style="position:relative; width:240px;">
-    <input type="text" id="globalSearchInput" placeholder="Search tasks, projects..." class="form-input" style="padding-left:32px; border-radius:6px; height:34px;" />
+    <input type="text" id="globalSearchInput" placeholder="Search tasks, projects..." class="form-input" style="padding-left:32px; border-radius:var(--radius-sm); height:34px;" />
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <div id="globalSearchResults" style="display:none; position:absolute; top:38px; left:0; right:0; background:var(--bg-surface); border:1px solid var(--border-base); border-radius:6px; box-shadow:var(--shadow-md); z-index:999; max-height:260px; overflow-y:auto; padding:4px 0;"></div>
+    <div id="globalSearchResults" style="display:none; position:absolute; top:38px; left:0; right:0; background:var(--bg-surface); border:1px solid var(--border-base); border-radius:var(--radius-sm); box-shadow:var(--shadow-md); z-index:999; max-height:260px; overflow-y:auto; padding:4px 0;"></div>
   </div>
 
   <div class="topbar-right">
@@ -17,20 +17,20 @@
     <button class="btn-primary" id="quickTaskTriggerBtn" title="Quick Add Task (Press N)" type="button" style="padding:6px 12px; font-size:12.5px;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span>New Task</span>
-      <kbd style="padding:1px 5px; font-size:10px; background:rgba(255,255,255,0.2); border-radius:3px; font-family:inherit; color:#fff; margin-left:4px;">N</kbd>
+      <kbd style="padding:1px 5px; font-size:10px; background:rgba(255,255,255,0.2); border-radius:var(--radius-xs); font-family:inherit; color:#fff; margin-left:4px;">N</kbd>
     </button>
 
     <!-- Command Palette Shortcut Button -->
     <button class="btn-secondary" id="cmdPaletteTriggerBtn" title="Press Ctrl+K or Cmd+K" type="button" style="padding:6px 10px; font-size:12.5px;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <kbd style="padding:1px 5px; font-size:10px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:3px; font-family:inherit; color:var(--text-secondary);">⌘K</kbd>
+      <kbd style="padding:1px 5px; font-size:10px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-xs); font-family:inherit; color:var(--text-secondary);">⌘K</kbd>
     </button>
 
     <!-- Notification Bell Button & Drawer -->
     <div style="position:relative;">
-      <button class="icon-btn" id="notifBellBtn" title="Notifications" type="button" aria-label="Notifications" style="width:32px; height:32px; border:1px solid var(--border-base); border-radius:6px; background:var(--bg-surface);">
+      <button class="icon-btn" id="notifBellBtn" title="Notifications" type="button" aria-label="Notifications" style="width:32px; height:32px; border:1px solid var(--border-base); border-radius:var(--radius-sm); background:var(--bg-surface);">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <span class="badge" id="notifBadge" style="display:none; position:absolute; top:-3px; right:-3px; background:var(--status-urgent-text); color:#fff; font-size:9.5px; padding:1px 4px; border-radius:6px;">0</span>
+        <span class="badge" id="notifBadge" style="display:none; position:absolute; top:-3px; right:-3px; background:var(--status-urgent-text); color:#fff; font-size:9.5px; padding:1px 4px; border-radius:var(--radius-xs);">0</span>
       </button>
 
       <!-- Dropdown Tray -->

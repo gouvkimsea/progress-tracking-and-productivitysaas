@@ -72,91 +72,73 @@ include __DIR__ . '/includes/head.php';
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
   }
   .tasks-header-title-wrap { display: flex; align-items: center; gap: 8px; }
-  .tasks-header-ic { color: #005C8A; }
-  .my-tasks-title { margin: 0; font-size: 19px; font-weight: 800; color: #111827; }
-  .close-icon-btn { background: none; border: none; font-size: 18px; color: #6B7280; cursor: pointer; }
+  .tasks-header-ic { color: var(--brand-primary); }
+  .my-tasks-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+  .close-icon-btn { background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; }
 
   /* Tab Navigation */
   .tasks-tab-nav {
-    display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #E5E7EB; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 20px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;
   }
   .tasks-tab-item {
-    font-size: 14px; font-weight: 600; color: #6B7280; padding-bottom: 8px; position: relative; cursor: pointer; transition: color 0.15s ease;
+    font-size: 13.5px; font-weight: 500; color: var(--text-secondary); padding-bottom: 8px; position: relative; cursor: pointer; transition: color 0.15s ease;
   }
-  .tasks-tab-item:hover { color: #111827; }
+  .tasks-tab-item:hover { color: var(--text-primary); }
   .tasks-tab-item.active {
-    color: #0E65C7; font-weight: 700;
+    color: var(--brand-primary); font-weight: 600;
   }
   .tasks-tab-item.active::after {
-    content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: #0E65C7;
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--brand-primary);
   }
-  [data-theme="dark"] .tasks-tab-item { color: #9CA3AF; }
-  [data-theme="dark"] .tasks-tab-item:hover { color: #F9FAFB; }
-  [data-theme="dark"] .tasks-tab-item.active { color: #60A5FA; }
-  [data-theme="dark"] .tasks-tab-item.active::after { background: #60A5FA; }
 
   /* Toolbar Info Bar */
   .tasks-toolbar-bar {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 13px; color: #374151;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);
   }
   .toolbar-left { display: flex; align-items: center; gap: 16px; }
-  .toolbar-link { color: #4B5563; text-decoration: none; font-weight: 500; cursor: pointer; }
-  .toolbar-link:hover { color: #111827; }
+  .toolbar-link { color: var(--text-secondary); text-decoration: none; font-weight: 500; cursor: pointer; }
+  .toolbar-link:hover { color: var(--text-primary); }
   
   .toolbar-right { display: flex; align-items: center; gap: 16px; }
   .tool-btn-action {
-    display: flex; align-items: center; gap: 6px; color: #4B5563; background: none; border: none; font-size: 13px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; color: var(--text-secondary); background: none; border: none; font-size: 13px; font-weight: 500; cursor: pointer;
   }
-  .tool-btn-action:hover { color: #111827; }
+  .tool-btn-action:hover { color: var(--text-primary); }
 
   /* Task Table Layout */
   .tasks-data-table-wrap {
-    width: 100%; border: 1px solid #E5E7EB; border-radius: 6px; overflow: hidden; background: #FFFFFF;
+    width: 100%; border: 1px solid var(--border-base); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface);
   }
   .tasks-data-table { width: 100%; border-collapse: collapse; text-align: left; }
   
   .tasks-data-table th {
-    background: #F9FAFB; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #4B5563; border-bottom: 1px solid #E5E7EB; border-right: 1px solid #F0F1F3;
+    background: var(--bg-subtle); padding: 11px 16px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-base); border-right: 1px solid var(--border-base);
   }
   .tasks-data-table th:last-child { border-right: none; }
   
   .tasks-data-table td {
-    padding: 12px 16px; font-size: 13.5px; color: #111827; border-bottom: 1px solid #F0F1F3; border-right: 1px solid #F4F5F7; vertical-align: middle;
+    padding: 11px 16px; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid var(--border-base); border-right: 1px solid var(--border-base); vertical-align: middle;
   }
   .tasks-data-table tr:last-child td { border-bottom: none; }
   .tasks-data-table td:last-child { border-right: none; }
+  .tasks-data-table tr:hover td { background: var(--bg-subtle); }
 
-  .project-name-cell { color: #9CA3AF; font-weight: 500; }
-  .assigned-cell { color: #6B7280; }
+  .project-name-cell { color: var(--text-muted); font-weight: 500; }
+  .assigned-cell { color: var(--text-secondary); }
   
   .task-status-pill {
-    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; background: #F3F4F6;
-    font-size: 12.5px; font-weight: 600; color: #374151; cursor: pointer; border: 1px solid #E5E7EB; transition: all 0.15s ease;
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-sm); background: var(--bg-subtle);
+    font-size: 12px; font-weight: 500; color: var(--text-primary); cursor: pointer; border: 1px solid var(--border-base); transition: all 0.15s ease;
   }
-  .task-status-pill:hover { background: #E5E7EB; }
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #9CA3AF; flex-shrink: 0; }
-  .task-status-pill.status-done .status-dot { background: #10B981; }
-  .task-status-pill.status-progress .status-dot { background: #F59E0B; }
+  .task-status-pill:hover { background: var(--border-base); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .task-status-pill.status-done .status-dot { background: var(--status-done-text); }
+  .task-status-pill.status-progress .status-dot { background: var(--status-high-text); }
 
   .add-col-btn {
-    background: none; border: none; font-size: 18px; color: #6B7280; cursor: pointer; font-weight: 400; padding: 0 4px;
+    background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; font-weight: 400; padding: 0 4px;
   }
-  .add-col-btn:hover { color: #0E65C7; }
-
-  /* Dark Theme Table Support */
-  [data-theme="dark"] .my-tasks-title { color: var(--ink); }
-  [data-theme="dark"] .tasks-tab-nav { border-color: #1F293D; }
-  [data-theme="dark"] .toolbar-link { color: #9CA3AF; }
-  [data-theme="dark"] .toolbar-link:hover { color: #F9FAFB; }
-  [data-theme="dark"] .tool-btn-action { color: #9CA3AF; }
-  [data-theme="dark"] .tool-btn-action:hover { color: #F9FAFB; }
-  [data-theme="dark"] .tasks-data-table-wrap { background: #111827; border-color: #1F293D; }
-  [data-theme="dark"] .tasks-data-table th { background: #0D1526; color: #9CA3AF; border-color: #1F293D; }
-  [data-theme="dark"] .tasks-data-table td { color: #F9FAFB; border-color: #1F293D; }
-  [data-theme="dark"] .tasks-data-table tr:hover td { background: #162032; }
-  [data-theme="dark"] .task-status-pill { background: #1E293B; border-color: #334155; color: #E2E8F0; }
-  [data-theme="dark"] .task-status-pill:hover { background: #334155; }
-  [data-theme="dark"] .assigned-cell { color: #9CA3AF; }
+  .add-col-btn:hover { color: var(--brand-primary); }
 </style>
 </head>
 <body>
@@ -191,7 +173,7 @@ include __DIR__ . '/includes/head.php';
       <div class="tasks-toolbar-bar">
         <div class="toolbar-left">
         <span>Number of tasks: <b><?= $taskCount; ?></b></span>
-        <span style="color:#D1D5DB;">|</span>
+        <span style="color:var(--border-base);">|</span>
         <a href="javascript:void(0)" class="toolbar-link" id="btnToggleIncomplete" onclick="toggleIncompleteFilter()">My incomplete tasks</a>
       </div>
 
@@ -200,12 +182,12 @@ include __DIR__ . '/includes/head.php';
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
           Custom fields
         </button>
-        <span style="color:#D1D5DB;">|</span>
+        <span style="color:var(--border-base);">|</span>
         <button type="button" class="tool-btn-action" id="btnToggleTaskFilter" onclick="toggleTaskFilterBar()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filter
         </button>
-        <span style="color:#D1D5DB;">|</span>
+        <span style="color:var(--border-base);">|</span>
         <a href="api/export.php?type=tasks" class="tool-btn-action" style="text-decoration:none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           Export
@@ -214,9 +196,9 @@ include __DIR__ . '/includes/head.php';
     </div>
 
     <!-- Filter Bar Component -->
-    <div id="taskFilterBar" style="display:none; padding:12px 16px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px; margin-bottom:14px; gap:16px; flex-wrap:wrap; align-items:center;">
+    <div id="taskFilterBar" style="display:none; padding:12px 16px; background:var(--bg-surface); border:1px solid var(--border-base); border-radius:var(--radius-md); margin-bottom:14px; gap:16px; flex-wrap:wrap; align-items:center;">
       <div style="display:flex; align-items:center; gap:6px;">
-        <span style="font-size:12px; font-weight:700; color:var(--muted);">Priority:</span>
+        <span style="font-size:12px; font-weight:700; color:var(--text-muted);">Priority:</span>
         <button type="button" class="btn-step filter-prio-btn active" data-prio="all" onclick="setTaskPrioFilter('all', this)">All</button>
         <button type="button" class="btn-step filter-prio-btn" data-prio="urgent" onclick="setTaskPrioFilter('urgent', this)">Urgent</button>
         <button type="button" class="btn-step filter-prio-btn" data-prio="high" onclick="setTaskPrioFilter('high', this)">High</button>
@@ -224,7 +206,7 @@ include __DIR__ . '/includes/head.php';
         <button type="button" class="btn-step filter-prio-btn" data-prio="low" onclick="setTaskPrioFilter('low', this)">Low</button>
       </div>
       <div style="display:flex; align-items:center; gap:6px;">
-        <span style="font-size:12px; font-weight:700; color:var(--muted);">Status:</span>
+        <span style="font-size:12px; font-weight:700; color:var(--text-muted);">Status:</span>
         <button type="button" class="btn-step filter-status-btn active" data-status="all" onclick="setTaskStatusFilter('all', this)">All</button>
         <button type="button" class="btn-step filter-status-btn" data-status="open" onclick="setTaskStatusFilter('open', this)">Open</button>
         <button type="button" class="btn-step filter-status-btn" data-status="in progress" onclick="setTaskStatusFilter('in progress', this)">In Progress</button>
@@ -252,8 +234,8 @@ include __DIR__ . '/includes/head.php';
         <tbody id="taskTableBody">
           <?php if (empty($tasks)): ?>
             <tr>
-              <td colspan="8" style="text-align: center; padding: 48px 20px; color: #6B7280;">
-                <div style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 4px;">No tasks yet</div>
+              <td colspan="8" style="text-align: center; padding: 48px 20px; color: var(--text-secondary);">
+                <div style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No tasks yet</div>
                 <div style="font-size: 13px; margin-bottom: 16px;">Create a task to track your work.</div>
                 <button type="button" class="btn-save" style="margin: 0 auto; display: inline-flex;" onclick="document.getElementById('btnOpenAddTaskFromHeader')?.click();">Create Task</button>
               </td>
@@ -264,7 +246,7 @@ include __DIR__ . '/includes/head.php';
               $statusClass = ($status === 'Done' || $status === 'Completed') ? 'status-done' : (($status === 'In Progress') ? 'status-progress' : '');
             ?>
               <tr id="taskRow-<?= $t['id']; ?>" data-prio="<?= strtolower($t['priority'] ?? 'medium'); ?>" data-status="<?= strtolower($status); ?>">
-                <td style="font-weight: 600; color: #111827;"><?= htmlspecialchars($t['task_name']); ?></td>
+                <td style="font-weight: 600; color: var(--text-primary);"><?= htmlspecialchars($t['task_name']); ?></td>
                 <td class="project-name-cell"><?= htmlspecialchars($t['project_name']); ?></td>
                 <td><?= renderPriorityBadge($t['priority'] ?? 'Medium'); ?></td>
                 <td><?= renderDueBadge($t['due_date'] ?? null); ?></td>
@@ -277,7 +259,7 @@ include __DIR__ . '/includes/head.php';
                 </td>
                 <td><?= (int)$t['time_log']; ?></td>
                 <td style="text-align: center;">
-                  <button type="button" class="btn-delete-task" title="Delete Task" onclick="deleteTask(<?= $t['id']; ?>)" style="background:none; border:none; color:#EF4444; font-size:14px; cursor:pointer; padding:3px 7px; border-radius:4px; font-weight:bold;">✕</button>
+                  <button type="button" class="btn-delete-task" title="Delete Task" onclick="deleteTask(<?= $t['id']; ?>)" style="background:none; border:none; color:var(--status-urgent-text); font-size:14px; cursor:pointer; padding:3px 7px; border-radius:var(--radius-xs); font-weight:bold;">✕</button>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -292,8 +274,8 @@ include __DIR__ . '/includes/head.php';
     <div class="tasks-toolbar-bar">
       <div class="toolbar-left">
         <span>Total Deliverables: <b><?= count($groupAssignments); ?></b></span>
-        <span style="color:#D1D5DB;">|</span>
-        <span style="color:var(--muted);">Shared team assignments and milestones</span>
+        <span style="color:var(--border-base);">|</span>
+        <span style="color:var(--text-secondary);">Shared team assignments and milestones</span>
       </div>
       <div class="toolbar-right">
         <button type="button" class="btn-save" onclick="document.getElementById('createGroupModal').classList.add('active')" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:6px 14px;">
@@ -318,7 +300,7 @@ include __DIR__ . '/includes/head.php';
         <tbody>
           <?php if (empty($groupAssignments)): ?>
             <tr>
-              <td colspan="7" style="text-align:center; padding:36px 20px; color:var(--muted);">
+              <td colspan="7" style="text-align:center; padding:36px 20px; color:var(--text-muted);">
                 No group assignments found. Click "+ New Group Assignment" to create one.
               </td>
             </tr>
@@ -327,12 +309,12 @@ include __DIR__ . '/includes/head.php';
               $isCompleted = (strtolower($ga['status'] ?? '') === 'completed');
             ?>
               <tr id="groupRow-<?= $ga['id']; ?>">
-                <td style="text-align:center; color:var(--muted); font-size:12px;"><?= $ga['id']; ?></td>
-                <td style="font-weight:600; color:var(--ink);">
+                <td style="text-align:center; color:var(--text-muted); font-size:12px;"><?= $ga['id']; ?></td>
+                <td style="font-weight:600; color:var(--text-primary);">
                   <?= htmlspecialchars($ga['title']); ?>
                 </td>
                 <td>
-                  <span style="font-size:11.5px; font-weight:600; color:#0E65C7; background:rgba(14,101,199,0.08); padding:3px 8px; border-radius:4px;">
+                  <span style="font-size:11.5px; font-weight:600; color:var(--brand-primary); background:var(--bg-subtle); padding:3px 8px; border-radius:var(--radius-xs); border:1px solid var(--border-base);">
                     <?= htmlspecialchars($ga['course_name']); ?>
                   </span>
                 </td>
@@ -344,14 +326,14 @@ include __DIR__ . '/includes/head.php';
                     <?= $isCompleted ? 'Completed' : 'In Progress'; ?>
                   </span>
                 </td>
-                <td style="color:var(--muted); font-size:12.5px;">
+                <td style="color:var(--text-secondary); font-size:12.5px;">
                   <?= !empty($ga['completed_by_user_name']) ? htmlspecialchars($ga['completed_by_user_name']) : '—'; ?>
                 </td>
                 <td style="text-align:center;">
                   <?php if ($isCompleted): ?>
-                    <span style="color:#10B981; font-size:12px; font-weight:600;">Completed</span>
+                    <span style="color:var(--status-done-text); font-size:12px; font-weight:600;">Completed</span>
                   <?php else: ?>
-                    <button type="button" class="btn-save" onclick="completeGroupAssignment(<?= $ga['id']; ?>)" style="padding:4px 10px; font-size:11.5px; background:#10B981;">
+                    <button type="button" class="btn-save" onclick="completeGroupAssignment(<?= $ga['id']; ?>)" style="padding:4px 10px; font-size:11.5px; background:var(--status-done-bg); color:var(--status-done-text); border:1px solid var(--status-done-border);">
                       Mark Done
                     </button>
                   <?php endif; ?>
@@ -424,7 +406,7 @@ include __DIR__ . '/includes/head.php';
       <button class="modal-close-btn" onclick="document.getElementById('customFieldsModal').classList.remove('active')">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px; color:var(--muted); margin-top:0;">Toggle visibility of columns in your task table:</p>
+      <p style="font-size:13px; color:var(--text-secondary); margin-top:0;">Toggle visibility of columns in your task table:</p>
       <div style="display:flex; flex-direction:column; gap:12px;">
         <label style="display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:600; cursor:pointer;">
           <input type="checkbox" id="colToggleProject" checked onchange="toggleColVisibility(2, this.checked)" /> Project Name

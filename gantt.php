@@ -32,21 +32,21 @@ include __DIR__ . '/includes/head.php';
 <style>
   .gantt-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
   .gantt-title-wrap { display: flex; align-items: center; gap: 10px; }
-  .gantt-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .gantt-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 
   .gantt-controls-bar {
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: var(--panel-bg);
-    padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border);
   }
   .zoom-btn-group { display: flex; align-items: center; gap: 4px; }
   .zoom-btn {
-    padding: 5px 10px; font-size: 12px; font-weight: 500; color: var(--muted); background: var(--white); border: 1px solid var(--border);
-    border-radius: 4px; cursor: pointer; transition: all 0.15s ease;
+    padding: 5px 10px; font-size: 12px; font-weight: 500; color: var(--muted); background: var(--panel-bg); border: 1px solid var(--border);
+    border-radius: var(--radius-xs); cursor: pointer; transition: all 0.15s ease;
   }
   .zoom-btn.active { background: var(--blue); color: #FFF; border-color: var(--blue); font-weight: 600; }
 
   .gantt-container-wrap {
-    display: flex; width: 100%; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--white);
+    display: flex; width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: var(--panel-bg);
   }
   .gantt-sidebar-col { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--panel-bg); }
   .gantt-sidebar-head { padding: 10px 14px; font-weight: 600; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--border); }
@@ -93,7 +93,7 @@ include __DIR__ . '/includes/head.php';
 
     <div class="gantt-page-header">
       <div class="gantt-title-wrap">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E65C7" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h6"/><path d="M10 12h8"/><path d="M7 16h5"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h6"/><path d="M10 12h8"/><path d="M7 16h5"/></svg>
         <h2 class="gantt-title">Gantt Timeline</h2>
       </div>
     </div>
@@ -110,8 +110,8 @@ include __DIR__ . '/includes/head.php';
         <button type="button" class="btn-step" id="btnToggleCriticalPath" onclick="toggleCriticalPath()" style="display:inline-flex; align-items:center; gap:6px; font-weight:700;">
           Highlight Critical Path
         </button>
-        <div style="font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; user-select:none;" onclick="toggleAutoSchedule()" title="Click to toggle auto-scheduling">
-          <span>Auto Scheduling: <b id="autoScheduleBadge" style="color:#10B981;">ON</b></span>
+        <div style="font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; user-select:none;" onclick="toggleAutoSchedule()" title="Click to toggle auto-scheduling">
+          <span>Auto Scheduling: <b id="autoScheduleBadge" style="color:var(--status-done-text);">ON</b></span>
         </div>
       </div>
     </div>
@@ -151,7 +151,7 @@ include __DIR__ . '/includes/head.php';
             $mName = date('M', $dayTs);
             $isToday = (date('Y-m-d', $dayTs) === date('Y-m-d', $todayTs));
           ?>
-            <div class="gantt-date-cell" style="<?= $isToday ? 'background:rgba(108,92,231,0.08); font-weight:800; color:var(--purple);' : ''; ?>">
+            <div class="gantt-date-cell" style="<?= $isToday ? 'background:var(--bg-subtle); font-weight:700; color:var(--brand-primary);' : ''; ?>">
               <?= $dNum; ?><br/><span style="font-size:10px; font-weight:600;"><?= $mName; ?></span>
             </div>
           <?php endfor; ?>
@@ -276,9 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('btnToggleCriticalPath');
     if (btn) {
       if (isCriticalPathActive) {
-        btn.style.background = '#F59E0B';
-        btn.style.color = '#FFFFFF';
-        btn.style.borderColor = '#D97706';
+        btn.style.background = 'var(--status-high-bg)';
+        btn.style.color = 'var(--status-high-text)';
+        btn.style.borderColor = 'var(--status-high-border)';
         if (typeof showToast === 'function') showToast('Critical path highlighted');
       } else {
         btn.style.background = '';

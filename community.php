@@ -38,17 +38,17 @@ include __DIR__ . '/includes/head.php';
 ?>
 <style>
   .comm-header { margin-bottom: 20px; }
-  .comm-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .comm-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
   
   /* Top Spot Spotlight */
   .top-spotlight-card {
     background: var(--panel-bg);
-    border: 1px solid var(--border); padding: 18px 20px; border-radius: 8px;
+    border: 1px solid var(--border); padding: 18px 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
   }
   .top-spotlight-left { display: flex; align-items: center; gap: 14px; }
   .spotlight-rank-badge {
-    width: 40px; height: 40px; border-radius: 6px; background: var(--blue);
+    width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--blue);
     color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
     flex-shrink: 0;
   }
@@ -59,13 +59,13 @@ include __DIR__ . '/includes/head.php';
   .comm-grid { display: grid; grid-template-columns: 7fr 4fr; gap: 16px; }
   .leader-item {
     display: flex; align-items: center; justify-content: space-between; padding: 10px 12px;
-    border-bottom: 1px solid var(--border); border-radius: 6px; transition: background 0.15s ease;
+    border-bottom: 1px solid var(--border); border-radius: var(--radius-sm); transition: background 0.15s ease;
   }
   .leader-item:hover { background: var(--panel-bg); }
-  .leader-item.is-me { background: rgba(37, 99, 235, 0.05); }
+  .leader-item.is-me { background: var(--bg-subtle); }
   
   .rank-badge {
-    width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center;
     font-size: 11.5px; font-weight: 600; flex-shrink: 0;
   }
   .rank-1 { background: var(--blue); color: #fff; }
@@ -76,7 +76,7 @@ include __DIR__ . '/includes/head.php';
   .user-stats-pill { display: flex; align-items: center; gap: 14px; }
   .stat-badge { font-size: 12px; font-weight: 500; color: var(--muted); }
   .stat-badge b { color: var(--ink); font-weight: 600; }
-  .btn-join { background: var(--panel-bg); color: var(--ink); border: 1px solid var(--border); padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; }
+  .btn-join { background: var(--panel-bg); color: var(--ink); border: 1px solid var(--border); padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; }
   .btn-join:hover { border-color: var(--blue); color: var(--blue); }
 </style>
 </head>

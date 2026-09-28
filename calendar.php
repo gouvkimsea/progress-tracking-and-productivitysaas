@@ -62,13 +62,13 @@ include __DIR__ . '/includes/head.php';
 ?>
 <style>
   .cal-header { margin-bottom: 20px; }
-  .cal-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .cal-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
   .cal-grid { display: grid; grid-template-columns: 7fr 4fr; gap: 16px; }
   .calendar-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 14px; }
   .cal-day-head { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; padding: 6px 0; }
-  .cal-day-box { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 6px; min-height: 72px; padding: 6px; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; }
-  .cal-day-box.today { background: rgba(37, 99, 235, 0.05); border-color: var(--blue); color: var(--blue); }
-  .event-dot { font-size: 10px; font-weight: 600; padding: 2px 4px; border-radius: 3px; color: #fff; margin-top: 3px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-day-box { background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); min-height: 72px; padding: 6px; font-size: 12px; font-weight: 600; display: flex; flex-direction: column; }
+  .cal-day-box.today { background: var(--bg-subtle); border-color: var(--brand-primary); color: var(--brand-primary); }
+  .event-dot { font-size: 10px; font-weight: 600; padding: 2px 4px; border-radius: var(--radius-xs); color: #fff; margin-top: 3px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .upcoming-item { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; }
   .upcoming-item:last-child { border-bottom: none; }
 </style>

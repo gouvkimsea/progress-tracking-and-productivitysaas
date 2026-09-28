@@ -32,20 +32,20 @@ include __DIR__ . '/includes/head.php';
 <style>
   .files-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
   .files-title-wrap { display: flex; align-items: center; gap: 10px; }
-  .files-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+  .files-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 
   .upload-dropzone {
-    border: 1px dashed var(--border); border-radius: 8px; padding: 28px 20px; text-align: center;
+    border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 28px 20px; text-align: center;
     background: var(--panel-bg); margin-bottom: 20px; transition: border-color 0.15s ease; cursor: pointer;
   }
-  .upload-dropzone:hover { border-color: var(--blue); }
+  .upload-dropzone:hover { border-color: var(--border-focus); }
 
   .files-grid-wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
   .file-card {
-    background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 14px;
+    background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;
     display: flex; flex-direction: column; align-items: center; text-align: center; transition: border-color 0.15s ease;
   }
-  .file-card:hover { border-color: var(--blue); }
+  .file-card:hover { border-color: var(--border-focus); }
   .file-icon { margin-bottom: 8px; }
   .file-name { font-size: 13px; font-weight: 600; color: var(--ink); margin: 0 0 4px; word-break: break-all; }
   .file-size { font-size: 11px; color: var(--muted); }

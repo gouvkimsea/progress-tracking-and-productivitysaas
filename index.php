@@ -56,7 +56,7 @@ include __DIR__ . '/includes/head.php';
     <section class="stat-grid">
 
       <div class="card stat-card">
-        <div class="stat-head"><span class="dash" style="background:var(--purple)"></span><span>Learning streak</span></div>
+        <div class="stat-head"><span class="dash" style="background:var(--brand-primary)"></span><span>Learning streak</span></div>
         <div class="stat-value-row"><span class="stat-value" id="statStreakVal"><?= (int)$stats['learning_streak']; ?></span></div>
         <div class="stat-delta-label"><span class="stat-delta up">+<?= (int)$stats['streak_delta']; ?> days</span> vs last week</div>
         <div class="stat-sub">
@@ -71,7 +71,7 @@ include __DIR__ . '/includes/head.php';
       </div>
 
       <div class="card stat-card">
-        <div class="stat-head"><span class="dash" style="background:var(--orange)"></span><span>Course progress</span></div>
+        <div class="stat-head"><span class="dash" style="background:var(--status-high-border)"></span><span>Course progress</span></div>
         <div class="stat-value-row"><span class="stat-value" id="statProgressVal"><?= round($stats['course_progress_pct']); ?>%</span></div>
         <div class="stat-delta-label"><span class="stat-delta up">+<?= number_format($stats['progress_delta_pct'], 1); ?>%</span> this week</div>
         <div class="stat-sub">
@@ -88,24 +88,24 @@ include __DIR__ . '/includes/head.php';
         <div>
           <div class="stat-head" style="display:flex; align-items:center; justify-content:space-between;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span class="dash" style="background:var(--blue)"></span>
+              <span class="dash" style="background:var(--brand-primary)"></span>
               <span>Focus timer</span>
             </div>
             <span id="pomoSessionsBadge" class="badge badge-neutral">0 completed today</span>
           </div>
 
           <!-- Pomodoro Mode Tabs -->
-          <div class="pomo-mode-tabs" style="display:flex; gap:4px; margin-top:10px; background:var(--panel-bg); padding:3px; border-radius:6px; border:1px solid var(--border);">
-            <button type="button" class="pomo-tab active" data-mode="focus" data-mins="25" style="flex:1; border:none; background:var(--blue); color:#fff; font-size:11.5px; font-weight:600; padding:5px 0; border-radius:4px; cursor:pointer;">25m Focus</button>
-            <button type="button" class="pomo-tab" data-mode="short" data-mins="5" style="flex:1; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:500; padding:5px 0; border-radius:4px; cursor:pointer;">5m Break</button>
-            <button type="button" class="pomo-tab" data-mode="long" data-mins="15" style="flex:1; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:500; padding:5px 0; border-radius:4px; cursor:pointer;">15m Long</button>
+          <div class="pomo-mode-tabs" style="display:flex; gap:4px; margin-top:10px; background:var(--bg-subtle); padding:3px; border-radius:var(--radius-sm); border:1px solid var(--border-base);">
+            <button type="button" class="pomo-tab active" data-mode="focus" data-mins="25" style="flex:1; border:none; background:var(--brand-primary); color:#fff; font-size:11.5px; font-weight:600; padding:5px 0; border-radius:var(--radius-xs); cursor:pointer;">25m Focus</button>
+            <button type="button" class="pomo-tab" data-mode="short" data-mins="5" style="flex:1; border:none; background:transparent; color:var(--text-secondary); font-size:11.5px; font-weight:500; padding:5px 0; border-radius:var(--radius-xs); cursor:pointer;">5m Break</button>
+            <button type="button" class="pomo-tab" data-mode="long" data-mins="15" style="flex:1; border:none; background:transparent; color:var(--text-secondary); font-size:11.5px; font-weight:500; padding:5px 0; border-radius:var(--radius-xs); cursor:pointer;">15m Long</button>
           </div>
 
           <!-- Timer Display & Controls -->
           <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
             <div>
-              <div id="timerDisplay" style="font-size:32px; font-weight:700; letter-spacing:-0.03em; color:var(--ink); font-family:ui-monospace, SFMono-Regular, Menlo, monospace; line-height:1;">25:00</div>
-              <div style="font-size:11.5px; color:var(--muted); margin-top:6px;">Total study: <b id="statTimeVal"><?= (int)$stats['study_hours']; ?>h <?= (int)$stats['study_minutes']; ?>m</b></div>
+              <div id="timerDisplay" style="font-size:32px; font-weight:700; letter-spacing:-0.03em; color:var(--text-primary); font-family:ui-monospace, SFMono-Regular, Menlo, monospace; line-height:1;">25:00</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:6px;">Total study: <b id="statTimeVal"><?= (int)$stats['study_hours']; ?>h <?= (int)$stats['study_minutes']; ?>m</b></div>
             </div>
             <div style="display:flex; gap:6px;">
               <button id="btnToggleTimer" class="btn btn-primary" style="padding:6px 14px; font-size:12px;">Start</button>
@@ -115,8 +115,8 @@ include __DIR__ . '/includes/head.php';
         </div>
 
         <!-- Mini Progress Bar -->
-        <div style="margin-top:16px; background:var(--border); border-radius:3px; height:4px; overflow:hidden;">
-          <div id="pomoProgressBar" style="width:0%; height:100%; background:var(--blue); transition:width 0.3s ease;"></div>
+        <div style="margin-top:16px; background:var(--border-base); border-radius:var(--radius-xs); height:4px; overflow:hidden;">
+          <div id="pomoProgressBar" style="width:0%; height:100%; background:var(--brand-primary); transition:width 0.3s ease;"></div>
         </div>
       </div>
 
@@ -159,7 +159,7 @@ include __DIR__ . '/includes/head.php';
       <div class="card card-block">
         <div class="card-block-head">
           <div class="card-title">
-            <div class="ic" style="background:var(--purple-light); color:var(--purple-deep)">
+            <div class="ic" style="background:var(--bg-subtle); color:var(--brand-primary)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5Z"/></svg>
             </div>
             <span>Weekly streak</span>
@@ -182,7 +182,7 @@ include __DIR__ . '/includes/head.php';
       <div class="card card-block">
         <div class="card-block-head">
           <div class="card-title">
-            <div class="ic" style="background:var(--orange-light); color:var(--orange)">
+            <div class="ic" style="background:var(--status-high-bg); color:var(--status-high-text)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             </div>
             <span>Learning progress</span>
@@ -199,7 +199,7 @@ include __DIR__ . '/includes/head.php';
       <div class="card card-block skill-card">
         <div class="card-block-head">
           <div class="card-title">
-            <div class="ic" style="background:var(--blue-light); color:var(--blue)">
+            <div class="ic" style="background:var(--bg-subtle); color:var(--brand-primary)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 0 14 7 7 0 0 0 0-14z"/></svg>
             </div>
             <span>Skill breakdown</span>

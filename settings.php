@@ -20,8 +20,8 @@ include __DIR__ . '/includes/head.php';
 ?>
 <style>
   .settings-header { margin-bottom: 24px; }
-  .settings-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--ink); }
-  .settings-card { padding: 28px; max-width: 600px; }
+  .settings-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+  .settings-card { padding: 24px; max-width: 600px; }
 </style>
 </head>
 <body>
@@ -34,11 +34,11 @@ include __DIR__ . '/includes/head.php';
 
     <div class="settings-header">
       <h2 class="settings-title">Account Settings</h2>
-      <p style="margin:4px 0 0; color:var(--muted); font-size:14px; font-weight:500;">Update your name, email, password, and theme preference.</p>
+      <p style="margin:4px 0 0; color:var(--text-secondary); font-size:13.5px; font-weight:400;">Update your name, email, password, and theme preference.</p>
     </div>
 
     <div class="card settings-card">
-      <h3 style="margin:0 0 20px; font-size:17px; font-weight:800;">Profile Information</h3>
+      <h3 style="margin:0 0 20px; font-size:16px; font-weight:700;">Profile Information</h3>
 
       <div id="settingsAlert" class="auth-alert" style="display:none;"></div>
 

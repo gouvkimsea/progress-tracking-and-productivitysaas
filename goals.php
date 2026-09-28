@@ -29,7 +29,7 @@ include __DIR__ . '/includes/head.php';
 
   .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .goal-card {
-    background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px;
+    background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px;
     display: flex; flex-direction: column; transition: border-color 0.15s ease;
   }
   .goal-card:hover { border-color: var(--border-focus); }
@@ -42,12 +42,9 @@ include __DIR__ . '/includes/head.php';
   .goal-status-badge {
     font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-xs);
   }
-  .status-on-track { background: #DCFCE7; color: #16A34A; }
-  .status-at-risk { background: #FEF9C3; color: #CA8A04; }
-  .status-behind { background: #FEE2E2; color: #DC2626; }
-  [data-theme="dark"] .status-on-track { background: #064E3B; color: #4ADE80; }
-  [data-theme="dark"] .status-at-risk { background: #713F12; color: #FACC15; }
-  [data-theme="dark"] .status-behind { background: #7F1D1D; color: #F87171; }
+  .status-on-track { background: var(--status-done-bg); color: var(--status-done-text); border: 1px solid var(--status-done-border); }
+  .status-at-risk { background: var(--status-high-bg); color: var(--status-high-text); border: 1px solid var(--status-high-border); }
+  .status-behind { background: var(--status-urgent-bg); color: var(--status-urgent-text); border: 1px solid var(--status-urgent-border); }
 
   .goal-title { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.35; }
   .goal-due { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 16px; }

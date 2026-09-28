@@ -13,8 +13,8 @@ include __DIR__ . '/includes/head.php';
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background: var(--bg);
-    color: var(--ink);
+    background: var(--bg-app);
+    color: var(--text-primary);
     text-align: center;
     font-family: inherit;
   }
@@ -22,28 +22,28 @@ include __DIR__ . '/includes/head.php';
     max-width: 480px;
     width: 100%;
     padding: 40px 32px;
-    background: var(--panel-bg);
-    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-base);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-shell);
+    box-shadow: var(--shadow-sm);
   }
   .error-code {
     font-size: 72px;
     font-weight: 800;
     line-height: 1;
     margin: 0 0 12px;
-    color: var(--blue);
+    color: var(--brand-primary);
     letter-spacing: -0.03em;
   }
   .error-title {
     font-size: 20px;
     font-weight: 700;
     margin: 0 0 8px;
-    color: var(--ink);
+    color: var(--text-primary);
   }
   .error-desc {
     font-size: 14px;
-    color: var(--muted);
+    color: var(--text-secondary);
     margin: 0 0 24px;
     line-height: 1.5;
   }
@@ -58,7 +58,7 @@ include __DIR__ . '/includes/head.php';
     align-items: center;
     gap: 8px;
     padding: 9px 16px;
-    background: var(--blue);
+    background: var(--brand-primary);
     color: #FFFFFF;
     font-weight: 600;
     font-size: 13.5px;
@@ -67,16 +67,16 @@ include __DIR__ . '/includes/head.php';
     transition: background 0.15s ease;
   }
   .btn-primary:hover {
-    background: var(--blue-hover);
+    background: var(--brand-hover);
   }
   .btn-outline {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 9px 16px;
-    background: var(--panel-bg);
-    color: var(--ink);
-    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-base);
     font-weight: 600;
     font-size: 13.5px;
     border-radius: var(--radius-sm);
@@ -84,7 +84,7 @@ include __DIR__ . '/includes/head.php';
     transition: background 0.15s ease, border-color 0.15s ease;
   }
   .btn-outline:hover {
-    background: var(--bg);
+    background: var(--bg-subtle);
     border-color: var(--border-focus);
   }
   .search-result-item {
@@ -92,14 +92,14 @@ include __DIR__ . '/includes/head.php';
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     text-decoration: none;
-    color: var(--ink);
+    color: var(--text-primary);
     font-size: 13px;
     transition: background 0.12s ease;
   }
   .search-result-item:hover {
-    background: var(--bg);
+    background: var(--bg-subtle);
   }
 </style>
 </head>
@@ -107,7 +107,7 @@ include __DIR__ . '/includes/head.php';
 
 <div class="error-container">
   <div class="error-card">
-    <div style="font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 20px;">
+    <div style="font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 20px;">
       MINDRIFT
     </div>
     <div class="error-code">404</div>
@@ -120,11 +120,11 @@ include __DIR__ . '/includes/head.php';
     <div style="margin: 0 0 24px; position: relative; text-align: left;">
       <div style="position: relative;">
         <input type="text" id="quick404Search" placeholder="Search tasks, projects, courses..." 
-               style="width: 100%; padding: 10px 14px 10px 36px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--panel-bg); color: var(--ink); font-size: 13.5px; outline: none; box-sizing: border-box; transition: border-color 0.15s ease;" 
-               onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'" />
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 12px; color: var(--muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+               style="width: 100%; padding: 10px 14px 10px 36px; border-radius: var(--radius-sm); border: 1px solid var(--border-base); background: var(--bg-surface); color: var(--text-primary); font-size: 13.5px; outline: none; box-sizing: border-box; transition: border-color 0.15s ease;" 
+               onfocus="this.style.borderColor='var(--brand-primary)'" onblur="this.style.borderColor='var(--border-base)'" />
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 12px; color: var(--text-secondary);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </div>
-      <div id="quick404Results" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 220px; overflow-y: auto; z-index: 50; box-shadow: var(--shadow-shell); padding: 4px;"></div>
+      <div id="quick404Results" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-sm); max-height: 220px; overflow-y: auto; z-index: 50; box-shadow: var(--shadow-sm); padding: 4px;"></div>
     </div>
 
     <div class="error-actions">
