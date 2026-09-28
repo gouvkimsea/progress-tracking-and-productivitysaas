@@ -135,7 +135,7 @@ include __DIR__ . '/includes/head.php';
     min-height: 340px;
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.25s ease;
     cursor: pointer;
     border-radius: var(--radius-xl);
   }
@@ -208,12 +208,11 @@ include __DIR__ . '/includes/head.php';
     cursor: pointer;
     font-size: 13px;
     font-weight: 700;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
     min-width: 90px;
   }
   .fc-btn-rate:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: currentColor;
   }
   .fc-btn-again { color: #EF4444; border-color: rgba(239, 68, 68, 0.3); }
   .fc-btn-again:hover { background: rgba(239, 68, 68, 0.08); }

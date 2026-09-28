@@ -87,6 +87,20 @@ include __DIR__ . '/includes/head.php';
     background: var(--bg);
     border-color: var(--border-focus);
   }
+  .search-result-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 13px;
+    transition: background 0.12s ease;
+  }
+  .search-result-item:hover {
+    background: var(--bg);
+  }
 </style>
 </head>
 <body>
@@ -143,7 +157,7 @@ if (searchInput && searchResults) {
       const data = await res.json();
       if (data.success && data.results && data.results.length > 0) {
         searchResults.innerHTML = data.results.map(r => `
-          <a href="${r.url}" style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-radius:6px; text-decoration:none; color:var(--ink); font-size:13px; transition:background 0.15s ease;" onmouseover="this.style.background='rgba(108,92,231,0.08)'" onmouseout="this.style.background='transparent'">
+          <a href="${r.url}" class="search-result-item">
             <span style="font-weight:600;">${r.title}</span>
             <span style="font-size:11px; color:var(--muted); text-transform:capitalize;">${r.type}</span>
           </a>

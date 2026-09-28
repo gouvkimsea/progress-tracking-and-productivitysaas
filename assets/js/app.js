@@ -376,7 +376,7 @@
 
             const fg = row.querySelector('.ring-fg');
             if (fg) {
-              fg.style.transition = 'stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1)';
+              fg.style.transition = 'stroke-dashoffset 0.25s ease';
               fg.setAttribute('stroke-dashoffset', (C - (C * c.progress_pct / 100)).toString());
             }
 
@@ -391,16 +391,11 @@
 
       lessonList.appendChild(row);
 
-      // Initial SVG Ring Offset
+      // Initial SVG Ring Offset (instant, no entrance delay)
       const fg = row.querySelector('.ring-fg');
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          if (fg) {
-            fg.style.transition = 'stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)';
-            fg.setAttribute('stroke-dashoffset', (C - (C * pct / 100)).toString());
-          }
-        }, 120);
-      });
+      if (fg) {
+        fg.setAttribute('stroke-dashoffset', (C - (C * pct / 100)).toString());
+      }
     });
   }
 

@@ -307,7 +307,7 @@ function toggleProjectOptions(e, projId, projName) {
 
   const dropdown = document.createElement('div');
   dropdown.className = 'proj-opts-dropdown';
-  dropdown.style.cssText = 'position:absolute; right:0; top:28px; background:var(--panel-bg); border:1px solid var(--border); border-radius:8px; box-shadow:0 10px 28px rgba(0,0,0,0.18); z-index:999; width:170px; overflow:hidden; animation:modalZoomIn 0.15s ease-out;';
+  dropdown.style.cssText = 'position:absolute; right:0; top:28px; background:var(--panel-bg); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-md); z-index:999; width:170px; overflow:hidden;';
   dropdown.innerHTML = `
     <div class="kebab-menu-item" onclick="window.location.href='gantt.php'">📈 Open in Gantt</div>
     <div class="kebab-menu-item" onclick="window.location.href='kanban.php'">📋 Open in Kanban</div>

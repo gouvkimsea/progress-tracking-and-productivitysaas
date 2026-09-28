@@ -64,17 +64,6 @@ include __DIR__ . '/includes/head.php';
     border-radius: var(--radius-xs); cursor: pointer; color: var(--ink); transition: background 0.15s ease;
   }
   .btn-step:hover { background: var(--bg); border-color: var(--border-focus); }
-
-  /* Modal Styles */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9999;
-    display: none; align-items: center; justify-content: center;
-  }
-  .modal-overlay.active { display: flex; }
-  .modal-card {
-    background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-md); width: 440px; max-width: 90vw;
-    padding: 24px; box-shadow: var(--shadow-shell);
-  }
 </style>
 </head>
 <body>
