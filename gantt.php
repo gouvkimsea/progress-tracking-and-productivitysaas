@@ -35,37 +35,19 @@ include __DIR__ . '/includes/head.php';
   .gantt-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 
   .gantt-controls-bar {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: var(--panel-bg);
-    padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: var(--bg-surface);
+    padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-base);
   }
   .zoom-btn-group { display: flex; align-items: center; gap: 4px; }
   .zoom-btn {
-    padding: 5px 10px; font-size: 12px; font-weight: 500; color: var(--muted); background: var(--panel-bg); border: 1px solid var(--border);
+    padding: 5px 10px; font-size: 12px; font-weight: 500; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border-base);
     border-radius: var(--radius-xs); cursor: pointer; transition: all 0.15s ease;
   }
-  .zoom-btn.active { background: var(--blue); color: #FFF; border-color: var(--blue); font-weight: 600; }
+  .zoom-btn.active { background: var(--brand-primary); color: #FFF; border-color: var(--brand-primary); font-weight: 600; }
 
-  .gantt-container-wrap {
-    display: flex; width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: var(--panel-bg);
-  }
-  .gantt-sidebar-col { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--panel-bg); }
-  .gantt-sidebar-head { padding: 10px 14px; font-weight: 600; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--border); }
-  .gantt-task-row { padding: 10px 14px; font-size: 13px; font-weight: 500; color: var(--ink); border-bottom: 1px solid var(--border); }
-
-  .gantt-timeline-col { flex: 1; overflow-x: auto; position: relative; }
-  .gantt-dates-head { display: flex; border-bottom: 1px solid var(--border); background: var(--panel-bg); }
-  .gantt-date-cell { width: 44px; min-width: 44px; text-align: center; padding: 8px 0; font-size: 11px; font-weight: 500; color: var(--muted); border-right: 1px solid var(--border); }
-  
-  .gantt-bar-row { display: flex; align-items: center; height: 45px; border-bottom: 1px solid var(--border); position: relative; }
-  .gantt-task-bar {
-    position: absolute; height: 24px; border-radius: 4px; background: var(--blue);
-    color: #FFF; font-size: 11.5px; font-weight: 600; display: flex; align-items: center; padding: 0 8px;
-    box-shadow: none; cursor: grab; user-select: none; z-index: 5;
-    transition: background 0.15s ease;
-  }
   .gantt-task-bar.dragging {
     cursor: grabbing; opacity: 0.9; z-index: 20;
-    background: var(--blue-hover);
+    background: var(--brand-hover);
   }
   .gantt-resize-handle {
     position: absolute; right: 0; top: 0; bottom: 0; width: 8px; cursor: ew-resize;
@@ -74,12 +56,8 @@ include __DIR__ . '/includes/head.php';
   .gantt-resize-handle:hover {
     background: rgba(255,255,255,0.6);
   }
-
-  .today-indicator-line {
-    position: absolute; top: 0; bottom: 0; width: 2px; background: var(--red); z-index: 10; pointer-events: none;
-  }
   .today-badge-tag {
-    position: absolute; top: 2px; left: -16px; background: var(--red); color: #FFF; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px;
+    position: absolute; top: 2px; left: -16px; background: var(--status-urgent-text); color: #FFF; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px;
   }
 </style>
 </head>

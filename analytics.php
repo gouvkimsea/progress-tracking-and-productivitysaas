@@ -65,7 +65,7 @@ include __DIR__ . '/includes/head.php';
 
   /* Table Layout */
   .timelog-table-wrap {
-    width: 100%; border: 1px solid var(--border-base); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface);
+    width: 100%; border: 1px solid var(--border-base); border-radius: var(--radius-md); overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--bg-surface);
   }
   .timelog-table { width: 100%; border-collapse: collapse; text-align: left; }
   

@@ -51,28 +51,8 @@ include __DIR__ . '/includes/head.php';
   .kanban-title-wrap { display: flex; align-items: center; gap: 10px; }
   .kanban-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 
-  .kanban-board-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
-  .kanban-column { background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; min-height: 500px; }
-  
-  .column-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .column-title-flex { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
-  .column-count-badge { background: var(--border); color: var(--muted); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-full); }
-
-  .kanban-card-list { display: flex; flex-direction: column; gap: 8px; }
-  .kanban-card {
-    background: var(--panel-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px;
-    box-shadow: var(--shadow-sm); cursor: grab; transition: border-color 0.15s ease;
-  }
-  .kanban-card:hover { border-color: var(--border-focus); }
-  .kanban-card.dragging { opacity: 0.5; border: 1px dashed var(--blue); }
-  .kanban-column.drag-over { background: var(--bg-subtle); border-color: var(--border-focus); }
-
-  .card-project-tag { font-size: 11px; font-weight: 600; color: var(--blue); text-transform: uppercase; margin-bottom: 4px; }
-  .card-task-title { margin: 0 0 8px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
-  .card-footer-flex { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
-
   .move-status-select {
-    font-size: 11.5px; font-weight: 500; padding: 3px 6px; border-radius: var(--radius-xs); border: 1px solid var(--border); background: var(--panel-bg); color: var(--ink); cursor: pointer;
+    font-size: 11.5px; font-weight: 500; padding: 4px 8px; border-radius: var(--radius-xs); border: 1px solid var(--border-base); background: var(--bg-surface); color: var(--text-primary); cursor: pointer;
   }
 </style>
 </head>

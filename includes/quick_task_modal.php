@@ -54,7 +54,7 @@ if (isset($db, $userId)) {
     </div>
 
     <!-- Explicit Field Controls -->
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding: 14px 18px;">
+    <div class="modal-form-grid" style="padding: 14px 18px;">
       <div class="form-group">
         <label class="form-label" for="omniSelectProject">Project</label>
         <select id="omniSelectProject" class="form-input">

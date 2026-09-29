@@ -744,6 +744,7 @@
     // 13. Sidebar Collapse Toggle
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
+    const appContainer = document.getElementById('app') || document.querySelector('.app');
     if (sidebar) {
       if (localStorage.getItem('mindrift_sidebar_collapsed') === '1') {
         sidebar.classList.add('collapsed');
@@ -751,9 +752,13 @@
       if (sidebarToggle) {
         sidebarToggle.addEventListener('click', (e) => {
           e.preventDefault();
-          sidebar.classList.toggle('collapsed');
-          const isCollapsed = sidebar.classList.contains('collapsed');
-          localStorage.setItem('mindrift_sidebar_collapsed', isCollapsed ? '1' : '0');
+          if (window.innerWidth <= 768) {
+            if (appContainer) appContainer.classList.remove('mobile-open');
+          } else {
+            sidebar.classList.toggle('collapsed');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('mindrift_sidebar_collapsed', isCollapsed ? '1' : '0');
+          }
         });
       }
     }

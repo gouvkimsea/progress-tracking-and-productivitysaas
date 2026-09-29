@@ -605,6 +605,8 @@ button, input, select, textarea {
   align-items: center;
   justify-content: center;
   padding: 4px;
+  width: 32px;
+  height: 32px;
 }
 
 .icon-btn:hover {
@@ -1330,6 +1332,12 @@ button, input, select, textarea {
   margin-bottom: 0;
 }
 
+.modal-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .form-label {
   display: block;
   font-size: 12px;
@@ -1851,6 +1859,23 @@ button, input, select, textarea {
     align-items: flex-start;
     gap: 12px;
   }
+  /* Responsive Kanban Board: Native horizontal scroll track */
+  .kanban-board-grid {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 14px;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 10px;
+  }
+  .kanban-column {
+    min-width: 280px;
+    max-width: 320px;
+    width: 82vw;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    min-height: 420px;
+  }
 }
 
 /* --- Mobile Landscape & Small Tablets (<= 768px) --- */
@@ -1858,6 +1883,11 @@ button, input, select, textarea {
   html, body {
     overflow-x: hidden;
     width: 100%;
+  }
+
+  /* Prevent iOS Safari 16px auto-zoom viewport distortion */
+  input, select, textarea, .form-input, .search-box-input {
+    font-size: 16px !important;
   }
 
   .sidebar {
@@ -1888,16 +1918,36 @@ button, input, select, textarea {
     transform: translateX(0);
   }
 
-  .main {
-    padding: 14px 12px 28px;
-  }
-
-  .mobile-menu-btn {
+  /* Touch Targets for interactive buttons & navigation */
+  .mobile-menu-btn,
+  .theme-toggle-btn,
+  #notifBellBtn,
+  .modal-close-btn,
+  .btn-step,
+  .icon-btn,
+  .kebab {
+    min-width: 38px;
+    min-height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 34px;
-    min-height: 34px;
+  }
+
+  .sidebar .gantt-nav-item {
+    padding: 10px 14px;
+    min-height: 42px;
+    font-size: 14px;
+  }
+
+  /* Safe Notification Dropdown on Mobile */
+  .notif-dropdown {
+    width: min(320px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
+    right: -8px;
+  }
+
+  .main {
+    padding: 14px 12px 28px;
   }
 
   .stat-grid {
@@ -1924,6 +1974,14 @@ button, input, select, textarea {
   }
   .tasks-data-table, .data-table, .timelog-table, .workload-matrix-table {
     min-width: 580px;
+  }
+
+  /* Tab Navigation Horizontal Scroll */
+  .tasks-tab-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    padding-bottom: 4px;
   }
 
   /* Toolbars flex collapse */
@@ -1994,16 +2052,32 @@ button, input, select, textarea {
     font-size: 16px;
   }
 
-  /* Modal Mobile Fitting */
+  /* Modal Bottom-Sheet fitting on mobile */
   .modal-overlay {
-    padding: 8px;
+    padding: 0;
     align-items: flex-end;
   }
   .modal-card {
     max-width: 100%;
+    width: 100%;
     max-height: 90vh;
     overflow-y: auto;
     border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+  .modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  .modal-footer .btn-cancel,
+  .modal-footer .btn-save,
+  .modal-footer button {
+    flex: 1;
+    min-height: 44px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .cmd-palette-overlay {
     padding-top: 16px;
@@ -2014,27 +2088,10 @@ button, input, select, textarea {
     max-width: 100%;
   }
 
-  /* Collapse any 2-column modal form grids */
+  /* Collapse modal form grids on small screens */
+  .modal-form-grid,
   .modal-card [style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
-  }
-
-  /* Swipeable Mobile Kanban Board */
-  .kanban-board-grid {
-    display: flex;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 12px;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 8px;
-  }
-  .kanban-column {
-    min-width: 270px;
-    width: 82vw;
-    max-width: 320px;
-    flex-shrink: 0;
-    scroll-snap-align: start;
-    min-height: 400px;
   }
 
   /* Project items on small screens */
@@ -2085,6 +2142,10 @@ button, input, select, textarea {
 
   .settings-card {
     padding: 16px;
+  }
+  .settings-card .btn-save {
+    width: 100%;
+    min-height: 42px;
   }
 
   .goals-grid {
@@ -2140,8 +2201,21 @@ button, input, select, textarea {
   .error-title {
     font-size: 18px;
   }
-  .btn-primary, .btn-secondary, .btn-submit {
+  .btn-primary, .btn-secondary, .btn-submit, .btn-save {
     min-height: 38px;
+  }
+  .all-projects-header,
+  .goals-header-row,
+  .portfolio-actions-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .all-projects-header .btn-outline-create,
+  .goals-header-row .btn-save,
+  .portfolio-actions-bar .btn-print {
+    width: 100%;
+    justify-content: center;
   }
 }
 

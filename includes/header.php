@@ -28,7 +28,7 @@
 
     <!-- Notification Bell Button & Drawer -->
     <div style="position:relative;">
-      <button class="icon-btn" id="notifBellBtn" title="Notifications" type="button" aria-label="Notifications" style="width:32px; height:32px; border:1px solid var(--border-base); border-radius:var(--radius-sm); background:var(--bg-surface);">
+      <button class="icon-btn" id="notifBellBtn" title="Notifications" type="button" aria-label="Notifications" style="border:1px solid var(--border-base); border-radius:var(--radius-sm); background:var(--bg-surface);">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="badge" id="notifBadge" style="display:none; position:absolute; top:-3px; right:-3px; background:var(--status-urgent-text); color:#fff; font-size:9.5px; padding:1px 4px; border-radius:var(--radius-xs);">0</span>
       </button>
