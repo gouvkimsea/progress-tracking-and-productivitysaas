@@ -71,7 +71,7 @@ include __DIR__ . '/includes/head.php';
         </div>
         <div class="sparkbars" id="bars-streak"></div>
         <button class="view-link" data-scroll="timeline">View all details
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
       </div>
 
@@ -85,7 +85,7 @@ include __DIR__ . '/includes/head.php';
         </div>
         <div class="sparkbars" id="bars-progress"></div>
         <button class="view-link" data-scroll="timeline">View all details
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
       </div>
 
