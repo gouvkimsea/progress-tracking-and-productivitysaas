@@ -93,7 +93,7 @@ VALUES (1, 'Alex Morgan', 'alex@mindrift.io', NULL)
 ON DUPLICATE KEY UPDATE `name`=`name`;
 
 INSERT INTO `user_stats` (`user_id`, `learning_streak`, `streak_delta`, `longest_streak`, `missed_days`, `inactive_pct`, `course_progress_pct`, `progress_delta_pct`, `weekly_lessons_current`, `weekly_lessons_last`, `study_hours`, `study_minutes`, `study_delta_pct`)
-VALUES (1, 0, 0, 0, 0, 0, 0.00, 0.00, 0, 0, 0, 0, 0.00)
+VALUES (1, 67, 2, 1000000, 0, 0, 0.00, 0.00, 0, 0, 0, 0, 0.00)
 ON DUPLICATE KEY UPDATE `learning_streak`=`learning_streak`;
 
 -- Seed Courses

@@ -778,6 +778,7 @@ button, input, select, textarea {
 
 .timeline-card {
   margin-bottom: 20px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .timeline-head {
@@ -785,6 +786,7 @@ button, input, select, textarea {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  gap: 12px;
 }
 
 .timeline-head h2 {
@@ -792,6 +794,32 @@ button, input, select, textarea {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.btn-fullscreen-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-fullscreen-toggle:hover {
+  background: var(--brand-subtle);
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.btn-fullscreen-toggle svg {
+  flex-shrink: 0;
 }
 
 .heatmap-scroll {
@@ -803,42 +831,51 @@ button, input, select, textarea {
 
 .gh-graph-wrap {
   display: flex;
-  align-items: flex-start;
-  min-width: max-content;
+  align-items: stretch;
+  width: 100%;
+  min-width: 680px;
   padding: 4px 2px;
 }
 
 .gh-days-col {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
   gap: 3px;
-  margin-top: 20px;
-  margin-right: 6px;
+  margin-top: 21px;
+  margin-right: 8px;
   user-select: none;
+  flex-shrink: 0;
+  width: 24px;
 }
 
 .gh-day-label {
-  height: 10px;
-  line-height: 10px;
-  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  line-height: 1;
+  font-size: 9.5px;
   color: var(--text-muted);
   font-weight: 500;
-  text-align: right;
-  width: 22px;
+  width: 24px;
 }
 
 .gh-graph-body {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
 }
 
 .gh-months-row {
   display: grid;
-  grid-template-columns: repeat(53, 10px);
+  grid-template-columns: repeat(53, minmax(0, 1fr));
   gap: 3px;
-  height: 15px;
+  height: 16px;
   margin-bottom: 5px;
   user-select: none;
+  width: 100%;
 }
 
 .gh-month-label {
@@ -850,20 +887,23 @@ button, input, select, textarea {
 
 .gh-weeks-grid {
   display: grid;
-  grid-template-columns: repeat(53, 10px);
+  grid-template-columns: repeat(53, minmax(0, 1fr));
   gap: 3px;
+  width: 100%;
 }
 
 .gh-week-col {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
   gap: 3px;
+  width: 100%;
 }
 
 /* GitHub Commit Squares (Light & Dark) */
 .gh-cell {
-  width: 10px;
-  height: 10px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 10px;
   border-radius: 2px;
   background: #ebedf0;
   outline: 1px solid rgba(27, 31, 35, 0.06);
@@ -956,6 +996,111 @@ button, input, select, textarea {
   font-weight: 600;
 }
 
+/* Timeline Fullscreen Mode */
+.timeline-card.is-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  z-index: 9999 !important;
+  padding: 36px 44px !important;
+  background: var(--bg-surface) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  overflow-y: auto !important;
+  box-shadow: none !important;
+}
+
+.timeline-card.is-fullscreen .timeline-head {
+  margin-bottom: 24px;
+}
+
+.timeline-card.is-fullscreen .timeline-head h2 {
+  font-size: 20px;
+}
+
+.timeline-card.is-fullscreen .btn-fullscreen-toggle {
+  padding: 6px 14px;
+  font-size: 12.5px;
+  background: var(--brand-subtle);
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.timeline-card.is-fullscreen .btn-fullscreen-toggle .ic-expand {
+  display: none;
+}
+
+.timeline-card.is-fullscreen .btn-fullscreen-toggle .ic-compress {
+  display: inline-block !important;
+}
+
+.timeline-card.is-fullscreen .heatmap-scroll {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 24px 0;
+}
+
+.timeline-card.is-fullscreen .gh-graph-wrap {
+  width: 100%;
+}
+
+.timeline-card.is-fullscreen .gh-months-row {
+  margin-bottom: 8px;
+  height: 20px;
+  gap: 4px;
+}
+
+.timeline-card.is-fullscreen .gh-month-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.timeline-card.is-fullscreen .gh-days-col {
+  margin-top: 28px;
+  gap: 4px;
+}
+
+.timeline-card.is-fullscreen .gh-day-label {
+  font-size: 11px;
+}
+
+.timeline-card.is-fullscreen .gh-weeks-grid {
+  gap: 4px;
+}
+
+.timeline-card.is-fullscreen .gh-week-col {
+  gap: 4px;
+}
+
+.timeline-card.is-fullscreen .gh-cell {
+  border-radius: 3px;
+}
+
+.timeline-card.is-fullscreen .timeline-foot {
+  margin-top: 24px;
+  padding-top: 16px;
+}
+
+.timeline-card.is-fullscreen .timeline-foot .fi {
+  font-size: 13.5px;
+}
+
+.timeline-card.is-fullscreen .gh-legend {
+  font-size: 12px;
+}
+
+.timeline-card.is-fullscreen .gh-legend-cell {
+  width: 12px;
+  height: 12px;
+}
+
 .tooltip {
   position: fixed;
   background: var(--text-primary);
@@ -968,7 +1113,7 @@ button, input, select, textarea {
   opacity: 0;
   transform: translate(-50%, -8px);
   transition: opacity 0.1s ease;
-  z-index: 1000;
+  z-index: 100000;
   white-space: nowrap;
   box-shadow: var(--shadow-sm);
 }

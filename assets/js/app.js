@@ -979,6 +979,51 @@
         }
       });
     });
+
+    // 18. Fullscreen Timeline Toggle Logic
+    const btnTimelineFs = document.getElementById('btnTimelineFullscreen');
+    const timelineCard = document.getElementById('timeline');
+    if (btnTimelineFs && timelineCard) {
+      const toggleTimelineFullscreen = () => {
+        const isFs = timelineCard.classList.toggle('is-fullscreen');
+        const btnText = btnTimelineFs.querySelector('.btn-text');
+
+        if (isFs) {
+          if (btnText) btnText.textContent = 'Exit (Esc)';
+          document.body.style.overflow = 'hidden';
+          if (timelineCard.requestFullscreen && !document.fullscreenElement) {
+            timelineCard.requestFullscreen().catch(() => {});
+          }
+          showToast('Timeline expanded to full screen');
+        } else {
+          if (btnText) btnText.textContent = 'Fullscreen';
+          document.body.style.overflow = '';
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+        }
+      };
+
+      btnTimelineFs.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleTimelineFullscreen();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && timelineCard.classList.contains('is-fullscreen')) {
+          toggleTimelineFullscreen();
+        }
+      });
+
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && timelineCard.classList.contains('is-fullscreen')) {
+          timelineCard.classList.remove('is-fullscreen');
+          const btnText = btnTimelineFs.querySelector('.btn-text');
+          if (btnText) btnText.textContent = 'Fullscreen';
+          document.body.style.overflow = '';
+        }
+      });
+    }
   }
 
   window.handleStreakReset = async function() {
