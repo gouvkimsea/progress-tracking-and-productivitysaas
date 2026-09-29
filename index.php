@@ -131,19 +131,6 @@ include __DIR__ . '/includes/head.php';
     <section class="card timeline-card" id="timeline">
       <div class="timeline-head">
         <h2>Learning activity timeline</h2>
-        <div style="position:relative;">
-          <button class="filter-btn" id="filterBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            Filter view
-          </button>
-          <div class="filter-menu" id="filterMenu">
-            <button class="sel" data-cat="all">All courses</button>
-            <button data-cat="Design">Design</button>
-            <button data-cat="Programming">JavaScript</button>
-            <button data-cat="Design">Photoshop</button>
-            <button data-cat="Data Science">Python for Data</button>
-          </div>
-        </div>
       </div>
 
       <div class="heatmap-scroll">
@@ -169,9 +156,6 @@ include __DIR__ . '/includes/head.php';
             </div>
             <span>Weekly streak</span>
           </div>
-          <button class="kebab" title="Options">
-            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
         </div>
 
         <div class="streak-big" id="streakBig"><?= (int)$stats['learning_streak']; ?> days</div>
@@ -192,9 +176,6 @@ include __DIR__ . '/includes/head.php';
             </div>
             <span>Learning progress</span>
           </div>
-          <button class="kebab" title="Options">
-            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
         </div>
 
         <div id="lessonList"></div>
@@ -209,9 +190,6 @@ include __DIR__ . '/includes/head.php';
             </div>
             <span>Skill breakdown</span>
           </div>
-          <button class="kebab" title="Options">
-            <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
         </div>
 
         <div class="radar-wrap" id="radarWrap"></div>

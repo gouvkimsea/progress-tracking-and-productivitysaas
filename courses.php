@@ -298,10 +298,10 @@ function toggleProjectOptions(e, projId, projName) {
   dropdown.className = 'proj-opts-dropdown';
   dropdown.style.cssText = 'position:absolute; right:0; top:28px; background:var(--panel-bg); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-md); z-index:999; width:170px; overflow:hidden;';
   dropdown.innerHTML = `
-    <div class="kebab-menu-item" onclick="window.location.href='gantt.php'">📈 Open in Gantt</div>
-    <div class="kebab-menu-item" onclick="window.location.href='kanban.php'">📋 Open in Kanban</div>
-    <div class="kebab-menu-item" onclick="window.location.href='goals.php'">🎯 Track as OKR</div>
-    <div class="kebab-menu-item" style="color:#EF4444;" onclick="deleteProject(${projId})">🗑️ Delete Project</div>
+    <div class="kebab-menu-item" onclick="window.location.href='gantt.php'">Open in Gantt</div>
+    <div class="kebab-menu-item" onclick="window.location.href='kanban.php'">Open in Kanban</div>
+    <div class="kebab-menu-item" onclick="window.location.href='goals.php'">Track as Objective</div>
+    <div class="kebab-menu-item" style="color:var(--status-urgent-text);" onclick="deleteProject(${projId})">Delete Project</div>
   `;
   e.target.parentElement.appendChild(dropdown);
 

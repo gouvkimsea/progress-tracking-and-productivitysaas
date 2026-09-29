@@ -30,7 +30,7 @@ try {
 
                     if ($dueFormatted < $todayStr) {
                         // Overdue notification
-                        $notifTitle = "⚠️ Task Overdue: {$taskTitle}";
+                        $notifTitle = "Task Overdue: {$taskTitle}";
                         $checkStmt = $db->prepare("SELECT id FROM notifications WHERE user_id = :uid AND title = :title");
                         $checkStmt->execute(['uid' => $userId, 'title' => $notifTitle]);
                         if (!$checkStmt->fetch()) {
@@ -39,7 +39,7 @@ try {
                         }
                     } elseif ($dueFormatted === $todayStr) {
                         // Due today notification
-                        $notifTitle = "🔥 Due Today: {$taskTitle}";
+                        $notifTitle = "Due Today: {$taskTitle}";
                         $checkStmt = $db->prepare("SELECT id FROM notifications WHERE user_id = :uid AND title = :title");
                         $checkStmt->execute(['uid' => $userId, 'title' => $notifTitle]);
                         if (!$checkStmt->fetch()) {

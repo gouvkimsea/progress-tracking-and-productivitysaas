@@ -210,10 +210,10 @@ include __DIR__ . '/includes/head.php';
         <div class="form-group">
           <label class="form-label" for="calTaskPriority">Priority</label>
           <select id="calTaskPriority" class="form-input">
-            <option value="Urgent">🔥 Urgent</option>
-            <option value="High">⚡ High</option>
-            <option value="Medium" selected>📌 Medium</option>
-            <option value="Low">☕ Low</option>
+            <option value="Urgent">Urgent</option>
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
           </select>
         </div>
       </div>

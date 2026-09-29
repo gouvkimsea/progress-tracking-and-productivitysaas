@@ -785,7 +785,6 @@
 
     // 14. Mobile Menu Toggle
     const mobileBtn = document.getElementById('mobileMenuBtn');
-    const appContainer = document.getElementById('app') || document.querySelector('.app');
     if (mobileBtn && appContainer) {
       mobileBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -889,86 +888,7 @@
       if (cmdBtn) cmdBtn.click();
     };
 
-    // 17. Dashboard Category Filter Dropdown
-    const filterBtn = document.getElementById('filterBtn');
-    const filterMenu = document.querySelector('.filter-menu');
-    if (filterBtn && filterMenu) {
-      filterBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        filterMenu.classList.toggle('active');
-      });
-      document.addEventListener('click', (e) => {
-        if (!filterMenu.contains(e.target) && !filterBtn.contains(e.target)) {
-          filterMenu.classList.remove('active');
-        }
-      });
-      const filterOptions = filterMenu.querySelectorAll('button');
-      filterOptions.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          filterOptions.forEach(b => b.classList.remove('sel'));
-          btn.classList.add('sel');
-          filterMenu.classList.remove('active');
-          const cat = btn.getAttribute('data-cat') || 'all';
-          const courseCards = document.querySelectorAll('.course-card');
-          courseCards.forEach(c => {
-            if (cat === 'all') {
-              c.style.display = 'flex';
-            } else {
-              const cardCat = c.querySelector('.cat-tag')?.textContent.trim() || '';
-              c.style.display = (cardCat.toLowerCase().includes(cat.toLowerCase())) ? 'flex' : 'none';
-            }
-          });
-          showToast(`Filtered by ${btn.textContent.trim()}`);
-        });
-      });
-    }
-
-    // 18. Dashboard Kebab Menus
-    const kebabs = document.querySelectorAll('.kebab');
-    kebabs.forEach((kebab, idx) => {
-      kebab.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('.kebab-menu-dropdown').forEach(m => m.remove());
-
-        const menu = document.createElement('div');
-        menu.className = 'kebab-menu-dropdown';
-        menu.style.cssText = 'position:absolute; right:0; top:30px; background:var(--panel-bg); border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.08); z-index:999; width:160px; overflow:hidden;';
-
-        let itemsHtml = '';
-        if (idx === 0) { // Weekly streak
-          itemsHtml = `
-            <div class="kebab-menu-item" onclick="handleStreakReset()">Reset Week</div>
-            <div class="kebab-menu-item" onclick="window.location.href='goals.php'">Set 7-Day Goal</div>
-            <div class="kebab-menu-item" onclick="window.location.href='api/export.php?type=tasks'">Export Streak</div>
-          `;
-        } else if (idx === 1) { // Learning progress
-          itemsHtml = `
-            <div class="kebab-menu-item" onclick="window.location.href='courses.php'">View All Courses</div>
-            <div class="kebab-menu-item" onclick="handleSortCoursesProgress()">Sort by Progress</div>
-            <div class="kebab-menu-item" onclick="window.location.href='api/export.php?type=tasks'">Export CSV</div>
-          `;
-        } else { // Skills breakdown
-          itemsHtml = `
-            <div class="kebab-menu-item" onclick="window.location.href='goals.php'">View Objectives</div>
-            <div class="kebab-menu-item" onclick="window.location.href='workload.php'">View Workload</div>
-            <div class="kebab-menu-item" onclick="window.location.href='reports.php'">View Reports</div>
-          `;
-        }
-        menu.innerHTML = itemsHtml;
-        kebab.style.position = 'relative';
-        kebab.appendChild(menu);
-
-        document.addEventListener('click', function closeKebab(ev) {
-          if (!menu.contains(ev.target)) {
-            menu.remove();
-            document.removeEventListener('click', closeKebab);
-          }
-        });
-      });
-    });
-
-    // 19. Stat Cards View Links
+    // 17. Stat Cards View Links
     const viewLinks = document.querySelectorAll('.view-link');
     viewLinks.forEach((link, idx) => {
       link.addEventListener('click', (e) => {
