@@ -100,10 +100,10 @@ include __DIR__ . '/includes/head.php';
           </div>
 
           <!-- Pomodoro Mode Tabs -->
-          <div class="pomo-mode-tabs" style="display:flex; gap:4px; margin-top:10px; background:var(--bg-subtle); padding:3px; border-radius:var(--radius-sm); border:1px solid var(--border-base);">
-            <button type="button" class="pomo-tab active" data-mode="focus" data-mins="25" style="flex:1; border:none; background:var(--brand-primary); color:#fff; font-size:11.5px; font-weight:600; padding:5px 0; border-radius:var(--radius-xs); cursor:pointer;">25m Focus</button>
-            <button type="button" class="pomo-tab" data-mode="short" data-mins="5" style="flex:1; border:none; background:transparent; color:var(--text-secondary); font-size:11.5px; font-weight:500; padding:5px 0; border-radius:var(--radius-xs); cursor:pointer;">5m Break</button>
-            <button type="button" class="pomo-tab" data-mode="long" data-mins="15" style="flex:1; border:none; background:transparent; color:var(--text-secondary); font-size:11.5px; font-weight:500; padding:5px 0; border-radius:var(--radius-xs); cursor:pointer;">15m Long</button>
+          <div class="pomo-mode-tabs">
+            <button type="button" class="pomo-tab active" data-mode="focus" data-mins="25">25m Focus</button>
+            <button type="button" class="pomo-tab" data-mode="short" data-mins="5">5m Break</button>
+            <button type="button" class="pomo-tab" data-mode="long" data-mins="15">15m Long</button>
           </div>
 
           <!-- Timer Display & Controls -->
