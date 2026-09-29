@@ -192,66 +192,141 @@
     }
 
     const activityMap = {};
+    let totalLessonsYear = 0;
+
     (appState.activities || []).forEach(act => {
       if (filterCategory === 'all' || act.category === filterCategory) {
-        activityMap[act.activity_date] = act.lessons_completed || 1;
+        const count = parseInt(act.lessons_completed || 1, 10);
+        activityMap[act.activity_date] = (activityMap[act.activity_date] || 0) + count;
+        totalLessonsYear += count;
       }
     });
 
-    const currentYear = new Date().getFullYear();
+    const summaryEl = document.getElementById('heatmapTotalSummary');
+    if (summaryEl) {
+      summaryEl.textContent = `${totalLessonsYear} activity log${totalLessonsYear === 1 ? '' : 's'} in the past year`;
+    }
 
-    months.forEach((m, mi) => {
-      const col = document.createElement('div');
-      col.className = 'month-col';
-      const label = document.createElement('div');
-      label.className = 'month-label';
-      label.textContent = m;
-      col.appendChild(label);
+    // 53-week GitHub commit contribution graph layout
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      const totalDays = daysInMonth[mi];
-      const cols = Math.ceil(totalDays / 5);
+    const todayDayOfWeek = today.getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + (6 - todayDayOfWeek));
 
-      for (let r = 0; r < 5; r++) {
-        const row = document.createElement('div');
-        row.className = 'week-row';
+    const numWeeks = 53;
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - (numWeeks * 7) + 1);
 
-        for (let c = 0; c < cols; c++) {
-          const dayNum = c * 5 + r + 1;
-          const cell = document.createElement('div');
-          
-          if (dayNum > totalDays) {
-            cell.style.visibility = 'hidden';
-            cell.className = 'cell';
-          } else {
-            const mStr = String(mi + 1).padStart(2, '0');
-            const dStr = String(dayNum).padStart(2, '0');
-            const dateKey = `${currentYear}-${mStr}-${dStr}`;
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthColumns = [];
 
-            const count = activityMap[dateKey] || 0;
-            let lvl = 0;
-            if (count >= 4) lvl = 4;
-            else if (count === 3) lvl = 3;
-            else if (count === 2) lvl = 2;
-            else if (count === 1) lvl = 1;
+    const graphContainer = document.createElement('div');
+    graphContainer.className = 'gh-graph-wrap';
 
-            cell.className = 'cell l' + lvl;
-            
-            cell.addEventListener('mouseenter', (ev) => {
-              if (!tooltip) return;
-              const rect = ev.target.getBoundingClientRect();
-              tooltip.textContent = `${m} ${dayNum} — ${lvl === 0 ? 'no activity logged' : count + ' lesson' + (count > 1 ? 's' : '') + ' completed'}`;
-              tooltip.style.left = (rect.left + rect.width / 2) + 'px';
-              tooltip.style.top = rect.top + 'px';
-              tooltip.classList.add('show');
-            });
-            cell.addEventListener('mouseleave', () => tooltip && tooltip.classList.remove('show'));
-          }
-          row.appendChild(cell);
+    // Day labels on left (Mon, Wed, Fri like GitHub)
+    const daysCol = document.createElement('div');
+    daysCol.className = 'gh-days-col';
+    const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+    dayLabels.forEach(lbl => {
+      const sp = document.createElement('span');
+      sp.className = 'gh-day-label';
+      sp.textContent = lbl;
+      daysCol.appendChild(sp);
+    });
+    graphContainer.appendChild(daysCol);
+
+    const graphBody = document.createElement('div');
+    graphBody.className = 'gh-graph-body';
+
+    const monthsRow = document.createElement('div');
+    monthsRow.className = 'gh-months-row';
+
+    const weeksGrid = document.createElement('div');
+    weeksGrid.className = 'gh-weeks-grid';
+
+    let lastMonth = -1;
+    let currDate = new Date(startDate);
+
+    for (let w = 0; w < numWeeks; w++) {
+      const weekCol = document.createElement('div');
+      weekCol.className = 'gh-week-col';
+
+      // Check first day of week for month label
+      const weekFirstMonth = currDate.getMonth();
+      const lastCol = monthColumns.length > 0 ? monthColumns[monthColumns.length - 1].col : -5;
+      if (weekFirstMonth !== lastMonth && (w - lastCol >= 3)) {
+        monthColumns.push({ col: w, name: monthNames[weekFirstMonth] });
+        lastMonth = weekFirstMonth;
+      }
+
+      for (let d = 0; d < 7; d++) {
+        const cell = document.createElement('div');
+        const isFuture = currDate > today;
+
+        if (isFuture) {
+          cell.className = 'gh-cell future';
+          cell.style.visibility = 'hidden';
+        } else {
+          const y = currDate.getFullYear();
+          const m = String(currDate.getMonth() + 1).padStart(2, '0');
+          const dayNum = String(currDate.getDate()).padStart(2, '0');
+          const dateKey = `${y}-${m}-${dayNum}`;
+          const dateDisplay = currDate.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+
+          const count = activityMap[dateKey] || 0;
+          let lvl = 0;
+          if (count >= 5) lvl = 4;
+          else if (count >= 3) lvl = 3;
+          else if (count >= 2) lvl = 2;
+          else if (count >= 1) lvl = 1;
+
+          cell.className = `gh-cell l${lvl}`;
+          cell.dataset.date = dateKey;
+          cell.dataset.count = count;
+
+          cell.addEventListener('mouseenter', (ev) => {
+            if (!tooltip) return;
+            const rect = ev.target.getBoundingClientRect();
+            const text = count === 0
+              ? `No activity on ${dateDisplay}`
+              : `${count} lesson${count === 1 ? '' : 's'} on ${dateDisplay}`;
+            tooltip.textContent = text;
+            tooltip.style.left = (rect.left + rect.width / 2) + 'px';
+            tooltip.style.top = rect.top + 'px';
+            tooltip.classList.add('show');
+          });
+
+          cell.addEventListener('mouseleave', () => {
+            if (tooltip) tooltip.classList.remove('show');
+          });
         }
-        col.appendChild(row);
+
+        weekCol.appendChild(cell);
+        currDate.setDate(currDate.getDate() + 1);
       }
-      wrap.appendChild(col);
+
+      weeksGrid.appendChild(weekCol);
+    }
+
+    monthColumns.forEach(mc => {
+      const lbl = document.createElement('span');
+      lbl.className = 'gh-month-label';
+      lbl.textContent = mc.name;
+      lbl.style.gridColumnStart = String(mc.col + 1);
+      monthsRow.appendChild(lbl);
     });
+
+    graphBody.appendChild(monthsRow);
+    graphBody.appendChild(weeksGrid);
+    graphContainer.appendChild(graphBody);
+    wrap.appendChild(graphContainer);
   }
 
   // Interactive Weekly Streak Days (Mon - Sun Check-in)

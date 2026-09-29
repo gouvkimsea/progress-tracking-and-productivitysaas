@@ -753,50 +753,135 @@ button, input, select, textarea {
   width: 100%;
 }
 
-.heatmap-months {
+.gh-graph-wrap {
   display: flex;
-  gap: 12px;
+  align-items: flex-start;
   min-width: max-content;
-  margin-bottom: 6px;
+  padding: 4px 2px;
 }
 
-.month-col {
+.gh-days-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 20px;
+  margin-right: 6px;
+  user-select: none;
+}
+
+.gh-day-label {
+  height: 10px;
+  line-height: 10px;
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: right;
+  width: 22px;
+}
+
+.gh-graph-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.gh-months-row {
+  display: grid;
+  grid-template-columns: repeat(53, 10px);
+  gap: 3px;
+  height: 15px;
+  margin-bottom: 5px;
+  user-select: none;
+}
+
+.gh-month-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.gh-weeks-grid {
+  display: grid;
+  grid-template-columns: repeat(53, 10px);
+  gap: 3px;
+}
+
+.gh-week-col {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.month-label {
+/* GitHub Commit Squares (Light & Dark) */
+.gh-cell {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: #ebedf0;
+  outline: 1px solid rgba(27, 31, 35, 0.06);
+  outline-offset: -1px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.gh-cell:hover {
+  outline: 1px solid var(--text-primary);
+  transform: scale(1.25);
+  z-index: 10;
+}
+
+.gh-cell.l0 { background: #ebedf0; }
+.gh-cell.l1 { background: #9be9a8; outline: none; }
+.gh-cell.l2 { background: #40c463; outline: none; }
+.gh-cell.l3 { background: #30a14e; outline: none; }
+.gh-cell.l4 { background: #216e39; outline: none; }
+
+[data-theme="dark"] .gh-cell {
+  background: #161b22;
+  outline: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .gh-cell.l0 { background: #161b22; }
+[data-theme="dark"] .gh-cell.l1 { background: #0e4429; outline: none; }
+[data-theme="dark"] .gh-cell.l2 { background: #006d32; outline: none; }
+[data-theme="dark"] .gh-cell.l3 { background: #26a641; outline: none; }
+[data-theme="dark"] .gh-cell.l4 { background: #39d353; outline: none; }
+
+/* GitHub Legend */
+.gh-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   color: var(--text-muted);
-  font-weight: 600;
-  margin-bottom: 4px;
-  height: 14px;
+  user-select: none;
+  margin-left: auto;
 }
 
-.week-row {
-  display: flex;
-  gap: 3px;
-}
-
-.cell {
-  width: 14px;
-  height: 14px;
+.gh-legend-cell {
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
-  background: var(--bg-subtle);
-  cursor: pointer;
-  transition: opacity 0.1s ease;
+  display: inline-block;
 }
 
-.cell.l0 { background: var(--bg-subtle); }
-.cell.l1 { background: var(--brand-primary); opacity: 0.35; }
-.cell.l2 { background: var(--brand-primary); opacity: 0.60; }
-.cell.l3 { background: var(--brand-primary); opacity: 0.85; }
-.cell.l4 { background: var(--brand-primary); opacity: 1; }
+.gh-legend-cell.l0 { background: #ebedf0; outline: 1px solid rgba(27, 31, 35, 0.06); outline-offset: -1px; }
+.gh-legend-cell.l1 { background: #9be9a8; }
+.gh-legend-cell.l2 { background: #40c463; }
+.gh-legend-cell.l3 { background: #30a14e; }
+.gh-legend-cell.l4 { background: #216e39; }
+
+[data-theme="dark"] .gh-legend-cell.l0 { background: #161b22; outline: 1px solid rgba(255, 255, 255, 0.05); }
+[data-theme="dark"] .gh-legend-cell.l1 { background: #0e4429; }
+[data-theme="dark"] .gh-legend-cell.l2 { background: #006d32; }
+[data-theme="dark"] .gh-legend-cell.l3 { background: #26a641; }
+[data-theme="dark"] .gh-legend-cell.l4 { background: #39d353; }
 
 .timeline-foot {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--border-base);
