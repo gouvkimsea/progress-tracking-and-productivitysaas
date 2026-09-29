@@ -194,7 +194,7 @@ include __DIR__ . '/includes/head.php';
   <div class="modal-card">
     <div class="modal-header">
       <h3 class="modal-title">Schedule Task for <span id="calTaskDateLabel" style="color:var(--purple);"></span></h3>
-      <button class="modal-close-btn" onclick="document.getElementById('calTaskModal').classList.remove('active')">&times;</button>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('calTaskModal').classList.remove('active')">&times;</button>
     </div>
     <form id="calTaskForm" onsubmit="handleCalTaskSubmit(event)">
       <input type="hidden" id="calTaskDate" />
@@ -238,6 +238,12 @@ window.openCalendarDateModal = function(dateStr) {
 
 window.handleCalTaskSubmit = async function(e) {
   e.preventDefault();
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Scheduling...';
+  }
+
   const dateStr = document.getElementById('calTaskDate').value;
   const payload = {
     action: 'create',
@@ -267,6 +273,11 @@ window.handleCalTaskSubmit = async function(e) {
     }
   } catch (err) {
     console.error(err);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Schedule Task';
+    }
   }
 };
 </script>

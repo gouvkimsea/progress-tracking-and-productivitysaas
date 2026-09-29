@@ -142,7 +142,7 @@ include __DIR__ . '/includes/head.php';
         ?>
           <div class="project-item-row" data-name="<?= strtolower(htmlspecialchars($c['name'])); ?>" data-progress="<?= (int)$c['progress_pct']; ?>" data-status="<?= $statusLabel; ?>" data-id="<?= $c['id']; ?>">
             <div class="project-left-col">
-              <button class="star-btn <?= ($c['is_starred'] ?? 0) ? 'starred' : ''; ?>" title="Star Project" onclick="toggleProjFavorite(<?= $c['id']; ?>, this)"><?= ($c['is_starred'] ?? 0) ? '★' : '☆'; ?></button>
+              <button class="star-btn <?= ($c['is_starred'] ?? 0) ? 'starred' : ''; ?>" title="Star Project" aria-label="Star Project" onclick="toggleProjFavorite(<?= $c['id']; ?>, this)"><?= ($c['is_starred'] ?? 0) ? '★' : '☆'; ?></button>
               <div>
                 <h3 class="project-title-name" style="cursor:pointer;" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)"><?= htmlspecialchars($c['name']); ?></h3>
                 <span class="project-sub-date">Category: <?= htmlspecialchars($c['category']); ?> · Progress: <?= (int)$c['progress_pct']; ?>%</span>
@@ -154,11 +154,11 @@ include __DIR__ . '/includes/head.php';
                 <span class="status-txt"><?= $statusLabel; ?></span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
               </button>
-              <button class="action-icon-btn" title="Project Details" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)">
+              <button class="action-icon-btn" title="Project Details" aria-label="Project Details" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
               </button>
               <div style="position:relative; display:inline-block;">
-                <button class="action-icon-btn btn-proj-opts" title="Options" onclick="toggleProjectOptions(event, <?= $c['id']; ?>, '<?= addslashes($c['name']); ?>')">
+                <button class="action-icon-btn btn-proj-opts" title="Options" aria-label="Project Options" onclick="toggleProjectOptions(event, <?= $c['id']; ?>, '<?= addslashes($c['name']); ?>')">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
                 </button>
               </div>
@@ -176,7 +176,7 @@ include __DIR__ . '/includes/head.php';
   <div class="modal-card">
     <div class="modal-header">
       <h3 class="modal-title" id="infoModalTitle">Project Details</h3>
-      <button class="modal-close-btn" onclick="document.getElementById('projectInfoModal').classList.remove('active')">&times;</button>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('projectInfoModal').classList.remove('active')">&times;</button>
     </div>
     <div class="modal-body">
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">

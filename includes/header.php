@@ -21,7 +21,7 @@
     </button>
 
     <!-- Command Palette Shortcut Button -->
-    <button class="btn-secondary" id="cmdPaletteTriggerBtn" title="Press Ctrl+K or Cmd+K" type="button" style="padding:6px 10px; font-size:12.5px;">
+    <button class="btn-secondary" id="cmdPaletteTriggerBtn" title="Press Ctrl+K or Cmd+K" type="button" aria-label="Open Command Palette" style="padding:6px 10px; font-size:12.5px;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <kbd style="padding:1px 5px; font-size:10px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-xs); font-family:inherit; color:var(--text-secondary);">⌘K</kbd>
     </button>
@@ -63,7 +63,7 @@
       </a>
     </div>
 
-    <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn">
+    <button class="icon-btn mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation menu" title="Toggle Navigation">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
     </button>
   </div>

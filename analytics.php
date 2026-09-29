@@ -98,7 +98,7 @@ include __DIR__ . '/includes/head.php';
         <svg class="timelog-title-ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         <h2 class="timelog-title">My time log</h2>
       </div>
-      <button class="close-icon-btn" title="Close" onclick="window.location.href='index.php';">&times;</button>
+      <button class="close-icon-btn" title="Close" aria-label="Close" onclick="window.location.href='index.php';">&times;</button>
     </div>
 
     <!-- Toolbar Info Bar -->

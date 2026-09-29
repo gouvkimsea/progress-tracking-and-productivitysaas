@@ -368,7 +368,7 @@ include __DIR__ . '/includes/head.php';
   <div class="modal-card">
     <div class="modal-header">
       <h3 class="modal-title">Create Flashcard</h3>
-      <button class="modal-close-btn" onclick="document.getElementById('createCardModal').classList.remove('active')">&times;</button>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('createCardModal').classList.remove('active')">&times;</button>
     </div>
     <form id="createCardForm" onsubmit="submitFlashcard(event)">
       <div class="modal-body">

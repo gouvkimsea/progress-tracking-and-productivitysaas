@@ -123,7 +123,7 @@ include __DIR__ . '/includes/head.php';
   <div class="modal-card">
     <div class="modal-header">
       <h3 class="modal-title">Add Task (<span id="kanbanColTitle">Open</span>)</h3>
-      <button class="modal-close-btn" onclick="document.getElementById('kanbanAddModal').classList.remove('active')">&times;</button>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('kanbanAddModal').classList.remove('active')">&times;</button>
     </div>
     <form id="kanbanAddTaskForm" onsubmit="handleKanbanAddTask(event)">
       <input type="hidden" id="kanbanTaskStatus" value="Open" />
@@ -268,6 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.handleKanbanAddTask = async function(e) {
     e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Adding...';
+    }
+
     const payload = {
       action: 'create',
       task_name: document.getElementById('kanbanTaskName').value.trim(),
@@ -296,6 +302,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Add Task';
+      }
     }
   };
 });

@@ -715,68 +715,6 @@ button, input, select, textarea {
   color: var(--text-primary);
 }
 
-.filter-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-base);
-  background: var(--bg-surface);
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.12s ease;
-}
-
-.filter-btn:hover {
-  background: var(--bg-subtle);
-  color: var(--text-primary);
-}
-
-.filter-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-base);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-md);
-  padding: 4px;
-  width: 170px;
-  display: none;
-  z-index: 50;
-}
-
-.filter-menu.open {
-  display: block;
-}
-
-.filter-menu button {
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 7px 10px;
-  border-radius: var(--radius-xs);
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.filter-menu button:hover {
-  background: var(--bg-subtle);
-  color: var(--text-primary);
-}
-
-.filter-menu button.sel {
-  color: var(--brand-primary);
-  font-weight: 600;
-  background: var(--brand-subtle);
-}
-
 .heatmap-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -913,20 +851,6 @@ button, input, select, textarea {
 .card-title .ic svg {
   width: 15px;
   height: 15px;
-}
-
-.kebab {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: var(--radius-xs);
-}
-
-.kebab:hover {
-  background: var(--bg-subtle);
-  color: var(--text-primary);
 }
 
 .streak-big {
@@ -1924,8 +1848,7 @@ button, input, select, textarea {
   #notifBellBtn,
   .modal-close-btn,
   .btn-step,
-  .icon-btn,
-  .kebab {
+  .icon-btn {
     min-width: 38px;
     min-height: 38px;
     display: inline-flex;

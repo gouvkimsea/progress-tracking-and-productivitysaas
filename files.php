@@ -92,7 +92,7 @@ include __DIR__ . '/includes/head.php';
           <div class="file-card" id="fileCard-<?= $f['id']; ?>">
             <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
               <div class="file-icon"><?= getFileIcon($f['file_name']); ?></div>
-              <button type="button" title="Delete File" onclick="deleteFile(<?= $f['id']; ?>)" style="background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:2px 6px; border-radius:4px;">✕</button>
+              <button type="button" title="Delete File" aria-label="Delete File" onclick="deleteFile(<?= $f['id']; ?>)" style="background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:2px 6px; border-radius:4px;">✕</button>
             </div>
             <h4 class="file-name" title="<?= htmlspecialchars($f['file_name']); ?>" style="margin:6px 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;"><?= htmlspecialchars($f['file_name']); ?></h4>
             <span class="file-size" style="color:var(--muted); font-size:11px;"><?= $sizeKb; ?> KB • <?= $uploadDate; ?></span>
@@ -138,9 +138,12 @@ async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
 
+  const fileInput = document.getElementById('fileUploadInput');
+  if (fileInput) fileInput.disabled = true;
+
   const dropzoneH3 = dropzone ? dropzone.querySelector('h3') : null;
   const originalH3 = dropzoneH3 ? dropzoneH3.textContent : '';
-  if (dropzoneH3) dropzoneH3.textContent = '⏳ Uploading and encrypting file...';
+  if (dropzoneH3) dropzoneH3.textContent = 'Uploading file...';
 
   try {
     const res = await secureFetch('api/files.php', {
@@ -161,6 +164,10 @@ async function uploadFile(file) {
     alert('Upload failed. Check your file format and try again.');
   } finally {
     if (dropzoneH3) dropzoneH3.textContent = originalH3;
+    if (fileInput) {
+      fileInput.disabled = false;
+      fileInput.value = '';
+    }
   }
 }
 

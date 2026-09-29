@@ -137,7 +137,7 @@ include __DIR__ . '/includes/head.php';
   <div class="modal-card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
       <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--ink);">Create Objective</h3>
-      <button type="button" onclick="closeGoalModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted);">&times;</button>
+      <button type="button" aria-label="Close modal" onclick="closeGoalModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted);">&times;</button>
     </div>
     
     <form id="goalForm" onsubmit="handleCreateGoal(event)">
@@ -205,6 +205,12 @@ function closeGoalModal() {
 
 async function handleCreateGoal(e) {
   e.preventDefault();
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating...';
+  }
+
   const payload = {
     action: 'create',
     title: document.getElementById('goalTitle').value.trim(),
@@ -231,6 +237,11 @@ async function handleCreateGoal(e) {
     }
   } catch (err) {
     console.error(err);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create Objective';
+    }
   }
 }
 

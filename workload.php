@@ -210,7 +210,7 @@ include __DIR__ . '/includes/head.php';
         <svg class="workload-title-ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         <h2 class="workload-title">Workload</h2>
       </div>
-      <button class="close-icon-btn" title="Close" onclick="window.location.href='index.php';">&times;</button>
+      <button class="close-icon-btn" title="Close" aria-label="Close" onclick="window.location.href='index.php';">&times;</button>
     </div>
 
     <!-- Toolbar Controls Bar -->

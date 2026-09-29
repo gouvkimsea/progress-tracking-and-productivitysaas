@@ -155,7 +155,7 @@ include __DIR__ . '/includes/head.php';
         <svg class="tasks-header-ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
         <h2 class="my-tasks-title">My tasks</h2>
       </div>
-      <button class="close-icon-btn" title="Close" onclick="window.location.href='index.php';">&times;</button>
+      <button class="close-icon-btn" title="Close" aria-label="Close" onclick="window.location.href='index.php';">&times;</button>
     </div>
 
     <!-- Tab Strip -->
@@ -352,7 +352,7 @@ include __DIR__ . '/includes/head.php';
   <div class="modal-card">
     <div class="modal-header">
       <h3 class="modal-title">Add Task</h3>
-      <button class="modal-close-btn" id="btnCloseAddTaskModal">&times;</button>
+      <button class="modal-close-btn" id="btnCloseAddTaskModal" aria-label="Close modal">&times;</button>
     </div>
     <form id="addTaskForm">
       <div class="modal-body">
@@ -403,7 +403,7 @@ include __DIR__ . '/includes/head.php';
   <div class="modal-card">
     <div class="modal-header">
       <h3 class="modal-title">Customize Table Columns</h3>
-      <button class="modal-close-btn" onclick="document.getElementById('customFieldsModal').classList.remove('active')">&times;</button>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('customFieldsModal').classList.remove('active')">&times;</button>
     </div>
     <div class="modal-body">
       <p style="font-size:13px; color:var(--text-secondary); margin-top:0;">Toggle visibility of columns in your task table:</p>
@@ -436,7 +436,7 @@ include __DIR__ . '/includes/head.php';
   <div class="modal-card">
     <div class="modal-header">
       <h3 class="modal-title">Create Group Assignment</h3>
-      <button class="modal-close-btn" onclick="document.getElementById('createGroupModal').classList.remove('active')">&times;</button>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('createGroupModal').classList.remove('active')">&times;</button>
     </div>
     <form id="createGroupForm" onsubmit="submitGroupAssignment(event)">
       <div class="modal-body">
@@ -617,6 +617,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (form && modal) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const btnSubmit = document.getElementById('btnSubmitAddTask');
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Adding...';
+      }
+
       const payload = {
         action: 'create',
         task_name: document.getElementById('taskNameInput').value.trim(),
@@ -645,6 +651,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch (err) {
         console.error(err);
+      } finally {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = 'Add Task';
+        }
       }
     });
   }

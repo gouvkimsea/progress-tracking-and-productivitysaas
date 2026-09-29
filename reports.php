@@ -119,7 +119,7 @@ include __DIR__ . '/includes/head.php';
         <svg class="reports-title-ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="18" x2="9" y2="15"/><line x1="15" y1="18" x2="15" y2="9"/></svg>
         <h2 class="reports-title">Reports</h2>
       </div>
-      <button class="close-icon-btn" title="Close" onclick="window.location.href='index.php';">&times;</button>
+      <button class="close-icon-btn" title="Close" aria-label="Close" onclick="window.location.href='index.php';">&times;</button>
     </div>
 
     <!-- Pill Tabs -->
