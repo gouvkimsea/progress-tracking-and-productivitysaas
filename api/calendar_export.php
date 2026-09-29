@@ -2,13 +2,25 @@
 require_once __DIR__ . '/../config/db.php';
 startSecureSession();
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    die('Unauthorized');
+$db = getDbConnection();
+$userId = null;
+$userName = 'Mindrift Tasks';
+
+if (isset($_SESSION['user_id'])) {
+    $userId = (int)$_SESSION['user_id'];
+    $userName = ($_SESSION['user_name'] ?? 'Mindrift') . ' Tasks';
+} elseif (!empty($_GET['token'])) {
+    $tokenUser = getUserByScheduleToken($db, trim($_GET['token']));
+    if ($tokenUser) {
+        $userId = (int)$tokenUser['id'];
+        $userName = ($tokenUser['name'] ?? 'Mindrift') . ' Tasks';
+    }
 }
 
-$db = getDbConnection();
-$userId = (int)$_SESSION['user_id'];
+if (!$userId) {
+    http_response_code(401);
+    die('Unauthorized: A valid login session or calendar share token is required.');
+}
 
 // Fetch all active tasks with dates
 $stmt = $db->prepare("SELECT * FROM tasks WHERE user_id = :uid AND (deleted_at IS NULL) ORDER BY id ASC");
@@ -40,7 +52,7 @@ $lines = [
     'PRODID:-//Mindrift//Mindrift Productivity Tasks//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Mindrift Tasks',
+    'X-WR-CALNAME:' . escapeIcsText($userName),
     'X-WR-TIMEZONE:UTC'
 ];
 

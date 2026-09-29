@@ -95,10 +95,16 @@ include __DIR__ . '/includes/head.php';
         <h2 class="cal-title">Calendar</h2>
         <p style="margin:4px 0 0; color:var(--muted); font-size:13px; font-weight:400;">View upcoming task deadlines and schedule items.</p>
       </div>
-      <a href="api/calendar_export.php" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-size:12.5px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Export iCalendar (.ics)
-      </a>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="btn btn-secondary" id="btnShareSchedule" onclick="openShareScheduleModal()" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share Schedule
+        </button>
+        <a href="api/calendar_export.php" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-size:12.5px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Export (.ics)
+        </a>
+      </div>
     </div>
 
     <div class="cal-grid">
@@ -280,6 +286,154 @@ window.handleCalTaskSubmit = async function(e) {
     }
   }
 };
+
+// Share Schedule Modal Functions
+window.openShareScheduleModal = async function() {
+  const modal = document.getElementById('shareScheduleModal');
+  if (!modal) return;
+  modal.classList.add('active');
+
+  const webInput = document.getElementById('shareWebUrlInput');
+  const feedInput = document.getElementById('shareFeedUrlInput');
+  const previewLink = document.getElementById('btnPreviewSharePage');
+
+  if (webInput) webInput.value = 'Loading link...';
+  if (feedInput) feedInput.value = 'Loading link...';
+
+  try {
+    const res = await secureFetch('api/schedule_share.php');
+    const data = await res.json();
+    if (data.success) {
+      if (webInput) webInput.value = data.share_url;
+      if (feedInput) feedInput.value = data.webcal_url;
+      if (previewLink) previewLink.href = data.share_url;
+    } else {
+      if (webInput) webInput.value = 'Failed to load link';
+    }
+  } catch (err) {
+    console.error(err);
+    if (webInput) webInput.value = 'Network error';
+  }
+};
+
+window.closeShareScheduleModal = function() {
+  const modal = document.getElementById('shareScheduleModal');
+  if (modal) modal.classList.remove('active');
+};
+
+window.copyShareUrl = function(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    if (typeof showToast === 'function') showToast('Copied to clipboard!');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = orig, 1800);
+    }
+  }).catch(() => {
+    document.execCommand('copy');
+    if (typeof showToast === 'function') showToast('Copied to clipboard!');
+  });
+};
+
+window.regenerateShareToken = async function() {
+  if (!confirm('Are you sure you want to reset your schedule share link? Anyone using the previous link will lose access.')) {
+    return;
+  }
+  const btn = document.getElementById('btnRegenerateShare');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Resetting...';
+  }
+
+  try {
+    const res = await secureFetch('api/schedule_share.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'regenerate' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const webInput = document.getElementById('shareWebUrlInput');
+      const feedInput = document.getElementById('shareFeedUrlInput');
+      const previewLink = document.getElementById('btnPreviewSharePage');
+      if (webInput) webInput.value = data.share_url;
+      if (feedInput) feedInput.value = data.webcal_url;
+      if (previewLink) previewLink.href = data.share_url;
+      if (typeof showToast === 'function') showToast(data.message);
+    } else {
+      alert(data.message || 'Failed to reset link');
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Reset Link';
+    }
+  }
+};
 </script>
+
+<!-- Modal: Share Schedule -->
+<div class="modal-overlay" id="shareScheduleModal">
+  <div class="modal-card" style="max-width:540px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Share Your Schedule</h3>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="closeShareScheduleModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="padding-top:14px;">
+      <p style="font-size:13px; color:var(--text-secondary); margin:0 0 16px;">
+        Share your upcoming deadlines and study schedule with teammates, clients, or friends.
+      </p>
+
+      <!-- Web Link Box -->
+      <div style="background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); padding:14px; margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+          Public Read-Only Web Link
+        </label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="shareWebUrlInput" readonly class="form-input" style="font-size:12.5px; background:var(--bg-surface);" />
+          <button type="button" class="btn-save" id="btnCopyWebUrl" onclick="copyShareUrl('shareWebUrlInput', 'btnCopyWebUrl')" style="white-space:nowrap; padding:6px 14px; font-size:12px;">Copy Link</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <span style="font-size:11.5px; color:var(--text-muted);">Viewable without logging into Mindrift.</span>
+          <a id="btnPreviewSharePage" href="#" target="_blank" style="font-size:11.5px; font-weight:600; color:var(--brand-primary); text-decoration:none;">Preview Page &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Calendar Subscription Feed -->
+      <div style="background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); padding:14px; margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+          Live Calendar Feed (Google / Apple / Outlook)
+        </label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="shareFeedUrlInput" readonly class="form-input" style="font-size:12.5px; background:var(--bg-surface);" />
+          <button type="button" class="btn-save" id="btnCopyFeedUrl" onclick="copyShareUrl('shareFeedUrlInput', 'btnCopyFeedUrl')" style="white-space:nowrap; padding:6px 14px; font-size:12px;">Copy Feed</button>
+        </div>
+        <span style="display:block; font-size:11.5px; color:var(--text-muted); margin-top:8px;">
+          Paste into your calendar software as a subscribed calendar URL. Updates stay in sync.
+        </span>
+      </div>
+
+      <!-- Privacy & Revocation Box -->
+      <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-base);">
+        <div>
+          <span style="display:block; font-size:12px; font-weight:600; color:var(--text-primary);">Revoke or Reset Links</span>
+          <span style="font-size:11px; color:var(--text-muted);">Resetting immediately disables all previous shared links.</span>
+        </div>
+        <button type="button" class="btn btn-secondary" id="btnRegenerateShare" onclick="regenerateShareToken()" style="font-size:11.5px; padding:6px 12px; color:#DC2626; border-color:rgba(220,38,38,0.3);">
+          Reset Link
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex; justify-content:flex-end;">
+      <button type="button" class="btn-save" onclick="closeShareScheduleModal()">Done</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

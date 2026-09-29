@@ -50,7 +50,7 @@
 ---
 
 ## 5. API Requests & Contracts
-All 24 API endpoints must strictly maintain their existing request parameters, response JSON schemas (`{ success: bool, message?: string, data?: any }`), and HTTP status codes (`200`, `400`, `401`, `404`, `405`, `500`):
+All 25 API endpoints must strictly maintain their existing request parameters, response JSON schemas (`{ success: bool, message?: string, data?: any }`), and HTTP status codes (`200`, `400`, `401`, `404`, `405`, `500`):
 
 | Endpoint | Method | Key Protections |
 | :--- | :--- | :--- |
@@ -78,6 +78,7 @@ All 24 API endpoints must strictly maintain their existing request parameters, r
 | `api/export.php` | GET | Comprehensive CSV / JSON data export stream generation |
 | `api/notifications.php`| GET, POST | In-app notification polling, mark-as-read updates |
 | `api/copilot.php` | POST | Assistant advice, study schedule recommendations, task breakdown |
+| `api/schedule_share.php`| GET, POST | Schedule token retrieval, live feed URL generation, token revocation |
 
 ---
 
@@ -111,6 +112,8 @@ All 24 API endpoints must strictly maintain their existing request parameters, r
 - **Public Auth Routes**:
   - `login.php`, `register.php`.
   - Authenticated visitors accessing login/register must automatically redirect to `index.php`.
+- **Public Share Route**:
+  - `schedule.php` (permits read-only tokenized viewing; rejects invalid or revoked tokens with 404).
 - **Fallback Route**:
   - `404.php` must render cleanly for invalid URL requests without exposing server paths.
 

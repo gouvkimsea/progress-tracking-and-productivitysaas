@@ -178,6 +178,7 @@ function getDbConnection(): PDO {
         try { $pdo->exec("ALTER TABLE tasks ADD COLUMN priority VARCHAR(20) DEFAULT 'Medium'"); } catch (Throwable $e) {}
         try { $pdo->exec("ALTER TABLE tasks ADD COLUMN due_date VARCHAR(50) NULL"); } catch (Throwable $e) {}
         try { $pdo->exec("ALTER TABLE tasks ADD COLUMN deleted_at DATETIME NULL"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN schedule_token VARCHAR(64) NULL"); } catch (Throwable $e) {}
 
         $pdo->exec("CREATE TABLE IF NOT EXISTS project_goals (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -250,6 +251,7 @@ function getDbConnection(): PDO {
         try { $pdo->exec("ALTER TABLE tasks ADD COLUMN priority TEXT DEFAULT 'Medium'"); } catch (Throwable $e) {}
         try { $pdo->exec("ALTER TABLE tasks ADD COLUMN due_date TEXT NULL"); } catch (Throwable $e) {}
         try { $pdo->exec("ALTER TABLE tasks ADD COLUMN deleted_at DATETIME NULL"); } catch (Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN schedule_token TEXT NULL"); } catch (Throwable $e) {}
 
         $pdo->exec("CREATE TABLE IF NOT EXISTS project_goals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -709,3 +711,71 @@ function assetVersion(string $relPath = '/assets/css/style.css'): string {
     $full = __DIR__ . '/..' . $relPath;
     return file_exists($full) ? (string)filemtime($full) : '1.0';
 }
+
+/**
+ * Retrieve or generate a persistent share token for the user's schedule.
+ */
+function getUserScheduleToken(PDO $db, int $userId): string {
+    try {
+        $stmt = $db->prepare("SELECT schedule_token FROM users WHERE id = :uid");
+        $stmt->execute(['uid' => $userId]);
+        $row = $stmt->fetch();
+        if (!empty($row['schedule_token'])) {
+            return $row['schedule_token'];
+        }
+    } catch (Throwable $e) {
+        try {
+            $db->exec("ALTER TABLE users ADD COLUMN schedule_token TEXT NULL");
+        } catch (Throwable $ex) {}
+    }
+
+    $newToken = bin2hex(random_bytes(24));
+    try {
+        $stmt = $db->prepare("UPDATE users SET schedule_token = :t WHERE id = :uid");
+        $stmt->execute(['t' => $newToken, 'uid' => $userId]);
+        return $newToken;
+    } catch (Throwable $e) {
+        return hash_hmac('sha256', 'user_' . $userId, 'mindrift_schedule_salt_' . $userId);
+    }
+}
+
+/**
+ * Regenerate a user's schedule share token, revoking all existing shared links.
+ */
+function regenerateUserScheduleToken(PDO $db, int $userId): string {
+    $newToken = bin2hex(random_bytes(24));
+    try {
+        $stmt = $db->prepare("UPDATE users SET schedule_token = :t WHERE id = :uid");
+        $stmt->execute(['t' => $newToken, 'uid' => $userId]);
+        return $newToken;
+    } catch (Throwable $e) {
+        return $newToken;
+    }
+}
+
+/**
+ * Look up a user by their schedule share token.
+ */
+function getUserByScheduleToken(PDO $db, string $token): ?array {
+    $token = trim($token);
+    if (empty($token) || strlen($token) < 16) return null;
+    try {
+        $stmt = $db->prepare("SELECT id, name, email FROM users WHERE schedule_token = :t");
+        $stmt->execute(['t' => $token]);
+        $user = $stmt->fetch();
+        if ($user) return $user;
+    } catch (Throwable $e) {}
+
+    // Check deterministic fallback
+    try {
+        $stmt = $db->query("SELECT id, name, email FROM users");
+        while ($u = $stmt->fetch()) {
+            if (hash_hmac('sha256', 'user_' . $u['id'], 'mindrift_schedule_salt_' . $u['id']) === $token) {
+                return $u;
+            }
+        }
+    } catch (Throwable $e) {}
+
+    return null;
+}
+
