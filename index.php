@@ -38,6 +38,11 @@ $stmtStreaks = $db->prepare("SELECT * FROM weekly_streaks WHERE user_id = :uid O
 $stmtStreaks->execute(['uid' => $userId]);
 $weeklyStreaks = $stmtStreaks->fetchAll();
 
+$completedStreakDays = 0;
+foreach ($weeklyStreaks as $ws) {
+    if (!empty($ws['is_completed'])) $completedStreakDays++;
+}
+
 $pageTitle = 'Mindrift — Dashboard';
 include __DIR__ . '/includes/head.php';
 ?>
@@ -148,7 +153,7 @@ include __DIR__ . '/includes/head.php';
       <div class="timeline-foot">
         <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Total hours: <b id="totalHoursFooter"><?= (int)$stats['study_hours']; ?>h</b></div>
         <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Lessons finished: <b id="totalLessonsFooter"><?= (int)$stats['weekly_lessons_current']; ?></b></div>
-        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> Quiz score: <b>100%</b></div>
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 1 0 10 10"/></svg> Overall progress: <b id="totalProgressFooter"><?= round($stats['course_progress_pct']); ?>%</b></div>
       </div>
     </section>
 
@@ -173,7 +178,7 @@ include __DIR__ . '/includes/head.php';
         <div class="week-days" id="weekDays"></div>
 
         <div class="streak-foot">
-          <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Current: <b id="streakCount">4</b>/7</div>
+          <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Current: <b id="streakCount"><?= (int)$completedStreakDays; ?></b>/7</div>
           <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Goal: <b>7 days</b></div>
         </div>
       </div>

@@ -123,18 +123,24 @@
 
     const totalLessonsFooter = document.getElementById('totalLessonsFooter');
     if (totalLessonsFooter) totalLessonsFooter.textContent = s.weekly_lessons_current || 0;
+
+    const totalProgressFooter = document.getElementById('totalProgressFooter');
+    if (totalProgressFooter) totalProgressFooter.textContent = `${Math.round(s.course_progress_pct || 0)}%`;
   }
 
-  // Render Dynamic Sparkbars based on Activity Data
+  // Render Dynamic Sparkbars based on Real Activity Data
   function renderSparkbars() {
     const activities = appState.activities || [];
-    let streakHeights = [20, 30, 25, 40, 35, 50, 45, 60, 55, 70, 65, 80];
-    let progressHeights = [15, 25, 35, 45, 55, 65, 75, 85, 90, 95, 100, 95];
-    let timeHeights = [30, 40, 50, 45, 60, 70, 65, 80, 85, 90, 75, 85];
+    let streakHeights = Array(12).fill(0);
+    let progressHeights = Array(12).fill(0);
+    let timeHeights = Array(12).fill(0);
 
     if (activities.length > 0) {
-      streakHeights = activities.slice(-12).map(a => Math.min(100, (a.lessons_completed || 1) * 25));
-      timeHeights = activities.slice(-12).map(a => Math.min(100, (a.study_minutes || 10) * 1.5));
+      const recent = activities.slice(-12);
+      streakHeights = recent.map(a => Math.min(100, Math.max(15, (a.lessons_completed || 0) * 25)));
+      timeHeights = recent.map(a => Math.min(100, Math.max(15, ((a.study_minutes || 0) / 60) * 40)));
+      const avgProg = appState.stats ? (parseFloat(appState.stats.course_progress_pct) || 0) : 0;
+      progressHeights = recent.map((a, idx) => Math.min(100, Math.max(10, Math.round(avgProg * ((idx + 1) / recent.length)))));
     }
 
     const barsData = {
@@ -150,14 +156,20 @@
       const isTime = id === 'bars-time';
       barsData[id].forEach((h, idx) => {
         const i = document.createElement('i');
-        i.style.height = Math.max(15, h) + '%';
-        let bg = 'var(--purple)';
-        if (id === 'bars-progress') bg = 'var(--orange)';
-        if (isTime) {
-          bg = idx % 3 === 0 ? 'var(--purple)' : (idx % 3 === 1 ? 'var(--orange)' : 'var(--blue)');
+        if (h <= 0) {
+          i.style.height = '4px';
+          i.style.background = 'var(--border-base)';
+          i.style.opacity = '0.5';
+        } else {
+          i.style.height = Math.max(10, h) + '%';
+          let bg = 'var(--brand-primary)';
+          if (id === 'bars-progress') bg = 'var(--status-high-border)';
+          if (isTime) {
+            bg = idx % 3 === 0 ? 'var(--brand-primary)' : (idx % 3 === 1 ? 'var(--status-high-border)' : 'var(--blue)');
+          }
+          i.style.background = bg;
+          i.style.opacity = (0.5 + (h / 200)).toString();
         }
-        i.style.background = bg;
-        i.style.opacity = (0.4 + (h / 180)).toString();
         el.appendChild(i);
       });
     });
@@ -324,6 +336,10 @@
     lessonList.innerHTML = '';
 
     const coursesToRender = appState.courses || [];
+    if (coursesToRender.length === 0) {
+      lessonList.innerHTML = `<div style="text-align:center; padding:28px 16px; color:var(--text-muted); font-size:12.5px;"><div style="font-weight:600; color:var(--text-primary); margin-bottom:4px;">No courses active</div><a href="courses.php" style="color:var(--brand-primary); font-weight:600; text-decoration:none;">Create a project</a> to track learning progress.</div>`;
+      return;
+    }
     const R = 17, C = 2 * Math.PI * R;
 
     coursesToRender.forEach(c => {
@@ -405,8 +421,12 @@
     if (!radarWrap) return;
 
     const skills = appState.skills || [];
+    if (!skills || skills.length === 0) {
+      radarWrap.innerHTML = `<div style="text-align:center; padding:36px 16px; color:var(--text-muted); font-size:12.5px;"><div style="font-weight:600; color:var(--text-primary); margin-bottom:4px;">No skills recorded</div>Complete courses to generate skill distribution.</div>`;
+      return;
+    }
     const size = 240, cx = size / 2, cy = size / 2 - 4, maxR = 78;
-    const n = skills.length || 5;
+    const n = skills.length;
     const angle = i => -Math.PI / 2 + i * (2 * Math.PI / n);
     const pt = (r, i) => [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))];
 

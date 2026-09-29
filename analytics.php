@@ -160,11 +160,11 @@ include __DIR__ . '/includes/head.php';
               $timeStr = ($h > 0 ? "{$h}h " : "") . "{$m}m";
             ?>
               <tr>
-                <td style="font-weight:600; color:var(--text-primary);">Task 1</td>
-                <td style="color:var(--text-secondary);">2dapp</td>
+                <td style="font-weight:600; color:var(--text-primary);"><?= htmlspecialchars($log['category'] ?? 'Study'); ?> Session</td>
+                <td style="color:var(--text-secondary);"><?= htmlspecialchars($log['category'] ?? 'General'); ?></td>
                 <td style="font-weight:700; color:var(--text-primary);"><?= htmlspecialchars($log['activity_date']); ?></td>
                 <td><b><?= $timeStr; ?></b></td>
-                <td style="color:var(--text-secondary);"><?= htmlspecialchars($log['category']); ?> study session completed</td>
+                <td style="color:var(--text-secondary);"><?= (int)($log['lessons_completed'] ?? 0); ?> lesson<?= ((int)($log['lessons_completed'] ?? 0) === 1 ? '' : 's'); ?> logged</td>
               </tr>
             <?php endforeach; ?>
           <?php endif; ?>

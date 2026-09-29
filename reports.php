@@ -13,8 +13,54 @@ $userId = (int)$_SESSION['user_id'];
 $stmtUser = $db->prepare("SELECT * FROM users WHERE id = :uid");
 $stmtUser->execute(['uid' => $userId]);
 $user = $stmtUser->fetch();
-?>
-<?php
+
+// Fetch Real Course / Project Metrics
+$stmtCourses = $db->prepare("SELECT * FROM courses WHERE user_id = :uid ORDER BY id ASC");
+$stmtCourses->execute(['uid' => $userId]);
+$courses = $stmtCourses->fetchAll();
+$totalCourses = count($courses);
+$completedCourses = 0;
+$inProgressCourses = 0;
+foreach ($courses as $c) {
+    if ((int)$c['progress_pct'] >= 100) $completedCourses++;
+    else $inProgressCourses++;
+}
+
+// Fetch Real Task Metrics by Status
+$stmtTasks = $db->prepare("SELECT status, COUNT(*) as cnt FROM tasks WHERE user_id = :uid AND deleted_at IS NULL GROUP BY status");
+$stmtTasks->execute(['uid' => $userId]);
+$rawStatus = $stmtTasks->fetchAll(PDO::FETCH_KEY_PAIR);
+$openTasks = (int)($rawStatus['Open'] ?? 0);
+$inProgressTasks = (int)($rawStatus['In Progress'] ?? 0);
+$reviewTasks = (int)($rawStatus['Review'] ?? 0);
+$doneTasks = (int)($rawStatus['Done'] ?? 0);
+$totalTasks = $openTasks + $inProgressTasks + $reviewTasks + $doneTasks;
+$taskCompletionPct = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
+
+// Fetch Real Time Log Metrics
+$stmtTotalTime = $db->prepare("SELECT SUM(study_minutes) as total_mins FROM daily_activities WHERE user_id = :uid");
+$stmtTotalTime->execute(['uid' => $userId]);
+$totalMins = (int)($stmtTotalTime->fetch()['total_mins'] ?? 0);
+$totalHours = floor($totalMins / 60);
+$remMins = $totalMins % 60;
+
+$weekStart = date('Y-m-d', strtotime('monday this week'));
+$stmtWeekTime = $db->prepare("SELECT SUM(study_minutes) as week_mins FROM daily_activities WHERE user_id = :uid AND activity_date >= :wstart");
+$stmtWeekTime->execute(['uid' => $userId, 'wstart' => $weekStart]);
+$weekMins = (int)($stmtWeekTime->fetch()['week_mins'] ?? 0);
+$weekHours = floor($weekMins / 60);
+$weekRemMins = $weekMins % 60;
+
+// Fetch Real Upcoming Deadlines (Milestones)
+$stmtUpcoming = $db->prepare("SELECT id, task_name, project_name, due_date, status, priority FROM tasks WHERE user_id = :uid AND deleted_at IS NULL AND due_date IS NOT NULL AND due_date != '' ORDER BY due_date ASC LIMIT 4");
+$stmtUpcoming->execute(['uid' => $userId]);
+$milestones = $stmtUpcoming->fetchAll();
+
+// Fetch Real Objectives & Deliverables from project_goals
+$stmtGoals = $db->prepare("SELECT * FROM project_goals WHERE user_id = :uid ORDER BY id DESC LIMIT 4");
+$stmtGoals->execute(['uid' => $userId]);
+$goals = $stmtGoals->fetchAll();
+
 $pageTitle = 'Mindrift — Reports';
 include __DIR__ . '/includes/head.php';
 ?>
@@ -38,7 +84,6 @@ include __DIR__ . '/includes/head.php';
     border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s ease;
   }
   .pill-btn.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm); font-weight: 600; }
-  .missing-feature-link { font-size: 13px; color: var(--text-secondary); text-decoration: none; font-weight: 500; }
 
   .subhead-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 14px; }
 
@@ -47,19 +92,17 @@ include __DIR__ . '/includes/head.php';
   .report-card { padding: 20px; background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
   .report-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .report-card-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary); }
-  .report-card-desc { font-size: 13px; color: var(--text-secondary); margin: 4px 0 18px; line-height: 1.45; }
+  .report-card-desc { font-size: 13px; color: var(--text-secondary); margin: 4px 0 16px; line-height: 1.45; }
 
-  /* Milestone Timeline SVG Graphic */
-  .milestone-timeline-wrap {
-    background: var(--bg-subtle); border-radius: var(--radius-sm); padding: 20px 16px; border: 1px solid var(--border-base); text-align: center;
+  /* Timeline list items */
+  .deadline-item {
+    display: flex; align-items: center; justify-content: space-between; padding: 10px 12px;
+    background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: var(--radius-sm); margin-bottom: 8px;
   }
-  
-  /* Donut Chart Visual */
-  .donut-chart-flex { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-  .donut-chart-svg { width: 170px; height: 170px; transform: rotate(-90deg); }
-  .legend-list { display: flex; flex-direction: column; gap: 10px; }
-  .legend-item { display: flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 500; color: var(--text-secondary); }
-  .legend-dot-sq { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .deadline-item:last-child { margin-bottom: 0; }
+  .deadline-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .deadline-project { font-size: 11.5px; color: var(--text-muted); }
+  .deadline-badge { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-xs); }
 </style>
 </head>
 <body>
@@ -84,8 +127,8 @@ include __DIR__ . '/includes/head.php';
       <div class="pill-group">
         <button type="button" class="pill-btn active" data-filter="all" onclick="filterReports('all', this)">All</button>
         <button type="button" class="pill-btn" data-filter="progress" onclick="filterReports('progress', this)">Progress</button>
-        <button type="button" class="pill-btn" data-filter="budget" onclick="filterReports('budget', this)">Budget</button>
-        <button type="button" class="pill-btn" data-filter="time" onclick="filterReports('time', this)">Time on tasks</button>
+        <button type="button" class="pill-btn" data-filter="goals" onclick="filterReports('goals', this)">Objectives</button>
+        <button type="button" class="pill-btn" data-filter="time" onclick="filterReports('time', this)">Time Logged</button>
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
         <a href="portfolio.php" class="btn-secondary" style="font-size:12.5px; padding:6px 12px; text-decoration:none;">
@@ -105,111 +148,130 @@ include __DIR__ . '/includes/head.php';
     <!-- Reports Grid Cards -->
     <div class="reports-cards-grid">
       
-      <!-- Card 1: Milestone timeline -->
-      <div class="report-card" data-cat="progress">
-        <h3 class="report-card-title">Milestone timeline</h3>
-        <p class="report-card-desc">View milestone dates and timeline progress.</p>
-
-        <div class="milestone-timeline-wrap">
-          <svg viewBox="0 0 400 160" width="100%" height="160">
-            <!-- Timeline Months Bar -->
-            <rect x="20" y="110" width="360" height="30" fill="#E5E7EB" rx="4"/>
-            <text x="50" y="130" font-size="13" font-weight="700" fill="#374151">Jan</text>
-            <text x="190" y="130" font-size="13" font-weight="700" fill="#374151">Apr</text>
-            <text x="330" y="130" font-size="13" font-weight="700" fill="#374151">Jul</text>
-
-            <!-- Today Vertical Line -->
-            <line x1="140" y1="50" x2="140" y2="140" stroke="#111827" stroke-width="2" stroke-dasharray="4,4"/>
-            <rect x="120" y="30" width="40" height="20" fill="#111827" rx="4"/>
-            <text x="140" y="44" font-size="10" font-weight="700" fill="#FFF" text-anchor="middle">Today</text>
-
-            <!-- Milestone 1 Pin (Green) -->
-            <line x1="90" y1="55" x2="90" y2="125" stroke="#84CC16" stroke-width="2"/>
-            <rect x="85" y="50" width="10" height="10" fill="#84CC16" transform="rotate(45 90 55)"/>
-            <circle cx="90" cy="125" r="5" fill="#84CC16"/>
-            <text x="90" y="38" font-size="11" font-weight="700" fill="#111827" text-anchor="middle">Milestone 1</text>
-            <text x="90" y="49" font-size="9" fill="#6B7280" text-anchor="middle">Feb 14, 2025</text>
-
-            <!-- Milestone 2 Pin (Blue) -->
-            <line x1="220" y1="55" x2="220" y2="125" stroke="#2563EB" stroke-width="2"/>
-            <rect x="215" y="50" width="10" height="10" fill="#2563EB" transform="rotate(45 220 55)"/>
-            <circle cx="220" cy="125" r="5" fill="#2563EB"/>
-            <text x="220" y="38" font-size="11" font-weight="700" fill="#111827" text-anchor="middle">Milestone 2</text>
-            <text x="220" y="49" font-size="9" fill="#6B7280" text-anchor="middle">Apr 02, 2025</text>
-
-            <!-- Milestone 3 Pin (Dark Blue Diamond) -->
-            <line x1="310" y1="75" x2="310" y2="125" stroke="#1D4ED8" stroke-width="2"/>
-            <polygon points="310,70 316,77 310,84 304,77" fill="#1D4ED8"/>
-            <circle cx="310" cy="125" r="5" fill="#1D4ED8"/>
-            <text x="310" y="58" font-size="11" font-weight="700" fill="#111827" text-anchor="middle">Milestone 3</text>
-            <text x="310" y="69" font-size="9" fill="#6B7280" text-anchor="middle">Jun 19, 2025</text>
-          </svg>
-        </div>
-      </div>
-
-      <!-- Card 2: Projects by status -->
+      <!-- Card 1: Upcoming Deadlines & Milestones -->
       <div class="report-card" data-cat="progress">
         <div class="report-card-head">
-          <h3 class="report-card-title">Projects by status</h3>
-          <a href="courses.php" style="color:#0E65C7; text-decoration:none; font-size:14px; font-weight:700;">+ New</a>
+          <h3 class="report-card-title">Upcoming Deadlines</h3>
+          <a href="calendar.php" style="color:var(--brand-primary); text-decoration:none; font-size:13px; font-weight:600;">Calendar →</a>
         </div>
-        <p class="report-card-desc">Project count categorized by status: on track, at risk, off track, or no status.</p>
+        <p class="report-card-desc">Scheduled task deadlines and upcoming deliverable dates.</p>
 
-        <div class="donut-chart-flex">
-          <svg viewBox="0 0 100 100" class="donut-chart-svg">
-            <circle cx="50" cy="50" r="32" fill="none" stroke="#9CA3AF" stroke-width="16" stroke-dasharray="105.5 100" stroke-dashoffset="0"/>
-            <circle cx="50" cy="50" r="32" fill="none" stroke="#84CC16" stroke-width="16" stroke-dasharray="65 100" stroke-dashoffset="-105.5"/>
-            <circle cx="50" cy="50" r="32" fill="none" stroke="#2563EB" stroke-width="16" stroke-dasharray="35 100" stroke-dashoffset="-170.5"/>
-            <circle cx="50" cy="50" r="32" fill="none" stroke="#FF9500" stroke-width="16" stroke-dasharray="45 100" stroke-dashoffset="-205.5"/>
-            <circle cx="50" cy="50" r="50" fill="none"/>
-            <text x="65" y="32" font-size="9" font-weight="800" fill="#FFF" transform="rotate(90 65 32)">42%</text>
-            <text x="35" y="32" font-size="9" font-weight="800" fill="#FFF" transform="rotate(90 35 32)">26%</text>
-            <text x="25" y="65" font-size="9" font-weight="800" fill="#FFF" transform="rotate(90 25 65)">14%</text>
-            <text x="60" y="72" font-size="9" font-weight="800" fill="#FFF" transform="rotate(90 60 72)">18%</text>
-          </svg>
-
-          <div class="legend-list">
-            <div class="legend-item"><span class="legend-dot-sq" style="background:#9CA3AF;"></span><span>No status</span></div>
-            <div class="legend-item"><span class="legend-dot-sq" style="background:#FF9500;"></span><span>On track</span></div>
-            <div class="legend-item"><span class="legend-dot-sq" style="background:#2563EB;"></span><span>At risk</span></div>
-            <div class="legend-item"><span class="legend-dot-sq" style="background:#84CC16;"></span><span>Off track</span></div>
+        <?php if (!empty($milestones)): ?>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <?php foreach ($milestones as $m): ?>
+              <div class="deadline-item">
+                <div>
+                  <div class="deadline-name"><?= htmlspecialchars($m['task_name']); ?></div>
+                  <div class="deadline-project"><?= htmlspecialchars($m['project_name'] ?? 'General'); ?></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="deadline-badge" style="background:var(--bg-surface); border:1px solid var(--border-base); color:var(--text-secondary);">
+                    <?= htmlspecialchars($m['due_date']); ?>
+                  </span>
+                </div>
+              </div>
+            <?php endforeach; ?>
           </div>
-        </div>
+        <?php else: ?>
+          <div style="text-align:center; padding:24px 16px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-base); color:var(--text-muted); font-size:13px;">
+            No upcoming deadlines scheduled. Set due dates on tasks to populate milestone reports.
+          </div>
+        <?php endif; ?>
       </div>
 
-      <!-- Card 3: Project Budget & Expenses -->
-      <div class="report-card" data-cat="budget">
+      <!-- Card 2: Task Status Distribution -->
+      <div class="report-card" data-cat="progress">
         <div class="report-card-head">
-          <h3 class="report-card-title">Project Budget Utilization</h3>
-          <span style="font-size:12.5px; font-weight:700; color:#10B981;">On Target</span>
+          <h3 class="report-card-title">Task Completion Progress</h3>
+          <a href="assignments.php" style="color:var(--brand-primary); text-decoration:none; font-size:13px; font-weight:600;">All Tasks →</a>
         </div>
-        <p class="report-card-desc">Track project expenditure against the allocated budget.</p>
-        <div style="margin-top:14px;">
-          <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:6px;">
-            <span style="color:var(--muted);">Utilized: $14,200</span>
-            <span style="color:var(--ink);">Budget: $20,000 (71%)</span>
+        <p class="report-card-desc">Breakdown of tasks across workflow states.</p>
+
+        <?php if ($totalTasks > 0): ?>
+          <div style="margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:6px;">
+              <span style="color:var(--text-secondary);">Completed: <?= $doneTasks; ?> of <?= $totalTasks; ?></span>
+              <span style="color:var(--text-primary); font-weight:700;"><?= $taskCompletionPct; ?>%</span>
+            </div>
+            <div style="width:100%; height:8px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-xs); overflow:hidden;">
+              <div style="height:100%; width:<?= $taskCompletionPct; ?>%; background:var(--brand-primary); border-radius:var(--radius-xs); transition:width 0.3s ease;"></div>
+            </div>
           </div>
-          <div style="width:100%; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
-            <div style="height:100%; width:71%; background:var(--green); border-radius:4px;"></div>
+
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+            <div style="padding:10px 8px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); text-align:center;">
+              <div style="font-size:16px; font-weight:700; color:var(--text-primary);"><?= $openTasks; ?></div>
+              <div style="font-size:10.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Open</div>
+            </div>
+            <div style="padding:10px 8px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); text-align:center;">
+              <div style="font-size:16px; font-weight:700; color:var(--brand-primary);"><?= $inProgressTasks; ?></div>
+              <div style="font-size:10.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">In Progress</div>
+            </div>
+            <div style="padding:10px 8px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); text-align:center;">
+              <div style="font-size:16px; font-weight:700; color:var(--status-high-text);"><?= $reviewTasks; ?></div>
+              <div style="font-size:10.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Review</div>
+            </div>
+            <div style="padding:10px 8px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); text-align:center;">
+              <div style="font-size:16px; font-weight:700; color:var(--status-done-text);"><?= $doneTasks; ?></div>
+              <div style="font-size:10.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Done</div>
+            </div>
           </div>
-        </div>
+        <?php else: ?>
+          <div style="text-align:center; padding:24px 16px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-base); color:var(--text-muted); font-size:13px;">
+            No tasks created yet. Add tasks to see status progress.
+          </div>
+        <?php endif; ?>
       </div>
 
-      <!-- Card 4: Time on Tasks Logged -->
+      <!-- Card 3: Objectives & Key Deliverables -->
+      <div class="report-card" data-cat="goals">
+        <div class="report-card-head">
+          <h3 class="report-card-title">Key Objectives (OKRs)</h3>
+          <a href="goals.php" style="color:var(--brand-primary); text-decoration:none; font-size:13px; font-weight:600;">Manage OKRs →</a>
+        </div>
+        <p class="report-card-desc">Progress toward key project milestones and targets.</p>
+
+        <?php if (!empty($goals)): ?>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <?php foreach ($goals as $g): 
+              $target = max(1, (int)$g['target_value']);
+              $curr = min($target, (int)$g['current_value']);
+              $pct = min(100, round(($curr / $target) * 100));
+            ?>
+              <div>
+                <div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; margin-bottom:4px;">
+                  <span style="color:var(--text-primary);"><?= htmlspecialchars($g['title']); ?></span>
+                  <span style="color:var(--text-secondary);"><?= $curr; ?> / <?= $target; ?> (<?= $pct; ?>%)</span>
+                </div>
+                <div style="width:100%; height:6px; background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-xs); overflow:hidden;">
+                  <div style="height:100%; width:<?= $pct; ?>%; background:var(--brand-primary); border-radius:var(--radius-xs);"></div>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php else: ?>
+          <div style="text-align:center; padding:24px 16px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-base); color:var(--text-muted); font-size:13px;">
+            No objectives created yet. Set targets in Objectives &amp; OKRs to track key results.
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <!-- Card 4: Time Logged on Tasks -->
       <div class="report-card" data-cat="time">
         <div class="report-card-head">
-          <h3 class="report-card-title">Time on Tasks Logged</h3>
-          <a href="analytics.php" style="color:var(--blue); text-decoration:none; font-size:13px; font-weight:600;">View Logs →</a>
+          <h3 class="report-card-title">Time Logged on Tasks</h3>
+          <a href="analytics.php" style="color:var(--brand-primary); text-decoration:none; font-size:13px; font-weight:600;">View Logs →</a>
         </div>
-        <p class="report-card-desc">Total hours logged on active tasks.</p>
-        <div style="display:flex; align-items:center; gap:16px; margin-top:14px;">
-          <div style="flex:1; background:var(--panel-bg); border:1px solid var(--border); padding:12px; border-radius:6px; text-align:center;">
-            <div style="font-size:22px; font-weight:700; color:var(--ink);">184h</div>
-            <div style="font-size:11px; font-weight:500; color:var(--muted);">Total Hours Logged</div>
+        <p class="report-card-desc">Total logged work and study hours from recorded activities.</p>
+        
+        <div style="display:flex; align-items:center; gap:14px; margin-top:6px;">
+          <div style="flex:1; background:var(--bg-subtle); border:1px solid var(--border-base); padding:16px; border-radius:var(--radius-sm); text-align:center;">
+            <div style="font-size:24px; font-weight:700; color:var(--text-primary);"><?= $totalHours; ?>h <?= $remMins; ?>m</div>
+            <div style="font-size:11.5px; font-weight:600; color:var(--text-secondary); margin-top:2px;">Total Time Logged</div>
           </div>
-          <div style="flex:1; background:var(--panel-bg); border:1px solid var(--border); padding:12px; border-radius:6px; text-align:center;">
-            <div style="font-size:22px; font-weight:700; color:var(--green);">32h</div>
-            <div style="font-size:11px; font-weight:500; color:var(--muted);">Logged This Week</div>
+          <div style="flex:1; background:var(--bg-subtle); border:1px solid var(--border-base); padding:16px; border-radius:var(--radius-sm); text-align:center;">
+            <div style="font-size:24px; font-weight:700; color:var(--brand-primary);"><?= $weekHours; ?>h <?= $weekRemMins; ?>m</div>
+            <div style="font-size:11.5px; font-weight:600; color:var(--text-secondary); margin-top:2px;">Logged This Week</div>
           </div>
         </div>
       </div>
@@ -218,7 +280,6 @@ include __DIR__ . '/includes/head.php';
 
   </main>
 </div>
-
 
 <script src="assets/js/app.js"></script>
 <script>

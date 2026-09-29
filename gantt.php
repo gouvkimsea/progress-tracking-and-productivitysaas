@@ -99,9 +99,13 @@ include __DIR__ . '/includes/head.php';
       <!-- Left Task List Sidebar -->
       <div class="gantt-sidebar-col">
         <div class="gantt-sidebar-head">Task Name</div>
-        <?php foreach ($tasks as $t): ?>
-          <div class="gantt-task-row"><?= htmlspecialchars($t['task_name']); ?></div>
-        <?php endforeach; ?>
+        <?php if (empty($tasks)): ?>
+          <div style="padding:24px 16px; font-size:12px; color:var(--text-muted); font-style:italic;">No tasks scheduled</div>
+        <?php else: ?>
+          <?php foreach ($tasks as $t): ?>
+            <div class="gantt-task-row"><?= htmlspecialchars($t['task_name']); ?></div>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </div>
 
       <!-- Right Timeline Grid -->
@@ -136,38 +140,44 @@ include __DIR__ . '/includes/head.php';
         </div>
 
         <!-- Task Bars Rows -->
-        <?php 
-        foreach ($tasks as $idx => $t): 
-          $sRaw = $t['start_date'] ?? null;
-          $dRaw = $t['due_date'] ?? null;
-
-          if (!empty($sRaw)) {
-              $taskStartTs = strtotime(str_replace('/', '-', $sRaw));
-              if (!$taskStartTs) $taskStartTs = $todayTs + ($idx * 86400);
-          } else {
-              $taskStartTs = $todayTs + ($idx * 86400);
-          }
-
-          if (!empty($dRaw)) {
-              $taskDueTs = strtotime(str_replace('/', '-', $dRaw));
-              if (!$taskDueTs || $taskDueTs <= $taskStartTs) $taskDueTs = $taskStartTs + (3 * 86400);
-          } else {
-              $taskDueTs = $taskStartTs + (3 * 86400);
-          }
-
-          $dayOffset = max(0, round(($taskStartTs - $timelineStartTs) / 86400));
-          $daySpan = max(1, round(($taskDueTs - $taskStartTs) / 86400));
-
-          $leftPx = $dayOffset * 44;
-          $widthPx = $daySpan * 44;
-        ?>
-          <div class="gantt-bar-row">
-            <div class="gantt-task-bar" data-task-id="<?= $t['id']; ?>" data-day-offset="<?= $dayOffset; ?>" data-duration-days="<?= $daySpan; ?>" style="left: <?= $leftPx; ?>px; width: <?= $widthPx; ?>px;" title="Drag bar to reschedule • Drag right edge to resize duration">
-              <span style="pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?= htmlspecialchars($t['task_name']); ?></span>
-              <div class="gantt-resize-handle" title="Drag to adjust duration"></div>
-            </div>
+        <?php if (empty($tasks)): ?>
+          <div style="padding:40px 20px; text-align:center; font-size:13px; color:var(--text-muted);">
+            No tasks scheduled on timeline. Create tasks in <a href="assignments.php" style="color:var(--brand-primary); font-weight:600;">Tasks</a> or <a href="kanban.php" style="color:var(--brand-primary); font-weight:600;">Kanban</a> to visualize your project schedule.
           </div>
-        <?php endforeach; ?>
+        <?php else: ?>
+          <?php 
+          foreach ($tasks as $idx => $t): 
+            $sRaw = $t['start_date'] ?? null;
+            $dRaw = $t['due_date'] ?? null;
+
+            if (!empty($sRaw)) {
+                $taskStartTs = strtotime(str_replace('/', '-', $sRaw));
+                if (!$taskStartTs) $taskStartTs = $todayTs + ($idx * 86400);
+            } else {
+                $taskStartTs = $todayTs + ($idx * 86400);
+            }
+
+            if (!empty($dRaw)) {
+                $taskDueTs = strtotime(str_replace('/', '-', $dRaw));
+                if (!$taskDueTs || $taskDueTs <= $taskStartTs) $taskDueTs = $taskStartTs + (3 * 86400);
+            } else {
+                $taskDueTs = $taskStartTs + (3 * 86400);
+            }
+
+            $dayOffset = max(0, round(($taskStartTs - $timelineStartTs) / 86400));
+            $daySpan = max(1, round(($taskDueTs - $taskStartTs) / 86400));
+
+            $leftPx = $dayOffset * 44;
+            $widthPx = $daySpan * 44;
+          ?>
+            <div class="gantt-bar-row">
+              <div class="gantt-task-bar" data-task-id="<?= $t['id']; ?>" data-day-offset="<?= $dayOffset; ?>" data-duration-days="<?= $daySpan; ?>" style="left: <?= $leftPx; ?>px; width: <?= $widthPx; ?>px;" title="Drag bar to reschedule • Drag right edge to resize duration">
+                <span style="pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?= htmlspecialchars($t['task_name']); ?></span>
+                <div class="gantt-resize-handle" title="Drag to adjust duration"></div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </div>
     </div>
 

@@ -51,6 +51,57 @@ try {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             fputcsv($output, sanitizeCsvRow($row));
         }
+    } elseif ($type === 'workload') {
+        fputcsv($output, ['Resource ID', 'Name', 'Email', 'Assigned Tasks Count', 'Total Hours Logged', 'Active Tasks']);
+        $stmtUsers = $db->query("SELECT id, name, email FROM users ORDER BY id ASC");
+        $users = $stmtUsers ? $stmtUsers->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        $stmtTasks = $db->query("SELECT id, user_id, task_name, assigned_to, status, time_log FROM tasks WHERE (deleted_at IS NULL)");
+        $allTasks = $stmtTasks ? $stmtTasks->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        foreach ($users as $u) {
+            $uTasks = [];
+            $totalHours = 0;
+            $userName = strtolower(trim($u['name'] ?? ''));
+            $userEmail = strtolower(trim($u['email'] ?? ''));
+            $firstName = explode(' ', $userName)[0];
+
+            foreach ($allTasks as $t) {
+                $assigned = strtolower(trim($t['assigned_to'] ?? ''));
+                if ($assigned === 'unassigned' || empty($assigned)) continue;
+
+                if ($assigned === $userName || $assigned === $userEmail || $assigned === $firstName || ((int)$t['user_id'] === (int)$u['id'] && in_array($assigned, ['me', 'myself', $firstName], true))) {
+                    $uTasks[] = $t['task_name'] . ' (' . ($t['status'] ?? 'Open') . ')';
+                    $totalHours += (int)($t['time_log'] ?? 0);
+                }
+            }
+
+            fputcsv($output, sanitizeCsvRow([
+                $u['id'],
+                $u['name'],
+                $u['email'],
+                count($uTasks),
+                $totalHours,
+                implode('; ', $uTasks)
+            ]));
+        }
+
+        // Unassigned Row
+        $unassigned = [];
+        foreach ($allTasks as $t) {
+            $assigned = strtolower(trim($t['assigned_to'] ?? ''));
+            if ($assigned === 'unassigned' || empty($assigned)) {
+                $unassigned[] = $t['task_name'] . ' (' . ($t['status'] ?? 'Open') . ')';
+            }
+        }
+        fputcsv($output, sanitizeCsvRow([
+            'N/A',
+            'Unassigned',
+            'N/A',
+            count($unassigned),
+            0,
+            implode('; ', $unassigned)
+        ]));
     } else {
         fputcsv($output, ['Type', 'Export Date']);
         fputcsv($output, [$type, date('Y-m-d H:i:s')]);

@@ -89,23 +89,27 @@ include __DIR__ . '/includes/head.php';
           </div>
 
           <div class="kanban-card-list">
-            <?php foreach ($colTasks as $t): ?>
-              <div class="kanban-card" draggable="true" data-task-id="<?= $t['id']; ?>">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-                  <div class="card-project-tag"><?= htmlspecialchars($t['project_name']); ?></div>
-                  <?= renderPriorityBadge($t['priority'] ?? 'Medium'); ?>
+            <?php if (empty($colTasks)): ?>
+              <div class="kanban-empty-hint" style="text-align:center; padding:32px 10px; color:var(--text-muted); font-size:12px; font-style:italic;">No tasks in <?= htmlspecialchars($colName); ?></div>
+            <?php else: ?>
+              <?php foreach ($colTasks as $t): ?>
+                <div class="kanban-card" draggable="true" data-task-id="<?= $t['id']; ?>">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                    <div class="card-project-tag"><?= htmlspecialchars($t['project_name']); ?></div>
+                    <?= renderPriorityBadge($t['priority'] ?? 'Medium'); ?>
+                  </div>
+                  <h4 class="card-task-title"><?= htmlspecialchars($t['task_name']); ?></h4>
+                  <div class="card-footer-flex">
+                    <span><?= htmlspecialchars($t['due_date'] ?? $t['start_date']); ?></span>
+                    <select class="move-status-select" onchange="moveKanbanTask(<?= $t['id']; ?>, this.value)">
+                      <?php foreach (['Open', 'In Progress', 'Review', 'Done'] as $opt): ?>
+                        <option value="<?= $opt; ?>" <?= ($opt === $colName) ? 'selected' : ''; ?>><?= $opt; ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
                 </div>
-                <h4 class="card-task-title"><?= htmlspecialchars($t['task_name']); ?></h4>
-                <div class="card-footer-flex">
-                  <span><?= htmlspecialchars($t['due_date'] ?? $t['start_date']); ?></span>
-                  <select class="move-status-select" onchange="moveKanbanTask(<?= $t['id']; ?>, this.value)">
-                    <?php foreach (['Open', 'In Progress', 'Review', 'Done'] as $opt): ?>
-                      <option value="<?= $opt; ?>" <?= ($opt === $colName) ? 'selected' : ''; ?>><?= $opt; ?></option>
-                    <?php endforeach; ?>
-                  </select>
-                </div>
-              </div>
-            <?php endforeach; ?>
+              <?php endforeach; ?>
+            <?php endif; ?>
           </div>
         </div>
       <?php endforeach; ?>
@@ -224,6 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sel) sel.value = newStatus;
 
       // Move element in DOM immediately
+      const hint = targetList.querySelector('.kanban-empty-hint');
+      if (hint) hint.remove();
       targetList.appendChild(draggedCard);
 
       // Recount column badges

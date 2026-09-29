@@ -33,6 +33,19 @@ $stmtLeaderboard = $db->query("
 $leaderboard = $stmtLeaderboard->fetchAll();
 $topUser = $leaderboard[0] ?? null;
 
+$totalMembers = count($leaderboard);
+$totalHoursAcrossCommunity = 0;
+$totalLessonsAcrossCommunity = 0;
+$myRank = 1;
+
+foreach ($leaderboard as $idx => $m) {
+    $totalHoursAcrossCommunity += (int)$m['study_hours'];
+    $totalLessonsAcrossCommunity += (int)$m['weekly_lessons_current'];
+    if ($m['id'] == $userId) {
+        $myRank = $idx + 1;
+    }
+}
+
 $pageTitle = 'Mindrift — Community & Leaderboards';
 include __DIR__ . '/includes/head.php';
 ?>
@@ -151,32 +164,30 @@ include __DIR__ . '/includes/head.php';
         ?>
       </div>
 
-      <!-- Study Groups -->
+      <!-- Community Overview Stats -->
       <div class="card card-block">
-        <h3 style="margin:0 0 16px; font-size:16.5px; font-weight:700;">Study Groups</h3>
+        <h3 style="margin:0 0 16px; font-size:16px; font-weight:700;">Community Summary</h3>
 
-        <div class="leader-item" style="padding:10px 0;">
-          <div>
-            <div style="font-size:14px; font-weight:700;">UI/UX Design Circle</div>
-            <div class="circle-count" style="font-size:12px; color:var(--muted);"><span class="cnt"><?= count($leaderboard); ?></span> members active</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="padding:12px 14px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-base);">
+            <div style="font-size:11.5px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Registered Members</div>
+            <div style="font-size:22px; font-weight:700; color:var(--text-primary); margin-top:2px;"><?= (int)$totalMembers; ?></div>
           </div>
-          <button type="button" class="btn-join" data-group="UI/UX Design Circle" onclick="toggleJoinGroup(this, 'UI/UX Design Circle')">Join</button>
-        </div>
 
-        <div class="leader-item" style="padding:10px 0;">
-          <div>
-            <div style="font-size:14px; font-weight:700;">Full-Stack JS Developers</div>
-            <div class="circle-count" style="font-size:12px; color:var(--muted);"><span class="cnt"><?= count($leaderboard); ?></span> members active</div>
+          <div style="padding:12px 14px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-base);">
+            <div style="font-size:11.5px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Total Community Study Time</div>
+            <div style="font-size:22px; font-weight:700; color:var(--brand-primary); margin-top:2px;"><?= (int)$totalHoursAcrossCommunity; ?>h</div>
           </div>
-          <button type="button" class="btn-join" data-group="Full-Stack JS Developers" onclick="toggleJoinGroup(this, 'Full-Stack JS Developers')">Join</button>
-        </div>
 
-        <div class="leader-item" style="padding:10px 0;">
-          <div>
-            <div style="font-size:14px; font-weight:700;">Data Science &amp; Machine Learning</div>
-            <div class="circle-count" style="font-size:12px; color:var(--muted);"><span class="cnt"><?= count($leaderboard); ?></span> members active</div>
+          <div style="padding:12px 14px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-base);">
+            <div style="font-size:11.5px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Lessons Finished</div>
+            <div style="font-size:22px; font-weight:700; color:var(--text-primary); margin-top:2px;"><?= (int)$totalLessonsAcrossCommunity; ?></div>
           </div>
-          <button type="button" class="btn-join" data-group="Data Science & Machine Learning" onclick="toggleJoinGroup(this, 'Data Science & Machine Learning')">Join</button>
+
+          <div style="padding:12px 14px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-base);">
+            <div style="font-size:11.5px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Your Standing</div>
+            <div style="font-size:18px; font-weight:700; color:var(--status-done-text); margin-top:2px;">#<?= (int)$myRank; ?> of <?= (int)$totalMembers; ?></div>
+          </div>
         </div>
       </div>
     </div>
@@ -184,47 +195,6 @@ include __DIR__ . '/includes/head.php';
   </main>
 </div>
 
-
 <script src="assets/js/app.js"></script>
-<script>
-window.toggleJoinGroup = function(btn, groupName) {
-  const isJoined = btn.classList.contains('joined');
-  const countSpan = btn.parentElement.querySelector('.circle-count .cnt');
-  let currentCnt = countSpan ? parseInt(countSpan.textContent, 10) : 1;
-
-  if (isJoined) {
-    btn.classList.remove('joined');
-    btn.textContent = 'Join';
-    btn.style.background = '';
-    btn.style.borderColor = '';
-    btn.style.color = '';
-    if (countSpan) countSpan.textContent = Math.max(0, currentCnt - 1);
-    localStorage.removeItem('joined_group_' + groupName);
-    if (typeof showToast === 'function') showToast(`Left ${groupName}`);
-  } else {
-    btn.classList.add('joined');
-    btn.textContent = 'Joined';
-    btn.style.background = '#10B981';
-    btn.style.borderColor = '#10B981';
-    btn.style.color = '#FFFFFF';
-    if (countSpan) countSpan.textContent = currentCnt + 1;
-    localStorage.setItem('joined_group_' + groupName, '1');
-    if (typeof showToast === 'function') showToast(`Joined ${groupName}`);
-  }
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.btn-join').forEach(btn => {
-    const gName = btn.getAttribute('data-group');
-    if (localStorage.getItem('joined_group_' + gName) === '1') {
-      btn.classList.add('joined');
-      btn.textContent = 'Joined';
-      btn.style.background = '#10B981';
-      btn.style.borderColor = '#10B981';
-      btn.style.color = '#FFFFFF';
-    }
-  });
-});
-</script>
 </body>
 </html>

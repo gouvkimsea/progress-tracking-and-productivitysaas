@@ -129,35 +129,43 @@ include __DIR__ . '/includes/head.php';
 
     <!-- Project List -->
     <div class="projects-list-wrap" id="projectListContainer">
-      <?php foreach ($courses as $c): 
-        $dateStr = date('d-m-Y');
-        $statusLabel = ($c['progress_pct'] > 0) ? (($c['progress_pct'] >= 100) ? 'Completed' : 'In progress') : 'No status';
-      ?>
-        <div class="project-item-row" data-name="<?= strtolower(htmlspecialchars($c['name'])); ?>" data-progress="<?= (int)$c['progress_pct']; ?>" data-status="<?= $statusLabel; ?>" data-id="<?= $c['id']; ?>">
-          <div class="project-left-col">
-            <button class="star-btn <?= ($c['is_starred'] ?? 0) ? 'starred' : ''; ?>" title="Star Project" onclick="toggleProjFavorite(<?= $c['id']; ?>, this)"><?= ($c['is_starred'] ?? 0) ? '★' : '☆'; ?></button>
-            <div>
-              <h3 class="project-title-name" style="cursor:pointer;" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)"><?= htmlspecialchars($c['name']); ?></h3>
-              <span class="project-sub-date">Category: <?= htmlspecialchars($c['category']); ?> · Progress: <?= (int)$c['progress_pct']; ?>%</span>
-            </div>
-          </div>
-
-          <div class="project-right-col">
-            <button class="status-select-btn" onclick="toggleProjStatus(<?= $c['id']; ?>, this)">
-              <span class="status-txt"><?= $statusLabel; ?></span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-            <button class="action-icon-btn" title="Project Details" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            </button>
-            <div style="position:relative; display:inline-block;">
-              <button class="action-icon-btn btn-proj-opts" title="Options" onclick="toggleProjectOptions(event, <?= $c['id']; ?>, '<?= addslashes($c['name']); ?>')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-              </button>
-            </div>
-          </div>
+      <?php if (empty($courses)): ?>
+        <div style="padding:40px 20px; text-align:center; color:var(--text-muted); background:var(--bg-surface);">
+          <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">No projects found</div>
+          <div style="font-size:12.5px; margin-bottom:14px;">Create your first project to start tracking milestones and progress.</div>
+          <button type="button" class="btn-outline-create" onclick="document.getElementById('btnOpenCreateProjFromHeader').click()" style="margin:0 auto; display:inline-flex;">+ New Project</button>
         </div>
-      <?php endforeach; ?>
+      <?php else: ?>
+        <?php foreach ($courses as $c): 
+          $dateStr = date('d-m-Y');
+          $statusLabel = ($c['progress_pct'] > 0) ? (($c['progress_pct'] >= 100) ? 'Completed' : 'In progress') : 'No status';
+        ?>
+          <div class="project-item-row" data-name="<?= strtolower(htmlspecialchars($c['name'])); ?>" data-progress="<?= (int)$c['progress_pct']; ?>" data-status="<?= $statusLabel; ?>" data-id="<?= $c['id']; ?>">
+            <div class="project-left-col">
+              <button class="star-btn <?= ($c['is_starred'] ?? 0) ? 'starred' : ''; ?>" title="Star Project" onclick="toggleProjFavorite(<?= $c['id']; ?>, this)"><?= ($c['is_starred'] ?? 0) ? '★' : '☆'; ?></button>
+              <div>
+                <h3 class="project-title-name" style="cursor:pointer;" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)"><?= htmlspecialchars($c['name']); ?></h3>
+                <span class="project-sub-date">Category: <?= htmlspecialchars($c['category']); ?> · Progress: <?= (int)$c['progress_pct']; ?>%</span>
+              </div>
+            </div>
+
+            <div class="project-right-col">
+              <button class="status-select-btn" onclick="toggleProjStatus(<?= $c['id']; ?>, this)">
+                <span class="status-txt"><?= $statusLabel; ?></span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <button class="action-icon-btn" title="Project Details" onclick="openProjectInfoModal(<?= htmlspecialchars(json_encode($c)); ?>)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </button>
+              <div style="position:relative; display:inline-block;">
+                <button class="action-icon-btn btn-proj-opts" title="Options" onclick="toggleProjectOptions(event, <?= $c['id']; ?>, '<?= addslashes($c['name']); ?>')">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
     </div>
 
   </main>

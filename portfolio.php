@@ -33,17 +33,7 @@ $courses = $stmtCourses->fetchAll();
 // Derive evaluated competencies from user's course progress
 $stmtSkills = $db->prepare("SELECT category as skill_name, ROUND(AVG(progress_pct)) as rating FROM courses WHERE user_id = :uid GROUP BY category ORDER BY rating DESC");
 $stmtSkills->execute(['uid' => $userId]);
-$skills = $stmtSkills->fetchAll();
-
-// Fallback if no courses yet
-if (empty($skills)) {
-    $skills = [
-        ['skill_name' => 'UI / UX Architecture', 'rating' => 95],
-        ['skill_name' => 'Full-Stack JavaScript', 'rating' => 88],
-        ['skill_name' => 'Data Structures & Algorithms', 'rating' => 82],
-        ['skill_name' => 'Systems Design & DevOps', 'rating' => 78]
-    ];
-}
+$skills = $stmtSkills->fetchAll() ?: [];
 
 $certId = 'MND-' . strtoupper(dechex($userId)) . '-' . date('Y') . '-' . substr(md5(($user['email'] ?? '') . $userId), 0, 6);
 $issuedDate = date('F j, Y');
@@ -433,8 +423,8 @@ include __DIR__ . '/includes/head.php';
     </table>
 
     <!-- Verified Competencies -->
+    <h3 style="font-size:15px; font-weight:700; color:var(--text-primary); margin:0 0 12px;">Skills Overview</h3>
     <?php if (!empty($skills)): ?>
-      <h3 style="font-size:15px; font-weight:700; color:var(--text-primary); margin:0 0 12px;">Skills Overview</h3>
       <div class="skills-strip">
         <?php foreach ($skills as $sk): ?>
           <div class="skill-badge">
@@ -443,6 +433,8 @@ include __DIR__ . '/includes/head.php';
           </div>
         <?php endforeach; ?>
       </div>
+    <?php else: ?>
+      <p style="font-size:13px; color:var(--text-secondary); margin:0 0 24px;">No skill ratings recorded yet. Complete course modules to build skill ratings.</p>
     <?php endif; ?>
 
     <!-- Official Seal & Certification Sign-Off -->
