@@ -47,11 +47,24 @@
         <kbd class="cmd-shortcut">iCal</kbd>
       </div>
 
+      <div class="cmd-item" onclick="location.href='journal.php?action=quiz'">
+        <div class="cmd-text">
+          <span class="cmd-title">Daily Reflection Quiz</span>
+          <span class="cmd-sub">Rate your day (1–5) and log accomplishments</span>
+        </div>
+        <kbd class="cmd-shortcut">Quiz</kbd>
+      </div>
+
       <!-- Navigation Group -->
       <div style="padding:10px 14px 4px; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; border-top:1px solid var(--border-base); margin-top:4px;">Navigation</div>
 
       <div class="cmd-item" onclick="location.href='index.php'">
         <div class="cmd-text"><span class="cmd-title">Dashboard</span><span class="cmd-sub">Overview and statistics</span></div>
+      </div>
+
+      <div class="cmd-item" onclick="location.href='journal.php'">
+        <div class="cmd-text"><span class="cmd-title">Daily Journal &amp; To-Do</span><span class="cmd-sub">Daily checklist &amp; 1–5 reflection quiz</span></div>
+        <kbd class="cmd-shortcut">J</kbd>
       </div>
 
       <div class="cmd-item" onclick="location.href='courses.php'">

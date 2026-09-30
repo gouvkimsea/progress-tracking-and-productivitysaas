@@ -7,14 +7,19 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     $method = $_SERVER['REQUEST_METHOD'];
 
     if ($method === 'GET') {
-        $stmt = $db->prepare("SELECT * FROM tasks WHERE user_id = :uid AND (deleted_at IS NULL) ORDER BY id DESC");
+        session_write_close();
+        $db = getDbConnection();
+
+        $stmt = $db->prepare("SELECT id, user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log, created_at 
+                              FROM tasks 
+                              WHERE user_id = :uid AND deleted_at IS NULL 
+                              ORDER BY id DESC");
         $stmt->execute(['uid' => $userId]);
-        $tasks = $stmt->fetchAll();
+        $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $columns = [
             'Open' => [],
@@ -34,11 +39,17 @@ try {
         sendJsonResponse(['success' => true, 'kanban' => $columns]);
     } elseif ($method === 'POST') {
         checkCsrfToken();
-        $rawInput = file_get_contents('php://input');
-        $data = json_decode($rawInput, true) ?? $_POST;
+        $data = getJsonRequestData();
+        session_write_close();
+        $db = getDbConnection();
         
         $taskId = (int)($data['task_id'] ?? 0);
-        $newStatus = trim($data['status'] ?? 'Open');
+        $newStatus = trim($data['status'] ?? '');
+        $validStatuses = ['Open', 'In Progress', 'Review', 'Done'];
+
+        if ($taskId <= 0 || !in_array($newStatus, $validStatuses, true)) {
+            sendJsonResponse(['success' => false, 'message' => 'Invalid task or status selection.'], 400);
+        }
 
         $stmt = $db->prepare("UPDATE tasks SET status = :status WHERE id = :id AND user_id = :uid");
         $stmt->execute(['status' => $newStatus, 'id' => $taskId, 'uid' => $userId]);
@@ -51,4 +62,3 @@ try {
     error_log('Kanban API error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred updating Kanban board.'], 500);
 }
-

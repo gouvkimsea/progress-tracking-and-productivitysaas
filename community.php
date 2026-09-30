@@ -14,7 +14,20 @@ $stmtUser = $db->prepare("SELECT * FROM users WHERE id = :uid");
 $stmtUser->execute(['uid' => $userId]);
 $user = $stmtUser->fetch();
 
-// Fetch ALL Registered Users from SQL Database ordered by progress & streak
+// 1. Fetch community-wide aggregates directly via SQL
+$stmtAgg = $db->query("
+    SELECT 
+        COUNT(*) AS total_members,
+        COALESCE(SUM(study_hours), 0) AS total_hours,
+        COALESCE(SUM(weekly_lessons_current), 0) AS total_lessons
+    FROM user_stats
+");
+$communityStats = $stmtAgg->fetch();
+$totalMembers = max(1, (int)($communityStats['total_members'] ?? 1));
+$totalHoursAcrossCommunity = (int)($communityStats['total_hours'] ?? 0);
+$totalLessonsAcrossCommunity = (int)($communityStats['total_lessons'] ?? 0);
+
+// 2. Fetch Top 100 Leaderboard Members (paginated for SaaS scalability)
 $stmtLeaderboard = $db->query("
     SELECT 
         u.id, 
@@ -29,21 +42,36 @@ $stmtLeaderboard = $db->query("
     FROM users u
     LEFT JOIN user_stats s ON u.id = s.user_id
     ORDER BY s.learning_streak DESC, s.course_progress_pct DESC, u.id ASC
+    LIMIT 100
 ");
 $leaderboard = $stmtLeaderboard->fetchAll();
 $topUser = $leaderboard[0] ?? null;
 
-$totalMembers = count($leaderboard);
-$totalHoursAcrossCommunity = 0;
-$totalLessonsAcrossCommunity = 0;
-$myRank = 1;
-
+// 3. Determine current user's rank efficiently
+$myRank = null;
 foreach ($leaderboard as $idx => $m) {
-    $totalHoursAcrossCommunity += (int)$m['study_hours'];
-    $totalLessonsAcrossCommunity += (int)$m['weekly_lessons_current'];
-    if ($m['id'] == $userId) {
+    if ((int)$m['id'] === $userId) {
         $myRank = $idx + 1;
+        break;
     }
+}
+
+if ($myRank === null) {
+    // If user is outside top 100, calculate exact rank via index count in SQL
+    $stmtMyStats = $db->prepare("SELECT COALESCE(learning_streak, 0) AS streak, COALESCE(course_progress_pct, 0) AS prog FROM user_stats WHERE user_id = :uid");
+    $stmtMyStats->execute(['uid' => $userId]);
+    $myStatRow = $stmtMyStats->fetch();
+    $myStreak = (int)($myStatRow['streak'] ?? 0);
+    $myProg = (float)($myStatRow['prog'] ?? 0.0);
+
+    $stmtRank = $db->prepare("
+        SELECT COUNT(*) + 1 AS rk
+        FROM user_stats
+        WHERE learning_streak > :streak
+           OR (learning_streak = :streak AND course_progress_pct > :prog)
+    ");
+    $stmtRank->execute(['streak' => $myStreak, 'prog' => $myProg]);
+    $myRank = (int)($stmtRank->fetch()['rk'] ?? $totalMembers);
 }
 
 $pageTitle = 'Mindrift — Community & Leaderboards';

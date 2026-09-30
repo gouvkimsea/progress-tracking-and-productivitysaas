@@ -63,6 +63,42 @@ if (!function_exists('renderDueBadge')) {
     }
 }
 
+if (!function_exists('renderTaskPlanningBadge')) {
+    function renderTaskPlanningBadge(?string $plan): string {
+        $p = trim($plan ?? '');
+        if (empty($p)) {
+            return '<span style="color:var(--text-muted); font-size:12px;">No task plan</span>';
+        }
+        $lines = array_values(array_filter(array_map('trim', explode("\n", $p))));
+        $total = count($lines);
+        if ($total === 0) {
+            return '<span style="color:var(--text-muted); font-size:12px;">No task plan</span>';
+        }
+        $done = 0;
+        foreach ($lines as $l) {
+            if (preg_match('/^(\[x\]|- \[x\]|\(x\))/i', $l)) {
+                $done++;
+            }
+        }
+        $badgeClass = ($total > 0 && $done === $total) ? 'plan-pill-done' : ($done > 0 ? 'plan-pill-progress' : 'plan-pill-pending');
+        $label = $total . ($total === 1 ? ' Step' : ' Steps');
+        if ($done > 0) {
+            $label .= " ({$done}/{$total})";
+        }
+        return '<span class="plan-pill ' . $badgeClass . '"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' . htmlspecialchars($label) . '</span>';
+    }
+}
+
+if (!function_exists('safeSnippet')) {
+    function safeSnippet(?string $text, int $length = 75): string {
+        $t = trim($text ?? '');
+        if (function_exists('mb_strimwidth')) {
+            return mb_strimwidth($t, 0, $length, '...');
+        }
+        return (strlen($t) > $length) ? substr($t, 0, $length) . '...' : $t;
+    }
+}
+
 $pageTitle = 'Mindrift — My Tasks';
 include __DIR__ . '/includes/head.php';
 ?>
@@ -139,6 +175,82 @@ include __DIR__ . '/includes/head.php';
     background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; font-weight: 400; padding: 0 4px;
   }
   .add-col-btn:hover { color: var(--brand-primary); }
+
+  /* Assignment Task Planning & Description Styles */
+  .assignment-desc-snippet {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 3px;
+    max-width: 260px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.15s ease;
+  }
+  .assignment-desc-snippet:hover {
+    color: var(--brand-primary);
+  }
+  .plan-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: var(--radius-full);
+    font-size: 11.5px;
+    font-weight: 600;
+    border: 1px solid var(--border-base);
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    cursor: pointer;
+  }
+  .plan-pill:hover {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+    background: var(--brand-subtle, rgba(99, 102, 241, 0.08));
+  }
+  .plan-pill-pending {
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+  }
+  .plan-pill-progress {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+  .plan-pill-done {
+    background: var(--status-done-bg);
+    color: var(--status-done-text);
+    border-color: var(--status-done-border);
+  }
+  .btn-ga-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-xs);
+    border: 1px solid var(--border-base);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+  }
+  .btn-ga-action:hover {
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    background: var(--bg-subtle);
+  }
+  .btn-ga-delete:hover {
+    color: var(--status-urgent-text);
+    border-color: var(--status-urgent-border);
+    background: var(--status-urgent-bg);
+  }
+  .plan-check-item:hover {
+    border-color: var(--brand-primary) !important;
+  }
 </style>
 </head>
 <body>
@@ -289,18 +401,19 @@ include __DIR__ . '/includes/head.php';
         <thead>
           <tr>
             <th style="width:40px; text-align:center;">#</th>
-            <th>Assignment Title</th>
+            <th style="min-width:220px;">Assignment Title & Description</th>
+            <th style="min-width:140px;">Task Planning</th>
             <th>Associated Course</th>
             <th>Due Date</th>
             <th>Status</th>
             <th>Completed By</th>
-            <th style="width:140px; text-align:center;">Action</th>
+            <th style="width:160px; text-align:center;">Action</th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($groupAssignments)): ?>
             <tr>
-              <td colspan="7" style="text-align:center; padding:36px 20px; color:var(--text-muted);">
+              <td colspan="8" style="text-align:center; padding:36px 20px; color:var(--text-muted);">
                 No group assignments found. Click "+ New Group Assignment" to create one.
               </td>
             </tr>
@@ -310,8 +423,20 @@ include __DIR__ . '/includes/head.php';
             ?>
               <tr id="groupRow-<?= $ga['id']; ?>">
                 <td style="text-align:center; color:var(--text-muted); font-size:12px;"><?= $ga['id']; ?></td>
-                <td style="font-weight:600; color:var(--text-primary);">
-                  <?= htmlspecialchars($ga['title']); ?>
+                <td>
+                  <div style="font-weight:600; color:var(--text-primary); cursor:pointer; display:inline-flex; align-items:center; gap:6px;" onclick="openAssignmentDetails(<?= $ga['id']; ?>)">
+                    <span><?= htmlspecialchars($ga['title']); ?></span>
+                  </div>
+                  <?php if (!empty($ga['description'])): ?>
+                    <div class="assignment-desc-snippet" title="<?= htmlspecialchars($ga['description']); ?>" onclick="openAssignmentDetails(<?= $ga['id']; ?>)" style="cursor:pointer;">
+                      <?= htmlspecialchars(safeSnippet($ga['description'], 75)); ?>
+                    </div>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <div style="cursor:pointer; display:inline-block;" onclick="openAssignmentDetails(<?= $ga['id']; ?>)" title="View & track task planning">
+                    <?= renderTaskPlanningBadge($ga['task_planning'] ?? null); ?>
+                  </div>
                 </td>
                 <td>
                   <span style="font-size:11.5px; font-weight:600; color:var(--brand-primary); background:var(--bg-subtle); padding:3px 8px; border-radius:var(--radius-xs); border:1px solid var(--border-base);">
@@ -330,13 +455,24 @@ include __DIR__ . '/includes/head.php';
                   <?= !empty($ga['completed_by_user_name']) ? htmlspecialchars($ga['completed_by_user_name']) : '—'; ?>
                 </td>
                 <td style="text-align:center;">
-                  <?php if ($isCompleted): ?>
-                    <span style="color:var(--status-done-text); font-size:12px; font-weight:600;">Completed</span>
-                  <?php else: ?>
-                    <button type="button" class="btn-save" onclick="completeGroupAssignment(<?= $ga['id']; ?>)" style="padding:4px 10px; font-size:11.5px; background:var(--status-done-bg); color:var(--status-done-text); border:1px solid var(--status-done-border);">
-                      Mark Done
+                  <div style="display:inline-flex; align-items:center; gap:5px; justify-content:center;">
+                    <button type="button" class="btn-ga-action" title="View Details & Plan" onclick="openAssignmentDetails(<?= $ga['id']; ?>)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
-                  <?php endif; ?>
+                    <button type="button" class="btn-ga-action" title="Edit Assignment" onclick="openEditAssignment(<?= $ga['id']; ?>)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <?php if ($isCompleted): ?>
+                      <span style="color:var(--status-done-text); font-size:11px; font-weight:600; padding:2px 4px;">Done</span>
+                    <?php else: ?>
+                      <button type="button" class="btn-save" onclick="completeGroupAssignment(<?= $ga['id']; ?>)" style="padding:3px 7px; font-size:11px; background:var(--status-done-bg); color:var(--status-done-text); border:1px solid var(--status-done-border);">
+                        Done
+                      </button>
+                    <?php endif; ?>
+                    <button type="button" class="btn-ga-action btn-ga-delete" title="Delete Assignment" onclick="deleteGroupAssignment(<?= $ga['id']; ?>)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -433,29 +569,40 @@ include __DIR__ . '/includes/head.php';
 
 <!-- Modal: Create Group Assignment -->
 <div class="modal-overlay" id="createGroupModal">
-  <div class="modal-card">
+  <div class="modal-card" style="max-width: 540px;">
     <div class="modal-header">
       <h3 class="modal-title">Create Group Assignment</h3>
       <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('createGroupModal').classList.remove('active')">&times;</button>
     </div>
     <form id="createGroupForm" onsubmit="submitGroupAssignment(event)">
-      <div class="modal-body">
+      <div class="modal-body" style="max-height:75vh; overflow-y:auto;">
         <div class="form-group">
           <label class="form-label" for="gaTitle">Assignment Title</label>
           <input type="text" id="gaTitle" class="form-input" placeholder="e.g. Distributed Database Replication Lab" required />
         </div>
-        <div class="form-group">
-          <label class="form-label" for="gaCourse">Associated Course</label>
-          <select id="gaCourse" class="form-input">
-            <?php foreach ($userCourses as $uc): ?>
-              <option value="<?= htmlspecialchars($uc['name']); ?>"><?= htmlspecialchars($uc['name']); ?></option>
-            <?php endforeach; ?>
-            <option value="General Engineering">General Engineering</option>
-          </select>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label class="form-label" for="gaCourse">Associated Course</label>
+            <select id="gaCourse" class="form-input">
+              <?php foreach ($userCourses as $uc): ?>
+                <option value="<?= htmlspecialchars($uc['name']); ?>"><?= htmlspecialchars($uc['name']); ?></option>
+              <?php endforeach; ?>
+              <option value="General Engineering">General Engineering</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="gaDueDate">Due Date / Timeline</label>
+            <input type="text" id="gaDueDate" class="form-input" value="Due in 5 days" required />
+          </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="gaDueDate">Due Date / Timeline</label>
-          <input type="text" id="gaDueDate" class="form-input" value="Due in 5 days" required />
+          <label class="form-label" for="gaDescription">Description</label>
+          <textarea id="gaDescription" class="form-input" rows="3" placeholder="Explain the assignment scope, instructions, or deliverables..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="gaTaskPlanning">Task Planning / Action Plan</label>
+          <textarea id="gaTaskPlanning" class="form-input" rows="4" placeholder="Enter task plan steps (one per line):&#10;1. Research system architecture&#10;2. Draft schema and API specification&#10;3. Implement core features&#10;4. Review and deploy"></textarea>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Tip: Enter each task on a new line to automatically create an interactive checklist. Prefix with [x] for completed tasks.</div>
         </div>
       </div>
       <div class="modal-footer">
@@ -466,9 +613,131 @@ include __DIR__ . '/includes/head.php';
   </div>
 </div>
 
+<!-- Modal: Assignment Details & Task Planning -->
+<div class="modal-overlay" id="viewAssignmentModal">
+  <div class="modal-card" style="max-width: 600px;">
+    <div class="modal-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:16px;">📋</span>
+        <h3 class="modal-title" id="viewGaTitle" style="margin:0;">Assignment Details</h3>
+      </div>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('viewAssignmentModal').classList.remove('active')">&times;</button>
+    </div>
+    <div class="modal-body" style="display:flex; flex-direction:column; gap:16px; max-height:75vh; overflow-y:auto;">
+      <!-- Metadata Chips -->
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:10px 14px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-base);">
+        <div><span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Course:</span> <span id="viewGaCourse" style="font-size:12.5px; font-weight:600; color:var(--brand-primary); margin-left:4px;"></span></div>
+        <span style="color:var(--border-base);">•</span>
+        <div><span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Due:</span> <span id="viewGaDueDate" style="font-size:12.5px; font-weight:500; margin-left:4px;"></span></div>
+        <span style="color:var(--border-base);">•</span>
+        <div><span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Status:</span> <span id="viewGaStatus" style="margin-left:4px;"></span></div>
+      </div>
+
+      <!-- Description Section -->
+      <div>
+        <label class="form-label" style="font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Description
+        </label>
+        <div id="viewGaDescBox" style="background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); padding:12px 14px; font-size:13px; line-height:1.6; color:var(--text-primary); white-space:pre-wrap; min-height:48px;"></div>
+      </div>
+
+      <!-- Task Planning Section -->
+      <div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <label class="form-label" style="font-weight:700; margin:0; display:flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Task Planning Roadmap
+          </label>
+          <span id="viewGaPlanProgressText" style="font-size:12px; font-weight:600; color:var(--brand-primary);"></span>
+        </div>
+
+        <!-- Progress bar -->
+        <div style="width:100%; height:6px; background:var(--bg-subtle); border-radius:99px; overflow:hidden; margin-bottom:12px; border:1px solid var(--border-base);">
+          <div id="viewGaProgressBar" style="width:0%; height:100%; background:var(--brand-primary); transition:width 0.25s ease;"></div>
+        </div>
+
+        <!-- Checklist -->
+        <div id="viewGaPlanChecklist" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+      <button type="button" class="btn-cancel" onclick="document.getElementById('viewAssignmentModal').classList.remove('active')">Close</button>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn-save" id="btnEditFromView" style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-subtle); color:var(--text-primary); border:1px solid var(--border-base);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button type="button" class="btn-save" id="btnCompleteFromView" style="display:inline-flex; align-items:center; gap:6px;">
+          Mark Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Group Assignment -->
+<div class="modal-overlay" id="editAssignmentModal">
+  <div class="modal-card" style="max-width: 560px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Assignment</h3>
+      <button class="modal-close-btn" aria-label="Close modal" onclick="document.getElementById('editAssignmentModal').classList.remove('active')">&times;</button>
+    </div>
+    <form id="editAssignmentForm" onsubmit="submitEditAssignment(event)">
+      <input type="hidden" id="editGaId" />
+      <div class="modal-body" style="max-height:75vh; overflow-y:auto;">
+        <div class="form-group">
+          <label class="form-label" for="editGaTitle">Assignment Title</label>
+          <input type="text" id="editGaTitle" class="form-input" required />
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label class="form-label" for="editGaCourse">Associated Course</label>
+            <select id="editGaCourse" class="form-input">
+              <?php foreach ($userCourses as $uc): ?>
+                <option value="<?= htmlspecialchars($uc['name']); ?>"><?= htmlspecialchars($uc['name']); ?></option>
+              <?php endforeach; ?>
+              <option value="General Engineering">General Engineering</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editGaDueDate">Due Date / Timeline</label>
+            <input type="text" id="editGaDueDate" class="form-input" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editGaStatus">Status</label>
+          <select id="editGaStatus" class="form-input">
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editGaDescription">Description</label>
+          <textarea id="editGaDescription" class="form-input" rows="3" placeholder="Explain the assignment scope, instructions, or deliverables..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editGaTaskPlanning">Task Planning / Action Plan</label>
+          <textarea id="editGaTaskPlanning" class="form-input" rows="5" placeholder="Enter task plan steps (one per line):&#10;1. Research & design&#10;2. Build prototype&#10;3. Testing & validation&#10;4. Final submission"></textarea>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Each line becomes a checklist item in the assignment details view. Prefix with [x] for completed tasks.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('editAssignmentModal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn-save" id="btnSubmitEditGA">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script src="assets/js/app.js"></script>
 <script>
 
+let currentAssignments = <?= json_encode($groupAssignments, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> || [];
+
+window.getAssignmentById = function(id) {
+  return currentAssignments.find(a => parseInt(a.id, 10) === parseInt(id, 10));
+};
 
 // Tab Switching Controller
 window.switchTaskTab = function(tab) {
@@ -495,6 +764,8 @@ window.submitGroupAssignment = async function(e) {
   const title = document.getElementById('gaTitle').value.trim();
   const course_name = document.getElementById('gaCourse').value;
   const due_date = document.getElementById('gaDueDate').value.trim();
+  const description = document.getElementById('gaDescription') ? document.getElementById('gaDescription').value.trim() : '';
+  const task_planning = document.getElementById('gaTaskPlanning') ? document.getElementById('gaTaskPlanning').value.trim() : '';
   const btn = document.getElementById('btnSubmitGA');
   btn.disabled = true;
   btn.textContent = 'Creating...';
@@ -503,11 +774,11 @@ window.submitGroupAssignment = async function(e) {
     const res = await secureFetch('api/assignments.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create', title, course_name, due_date })
+      body: JSON.stringify({ action: 'create', title, course_name, due_date, description, task_planning })
     });
     const data = await res.json();
     if (data.success) {
-      if (typeof showToast === 'function') showToast('Group assignment created.');
+      if (typeof showToast === 'function') showToast('Assignment created successfully!');
       setTimeout(() => location.reload(), 400);
     } else {
       alert(data.message || 'Failed to create group assignment');
@@ -517,6 +788,200 @@ window.submitGroupAssignment = async function(e) {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Create Assignment';
+  }
+};
+
+window.openAssignmentDetails = function(id) {
+  const ga = getAssignmentById(id);
+  if (!ga) return;
+
+  document.getElementById('viewGaTitle').textContent = ga.title || 'Assignment Details';
+  document.getElementById('viewGaCourse').textContent = ga.course_name || 'General';
+  document.getElementById('viewGaDueDate').textContent = ga.due_date || 'No deadline';
+  
+  const isDone = (ga.status || '').toLowerCase() === 'completed';
+  const statusEl = document.getElementById('viewGaStatus');
+  statusEl.className = 'priority-badge ' + (isDone ? 'priority-low' : 'priority-medium');
+  statusEl.textContent = isDone ? 'Completed' : 'In Progress';
+
+  const descBox = document.getElementById('viewGaDescBox');
+  if (ga.description && ga.description.trim()) {
+    descBox.textContent = ga.description;
+    descBox.style.color = 'var(--text-primary)';
+    descBox.style.fontStyle = 'normal';
+  } else {
+    descBox.textContent = 'No description provided for this assignment.';
+    descBox.style.color = 'var(--text-muted)';
+    descBox.style.fontStyle = 'italic';
+  }
+
+  // Render Task Planning Checklist
+  renderChecklistInView(ga);
+
+  // Setup action buttons
+  const editBtn = document.getElementById('btnEditFromView');
+  editBtn.onclick = () => {
+    document.getElementById('viewAssignmentModal').classList.remove('active');
+    openEditAssignment(ga.id);
+  };
+
+  const compBtn = document.getElementById('btnCompleteFromView');
+  compBtn.textContent = isDone ? 'Mark In Progress' : 'Mark Done';
+  compBtn.onclick = async () => {
+    await completeGroupAssignment(ga.id);
+  };
+
+  document.getElementById('viewAssignmentModal').classList.add('active');
+};
+
+function renderChecklistInView(ga) {
+  const container = document.getElementById('viewGaPlanChecklist');
+  container.innerHTML = '';
+
+  const rawPlan = ga.task_planning ? ga.task_planning.trim() : '';
+  const lines = rawPlan ? rawPlan.split(/\r?\n/).filter(l => l.trim().length > 0) : [];
+
+  const progBar = document.getElementById('viewGaProgressBar');
+  const progText = document.getElementById('viewGaPlanProgressText');
+
+  if (lines.length === 0) {
+    progBar.style.width = '0%';
+    progText.textContent = '0 tasks planned';
+    container.innerHTML = `
+      <div style="padding:16px; text-align:center; background:var(--bg-subtle); border:1px dashed var(--border-base); border-radius:var(--radius-sm); color:var(--text-muted); font-size:12.5px;">
+        No task planning steps yet. Click <b>Edit</b> to add a task plan roadmap.
+      </div>
+    `;
+    return;
+  }
+
+  let completedCount = 0;
+  lines.forEach((line, idx) => {
+    const isChecked = /^(\[x\]|- \[x\]|\(x\))/i.test(line.trim());
+    if (isChecked) completedCount++;
+
+    const cleanText = line.replace(/^(\[x\]|\[ \]|-\s*\[x\]|-\s*\[ \]|-\s*|\d+[\.\)]\s*)/i, '').trim();
+
+    const itemEl = document.createElement('label');
+    itemEl.className = 'plan-check-item' + (isChecked ? ' checked' : '');
+    itemEl.style.cssText = 'display:flex; align-items:flex-start; gap:10px; padding:9px 12px; background:var(--bg-surface); border:1px solid var(--border-base); border-radius:var(--radius-sm); cursor:pointer; font-size:13px; transition:all 0.15s ease;';
+    
+    itemEl.innerHTML = `
+      <input type="checkbox" ${isChecked ? 'checked' : ''} style="margin-top:2px; accent-color:var(--brand-primary); cursor:pointer;" />
+      <span style="flex:1; line-height:1.4; color:var(--text-primary); ${isChecked ? 'text-decoration:line-through; opacity:0.6;' : ''}">${escapeHtml(cleanText || line)}</span>
+    `;
+
+    const checkbox = itemEl.querySelector('input');
+    checkbox.onchange = (e) => {
+      togglePlanItem(ga.id, idx, e.target.checked);
+    };
+
+    container.appendChild(itemEl);
+  });
+
+  const pct = Math.round((completedCount / lines.length) * 100);
+  progBar.style.width = pct + '%';
+  progText.textContent = `${completedCount} of ${lines.length} done (${pct}%)`;
+}
+
+window.togglePlanItem = async function(id, lineIndex, isChecked) {
+  const ga = getAssignmentById(id);
+  if (!ga || !ga.task_planning) return;
+
+  const lines = ga.task_planning.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lineIndex < 0 || lineIndex >= lines.length) return;
+
+  const origLine = lines[lineIndex];
+  const cleanText = origLine.replace(/^(\[x\]|\[ \]|-\s*\[x\]|-\s*\[ \])/i, '').trim();
+  lines[lineIndex] = isChecked ? `[x] ${cleanText}` : `[ ] ${cleanText}`;
+
+  ga.task_planning = lines.join('\n');
+  renderChecklistInView(ga);
+
+  try {
+    const res = await secureFetch('api/assignments.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_plan', assignment_id: id, task_planning: ga.task_planning })
+    });
+    const data = await res.json();
+    if (data.success && typeof showToast === 'function') {
+      showToast('Plan progress updated');
+    }
+  } catch (err) {
+    console.error('Failed to update plan:', err);
+  }
+};
+
+window.openEditAssignment = function(id) {
+  const ga = getAssignmentById(id);
+  if (!ga) return;
+
+  document.getElementById('editGaId').value = ga.id;
+  document.getElementById('editGaTitle').value = ga.title || '';
+  document.getElementById('editGaCourse').value = ga.course_name || 'General Engineering';
+  document.getElementById('editGaDueDate').value = ga.due_date || '';
+  document.getElementById('editGaStatus').value = ga.status || 'In Progress';
+  document.getElementById('editGaDescription').value = ga.description || '';
+  document.getElementById('editGaTaskPlanning').value = ga.task_planning || '';
+
+  document.getElementById('editAssignmentModal').classList.add('active');
+};
+
+window.submitEditAssignment = async function(e) {
+  e.preventDefault();
+  const id = parseInt(document.getElementById('editGaId').value, 10);
+  const title = document.getElementById('editGaTitle').value.trim();
+  const course_name = document.getElementById('editGaCourse').value;
+  const due_date = document.getElementById('editGaDueDate').value.trim();
+  const status = document.getElementById('editGaStatus').value;
+  const description = document.getElementById('editGaDescription').value.trim();
+  const task_planning = document.getElementById('editGaTaskPlanning').value.trim();
+
+  const btn = document.getElementById('btnSubmitEditGA');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    const res = await secureFetch('api/assignments.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update', assignment_id: id, title, course_name, due_date, status, description, task_planning })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (typeof showToast === 'function') showToast('Assignment updated successfully!');
+      setTimeout(() => location.reload(), 400);
+    } else {
+      alert(data.message || 'Failed to update assignment');
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+  }
+};
+
+window.deleteGroupAssignment = async function(id) {
+  if (!confirm('Are you sure you want to delete this assignment?')) return;
+  try {
+    const res = await secureFetch('api/assignments.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', assignment_id: id })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (typeof showToast === 'function') showToast('Assignment deleted.');
+      const row = document.getElementById('groupRow-' + id);
+      if (row) row.remove();
+      setTimeout(() => location.reload(), 400);
+    } else {
+      alert(data.message || 'Failed to delete assignment');
+    }
+  } catch (err) {
+    console.error(err);
   }
 };
 
@@ -538,6 +1003,12 @@ window.completeGroupAssignment = async function(id) {
     console.error(err);
   }
 };
+
+function escapeHtml(str) {
+  return (str || '').replace(/[&<>"']/g, function(m) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+  });
+}
 
 let activePrioFilter = 'all';
 let activeStatusFilter = 'all';

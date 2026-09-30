@@ -2,19 +2,24 @@
 require_once __DIR__ . '/../config/db.php';
 startSecureSession();
 
-$db = getDbConnection();
 $userId = null;
 $userName = 'Mindrift Tasks';
 
 if (isset($_SESSION['user_id'])) {
     $userId = (int)$_SESSION['user_id'];
     $userName = ($_SESSION['user_name'] ?? 'Mindrift') . ' Tasks';
+    session_write_close();
+    $db = getDbConnection();
 } elseif (!empty($_GET['token'])) {
+    session_write_close();
+    $db = getDbConnection();
     $tokenUser = getUserByScheduleToken($db, trim($_GET['token']));
     if ($tokenUser) {
         $userId = (int)$tokenUser['id'];
         $userName = ($tokenUser['name'] ?? 'Mindrift') . ' Tasks';
     }
+} else {
+    session_write_close();
 }
 
 if (!$userId) {
@@ -22,10 +27,13 @@ if (!$userId) {
     die('Unauthorized: A valid login session or calendar share token is required.');
 }
 
-// Fetch all active tasks with dates
-$stmt = $db->prepare("SELECT * FROM tasks WHERE user_id = :uid AND (deleted_at IS NULL) ORDER BY id ASC");
+// Fetch all active tasks with explicit columns
+$stmt = $db->prepare("SELECT id, task_name, project_name, assigned_to, priority, status, start_date, due_date 
+                      FROM tasks 
+                      WHERE user_id = :uid AND deleted_at IS NULL 
+                      ORDER BY id ASC");
 $stmt->execute(['uid' => $userId]);
-$tasks = $stmt->fetchAll();
+$tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 function formatDateToIcs(?string $dStr, string $fallback = 'now'): string {
     if (empty($dStr)) {
@@ -34,7 +42,7 @@ function formatDateToIcs(?string $dStr, string $fallback = 'now'): string {
         $ts = strtotime(str_replace('/', '-', $dStr));
         if (!$ts) $ts = strtotime($fallback);
     }
-    return gmdate('Ymd\THis\Z', $ts);
+    return gmdate('Ymd\THis\Z', $ts ?: time());
 }
 
 function escapeIcsText(string $str): string {
@@ -100,4 +108,3 @@ header('Content-Length: ' . strlen($icsContent));
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 echo $icsContent;
-exit;

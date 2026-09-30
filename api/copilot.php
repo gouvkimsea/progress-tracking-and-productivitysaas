@@ -9,14 +9,14 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     $userName = $_SESSION['user_name'] ?? 'User';
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         checkCsrfToken();
-        $raw = file_get_contents('php://input');
-        $data = json_decode($raw, true) ?? $_POST;
+        $data = getJsonRequestData();
+        session_write_close();
+
         $action = $data['action'] ?? 'breakdown';
 
         if ($action === 'breakdown') {
@@ -79,30 +79,43 @@ try {
                 sendJsonResponse(['success' => false, 'message' => 'No tasks provided'], 400);
             }
 
+            $db = getDbConnection();
             $insertedCount = 0;
-            $stmt = $db->prepare("INSERT INTO tasks (user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log)
-                                  VALUES (:uid, :tname, :pname, :sdate, :ddate, :prio, :assigned, 'Open', :tlog)");
+            $db->beginTransaction();
+            try {
+                $stmt = $db->prepare("INSERT INTO tasks (user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log)
+                                      VALUES (:uid, :tname, :pname, :sdate, :ddate, :prio, :assigned, 'Open', :tlog)");
 
-            foreach ($tasksList as $t) {
-                if (empty($t['task_name'])) continue;
-                $taskName = substr(trim($t['task_name']), 0, 190);
-                $priority = trim($t['priority'] ?? 'Medium');
-                if (!in_array($priority, ['Urgent', 'High', 'Medium', 'Low'], true)) {
-                    $priority = 'Medium';
+                $startDate = date('d-m-Y');
+                $defaultDue = date('d-m-Y', strtotime('+3 days'));
+
+                foreach ($tasksList as $t) {
+                    if (empty($t['task_name'])) continue;
+                    $taskName = substr(trim($t['task_name']), 0, 190);
+                    $priority = trim($t['priority'] ?? 'Medium');
+                    if (!in_array($priority, ['Urgent', 'High', 'Medium', 'Low'], true)) {
+                        $priority = 'Medium';
+                    }
+                    $timeLog = max(0, min(100, (int)($t['time_log'] ?? 0)));
+
+                    $stmt->execute([
+                        'uid' => $userId,
+                        'tname' => $taskName,
+                        'pname' => $projectName,
+                        'sdate' => $startDate,
+                        'ddate' => $t['due_date'] ?? $defaultDue,
+                        'prio' => $priority,
+                        'assigned' => $userName,
+                        'tlog' => $timeLog
+                    ]);
+                    $insertedCount++;
                 }
-                $timeLog = max(0, min(100, (int)($t['time_log'] ?? 0)));
-
-                $stmt->execute([
-                    'uid' => $userId,
-                    'tname' => $taskName,
-                    'pname' => $projectName,
-                    'sdate' => date('d-m-Y'),
-                    'ddate' => $t['due_date'] ?? date('d-m-Y', strtotime('+3 days')),
-                    'prio' => $priority,
-                    'assigned' => $userName,
-                    'tlog' => $timeLog
-                ]);
-                $insertedCount++;
+                $db->commit();
+            } catch (Throwable $ex) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                throw $ex;
             }
 
             sendJsonResponse([

@@ -3,10 +3,7 @@ require_once __DIR__ . '/../config/db.php';
 startSecureSession();
 
 try {
-    $db = getDbConnection();
-    
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true) ?? $_POST;
+    $data = getJsonRequestData();
 
     $name = isset($data['name']) ? trim($data['name']) : '';
     $email = isset($data['email']) ? strtolower(trim($data['email'])) : '';
@@ -24,8 +21,10 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Password must be at least 8 characters long and contain both letters and numbers.'], 400);
     }
 
-    // Check if email already registered
-    $stmtCheck = $db->prepare("SELECT id FROM users WHERE LOWER(email) = :email");
+    $db = getDbConnection();
+
+    // Check if email already registered (uses unique index idx_users_email)
+    $stmtCheck = $db->prepare("SELECT id FROM users WHERE email = :email");
     $stmtCheck->execute(['email' => $email]);
     if ($stmtCheck->fetch()) {
         sendJsonResponse(['success' => false, 'message' => 'An account with this email address already exists.'], 409);
@@ -45,48 +44,62 @@ try {
 
     $userId = (int)$db->lastInsertId();
 
-    // Initialize user default stats with parameterized query
+    // Initialize user default stats
     $stmtStats = $db->prepare("INSERT INTO user_stats (user_id, learning_streak, streak_delta, longest_streak, missed_days, inactive_pct, course_progress_pct, progress_delta_pct, weekly_lessons_current, weekly_lessons_last, study_hours, study_minutes, study_delta_pct)
                                VALUES (:uid, 0, 0, 0, 0, 0, 0.00, 0.00, 0, 0, 0, 0, 0.00)");
     $stmtStats->execute(['uid' => $userId]);
 
-    // Initialize starter courses
-    $courses = [
-        ['UI', 'UI Design Mastery', 'Design', 'Intermediate', 12, 'linear-gradient(145deg,#8B7CF0,#5A46E0)', '#6C5CE7'],
-        ['JS', 'Learn JavaScript', 'Programming', 'Beginner', 8, 'linear-gradient(145deg,#FBAE68,#F2994A)', '#F2994A'],
-        ['PS', 'Learn Photoshop', 'Design', 'Advanced', 32, 'linear-gradient(145deg,#6FC1F0,#4FA3E0)', '#4FA3E0'],
-        ['PY', 'Python for Data', 'Data Science', 'Intermediate', 20, 'linear-gradient(145deg,#7FD9A5,#2FBE73)', '#2FBE73']
-    ];
-    $stmtCourse = $db->prepare("INSERT INTO courses (user_id, code, name, category, level, total_modules, completed_modules, progress_pct, bg_gradient, ring_color) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)");
-    foreach ($courses as $c) {
-        $stmtCourse->execute([$userId, $c[0], $c[1], $c[2], $c[3], $c[4], $c[5], $c[6]]);
-    }
+    // Initialize starter courses in 1 multi-row batch insert
+    $stmtCourse = $db->prepare("INSERT INTO courses (user_id, code, name, category, level, total_modules, completed_modules, progress_pct, bg_gradient, ring_color) VALUES 
+        (?, 'UI', 'UI Design Mastery', 'Design', 'Intermediate', 12, 0, 0, 'linear-gradient(145deg,#8B7CF0,#5A46E0)', '#6C5CE7'),
+        (?, 'JS', 'Learn JavaScript', 'Programming', 'Beginner', 8, 0, 0, 'linear-gradient(145deg,#FBAE68,#F2994A)', '#F2994A'),
+        (?, 'PS', 'Learn Photoshop', 'Design', 'Advanced', 32, 0, 0, 'linear-gradient(145deg,#6FC1F0,#4FA3E0)', '#4FA3E0'),
+        (?, 'PY', 'Python for Data', 'Data Science', 'Intermediate', 20, 0, 0, 'linear-gradient(145deg,#7FD9A5,#2FBE73)', '#2FBE73')");
+    $stmtCourse->execute([$userId, $userId, $userId, $userId]);
 
-    // Initialize weekly streak check-in days
-    $stmtStreak = $db->prepare("INSERT INTO weekly_streaks (user_id, day_index, day_name, is_completed) VALUES (?, ?, ?, 0)");
-    $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    foreach ($days as $idx => $d) {
-        $stmtStreak->execute([$userId, $idx, $d]);
-    }
+    // Initialize weekly streak check-in days in 1 multi-row batch insert
+    $stmtStreak = $db->prepare("INSERT INTO weekly_streaks (user_id, day_index, day_name, is_completed) VALUES 
+        (?, 0, 'Mon', 0),
+        (?, 1, 'Tue', 0),
+        (?, 2, 'Wed', 0),
+        (?, 3, 'Thu', 0),
+        (?, 4, 'Fri', 0),
+        (?, 5, 'Sat', 0),
+        (?, 6, 'Sun', 0)");
+    $stmtStreak->execute([$userId, $userId, $userId, $userId, $userId, $userId, $userId]);
 
-    // Initialize user skills radar
-    $stmtSkill = $db->prepare("INSERT INTO user_skills (user_id, label, score_pct) VALUES (?, ?, 0.50)");
-    $skills = ['Productivity', 'Data & Analysis', 'Communication', 'Creativity', 'Technical'];
-    foreach ($skills as $s) {
-        $stmtSkill->execute([$userId, $s]);
-    }
+    // Initialize user skills radar in 1 multi-row batch insert
+    $stmtSkill = $db->prepare("INSERT INTO user_skills (user_id, label, score_pct) VALUES 
+        (?, 'Productivity', 0.50),
+        (?, 'Data & Analysis', 0.50),
+        (?, 'Communication', 0.50),
+        (?, 'Creativity', 0.50),
+        (?, 'Technical', 0.50)");
+    $stmtSkill->execute([$userId, $userId, $userId, $userId, $userId]);
 
-    // Initialize starter tasks for Kanban, Gantt, and Assignments
-    $stmtTask = $db->prepare("INSERT INTO tasks (user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmtTask->execute([$userId, 'Design System Component Tokens', 'UI Design Mastery', date('d-m-Y'), date('d-m-Y', strtotime('+5 days')), 'High', $name, 'In Progress', 4]);
-    $stmtTask->execute([$userId, 'Modern Frontend Architecture & State', 'Learn JavaScript', date('d-m-Y'), date('d-m-Y', strtotime('+2 days')), 'Urgent', $name, 'Open', 2]);
-    $stmtTask->execute([$userId, 'RESTful API & Database Integration', 'Python for Data', date('d-m-Y', strtotime('-4 days')), date('d-m-Y', strtotime('-1 day')), 'Medium', $name, 'Done', 6]);
+    // Initialize starter tasks in 1 multi-row batch insert
+    $todayStr = date('d-m-Y');
+    $duePlus5 = date('d-m-Y', strtotime('+5 days'));
+    $duePlus2 = date('d-m-Y', strtotime('+2 days'));
+    $dueMinus1 = date('d-m-Y', strtotime('-1 day'));
+    $startMinus4 = date('d-m-Y', strtotime('-4 days'));
 
-    // Initialize starter OKRs & Goals
-    $stmtGoal = $db->prepare("INSERT INTO project_goals (user_id, title, category, target_value, current_value, unit, due_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmtGoal->execute([$userId, 'Complete Q3 Design System Roadmap', 'Productivity', 100, 75, '%', 'End of Quarter', 'On Track']);
-    $stmtGoal->execute([$userId, 'Log 40 Hours of Deep Focus Work', 'Learning', 40, 28, 'hrs', 'This Month', 'On Track']);
-    $stmtGoal->execute([$userId, 'Publish Multi-Cloud API Integration', 'Engineering', 100, 30, '%', 'Next Month', 'At Risk']);
+    $stmtTask = $db->prepare("INSERT INTO tasks (user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log) VALUES 
+        (?, 'Design System Component Tokens', 'UI Design Mastery', ?, ?, 'High', ?, 'In Progress', 4),
+        (?, 'Modern Frontend Architecture & State', 'Learn JavaScript', ?, ?, 'Urgent', ?, 'Open', 2),
+        (?, 'RESTful API & Database Integration', 'Python for Data', ?, ?, 'Medium', ?, 'Done', 6)");
+    $stmtTask->execute([
+        $userId, $todayStr, $duePlus5, $name,
+        $userId, $todayStr, $duePlus2, $name,
+        $userId, $startMinus4, $dueMinus1, $name
+    ]);
+
+    // Initialize starter OKRs & Goals in 1 multi-row batch insert
+    $stmtGoal = $db->prepare("INSERT INTO project_goals (user_id, title, category, target_value, current_value, unit, due_date, status) VALUES 
+        (?, 'Complete Q3 Design System Roadmap', 'Productivity', 100, 75, '%', 'End of Quarter', 'On Track'),
+        (?, 'Log 40 Hours of Deep Focus Work', 'Learning', 40, 28, 'hrs', 'This Month', 'On Track'),
+        (?, 'Publish Multi-Cloud API Integration', 'Engineering', 100, 30, '%', 'Next Month', 'At Risk')");
+    $stmtGoal->execute([$userId, $userId, $userId]);
 
     $db->commit();
 
@@ -114,4 +127,3 @@ try {
     error_log('Registration Error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred during registration. Please try again.'], 500);
 }
-

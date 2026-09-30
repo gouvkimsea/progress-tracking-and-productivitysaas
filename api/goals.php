@@ -7,19 +7,25 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     $method = $_SERVER['REQUEST_METHOD'];
 
     if ($method === 'GET') {
-        $stmt = $db->prepare("SELECT * FROM project_goals WHERE user_id = :uid ORDER BY id DESC");
+        session_write_close();
+        $db = getDbConnection();
+        $stmt = $db->prepare("SELECT id, user_id, title, category, target_value, current_value, unit, due_date, status, created_at 
+                              FROM project_goals 
+                              WHERE user_id = :uid 
+                              ORDER BY id DESC");
         $stmt->execute(['uid' => $userId]);
-        $goals = $stmt->fetchAll();
+        $goals = $stmt->fetchAll(PDO::FETCH_ASSOC);
         sendJsonResponse(['success' => true, 'goals' => $goals]);
     } elseif ($method === 'POST') {
         checkCsrfToken();
-        $rawInput = file_get_contents('php://input');
-        $data = json_decode($rawInput, true) ?? $_POST;
+        $data = getJsonRequestData();
+        session_write_close();
+        $db = getDbConnection();
+
         $action = $data['action'] ?? 'create';
 
         if ($action === 'create') {
@@ -51,8 +57,44 @@ try {
             sendJsonResponse([
                 'success' => true,
                 'message' => 'Goal created successfully!',
-                'goal_id' => $db->lastInsertId()
+                'goal_id' => (int)$db->lastInsertId()
             ]);
+        } elseif ($action === 'update') {
+            $goalId = (int)($data['goal_id'] ?? 0);
+            $title = trim($data['title'] ?? '');
+            $category = trim($data['category'] ?? 'Productivity');
+            $targetValue = max(1, (int)($data['target_value'] ?? 100));
+            $currentValue = max(0, (int)($data['current_value'] ?? 0));
+            $unit = trim($data['unit'] ?? '%');
+            $dueDate = trim($data['due_date'] ?? 'End of Quarter');
+            $status = trim($data['status'] ?? 'On Track');
+
+            if (empty($title)) {
+                sendJsonResponse(['success' => false, 'message' => 'Objective title is required.'], 400);
+            }
+
+            $stmt = $db->prepare("UPDATE project_goals SET 
+                                    title = :title, 
+                                    category = :cat, 
+                                    target_value = :tval, 
+                                    current_value = :cval, 
+                                    unit = :unit, 
+                                    due_date = :ddate, 
+                                    status = :st 
+                                  WHERE id = :id AND user_id = :uid");
+            $stmt->execute([
+                'title' => $title,
+                'cat' => $category,
+                'tval' => $targetValue,
+                'cval' => $currentValue,
+                'unit' => $unit,
+                'ddate' => $dueDate,
+                'st' => $status,
+                'id' => $goalId,
+                'uid' => $userId
+            ]);
+
+            sendJsonResponse(['success' => true, 'message' => 'Objective updated successfully!']);
         } elseif ($action === 'update_progress') {
             $goalId = (int)($data['goal_id'] ?? 0);
             $currentValue = max(0, (int)($data['current_value'] ?? 0));

@@ -7,11 +7,11 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     checkCsrfToken();
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true) ?? $_POST;
+    $data = getJsonRequestData();
+    session_write_close();
+    $db = getDbConnection();
 
     $minutes = (int)($data['minutes'] ?? 0);
     $category = trim($data['category'] ?? 'General Study');
@@ -20,6 +20,8 @@ try {
     if ($minutes <= 0) {
         $minutes = 1;
     }
+
+    $db->beginTransaction();
 
     // Upsert into daily_activities supporting SQLite and MySQL
     $isSqlite = $db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
@@ -46,12 +48,15 @@ try {
     // Recalculate total study time accurately from daily_activities table
     $stmtTotals = $db->prepare("SELECT SUM(study_minutes) as total_mins FROM daily_activities WHERE user_id = :uid");
     $stmtTotals->execute(['uid' => $userId]);
-    $totalMins = (int)($stmtTotals->fetch()['total_mins'] ?? 0);
-    $hours = floor($totalMins / 60);
+    $totalsRow = $stmtTotals->fetch(PDO::FETCH_ASSOC);
+    $totalMins = (int)($totalsRow['total_mins'] ?? 0);
+    $hours = (int)floor($totalMins / 60);
     $remMins = $totalMins % 60;
 
     $stmtStats = $db->prepare("UPDATE user_stats SET study_hours = :h, study_minutes = :m WHERE user_id = :uid");
     $stmtStats->execute(['h' => $hours, 'm' => $remMins, 'uid' => $userId]);
+
+    $db->commit();
 
     sendJsonResponse([
         'success' => true,
@@ -61,7 +66,9 @@ try {
         'total_minutes' => $remMins
     ]);
 } catch (Throwable $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     error_log('Timer API error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred logging timer session.'], 500);
 }
-

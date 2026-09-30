@@ -14,17 +14,19 @@ $stmtUser = $db->prepare("SELECT * FROM users WHERE id = :uid");
 $stmtUser->execute(['uid' => $userId]);
 $user = $stmtUser->fetch();
 
-// Fetch Real Course / Project Metrics
-$stmtCourses = $db->prepare("SELECT * FROM courses WHERE user_id = :uid ORDER BY id ASC");
+// Fetch Real Course / Project Metrics via direct SQL aggregation
+$stmtCourses = $db->prepare("
+    SELECT 
+        COUNT(*) as total_courses,
+        SUM(CASE WHEN progress_pct >= 100 THEN 1 ELSE 0 END) as completed_courses
+    FROM courses 
+    WHERE user_id = :uid
+");
 $stmtCourses->execute(['uid' => $userId]);
-$courses = $stmtCourses->fetchAll();
-$totalCourses = count($courses);
-$completedCourses = 0;
-$inProgressCourses = 0;
-foreach ($courses as $c) {
-    if ((int)$c['progress_pct'] >= 100) $completedCourses++;
-    else $inProgressCourses++;
-}
+$courseMetrics = $stmtCourses->fetch();
+$totalCourses = (int)($courseMetrics['total_courses'] ?? 0);
+$completedCourses = (int)($courseMetrics['completed_courses'] ?? 0);
+$inProgressCourses = max(0, $totalCourses - $completedCourses);
 
 // Fetch Real Task Metrics by Status
 $stmtTasks = $db->prepare("SELECT status, COUNT(*) as cnt FROM tasks WHERE user_id = :uid AND deleted_at IS NULL GROUP BY status");
@@ -37,17 +39,23 @@ $doneTasks = (int)($rawStatus['Done'] ?? 0);
 $totalTasks = $openTasks + $inProgressTasks + $reviewTasks + $doneTasks;
 $taskCompletionPct = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
 
-// Fetch Real Time Log Metrics
-$stmtTotalTime = $db->prepare("SELECT SUM(study_minutes) as total_mins FROM daily_activities WHERE user_id = :uid");
-$stmtTotalTime->execute(['uid' => $userId]);
-$totalMins = (int)($stmtTotalTime->fetch()['total_mins'] ?? 0);
+// Fetch Real Time Log Metrics combined into a single query
+$weekStart = date('Y-m-d', strtotime('monday this week'));
+$stmtTime = $db->prepare("
+    SELECT 
+        COALESCE(SUM(study_minutes), 0) as total_mins,
+        COALESCE(SUM(CASE WHEN activity_date >= :wstart THEN study_minutes ELSE 0 END), 0) as week_mins
+    FROM daily_activities 
+    WHERE user_id = :uid
+");
+$stmtTime->execute(['uid' => $userId, 'wstart' => $weekStart]);
+$timeMetrics = $stmtTime->fetch();
+
+$totalMins = (int)($timeMetrics['total_mins'] ?? 0);
 $totalHours = floor($totalMins / 60);
 $remMins = $totalMins % 60;
 
-$weekStart = date('Y-m-d', strtotime('monday this week'));
-$stmtWeekTime = $db->prepare("SELECT SUM(study_minutes) as week_mins FROM daily_activities WHERE user_id = :uid AND activity_date >= :wstart");
-$stmtWeekTime->execute(['uid' => $userId, 'wstart' => $weekStart]);
-$weekMins = (int)($stmtWeekTime->fetch()['week_mins'] ?? 0);
+$weekMins = (int)($timeMetrics['week_mins'] ?? 0);
 $weekHours = floor($weekMins / 60);
 $weekRemMins = $weekMins % 60;
 

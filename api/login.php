@@ -3,30 +3,31 @@ require_once __DIR__ . '/../config/db.php';
 startSecureSession();
 
 try {
-    $db = getDbConnection();
-
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true) ?? $_POST;
+    $data = getJsonRequestData();
 
     $email = isset($data['email']) ? strtolower(trim($data['email'])) : '';
     $password = isset($data['password']) ? trim($data['password']) : '';
     $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+    // Validate inputs BEFORE doing rate limit DB queries!
+    if (empty($email) || empty($password)) {
+        sendJsonResponse(['success' => false, 'message' => 'Please enter both email and password.'], 400);
+    }
+
+    $db = getDbConnection();
 
     // Enforce brute-force attack rate limiting (5 attempts per 15 minutes)
     if (!checkLoginRateLimit($db, $ip, 5, 900)) {
         sendJsonResponse(['success' => false, 'message' => 'Too many failed login attempts. Please wait 15 minutes before trying again.'], 429);
     }
 
-    if (empty($email) || empty($password)) {
-        sendJsonResponse(['success' => false, 'message' => 'Please enter both email and password.'], 400);
-    }
-
-    $stmt = $db->prepare("SELECT id, name, email, password FROM users WHERE LOWER(email) = :email");
+    // Query with indexed lookup on email
+    $stmt = $db->prepare("SELECT id, name, email, password FROM users WHERE email = :email");
     $stmt->execute(['email' => $email]);
-    $user = $stmt->fetch();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user || empty($user['password'])) {
-        // Enforce constant-time comparison or rejection to mitigate user enumeration
+        // Enforce constant-time comparison to mitigate user enumeration
         password_verify($password, '$2y$10$dummyhashforenumerationpreventiondummyhash12345678901');
         recordLoginAttempt($db, $ip, $email);
         sendJsonResponse(['success' => false, 'message' => 'Invalid email or password.'], 401);
@@ -63,4 +64,3 @@ try {
     error_log('Login Error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred during login. Please try again.'], 500);
 }
-

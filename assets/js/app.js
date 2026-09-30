@@ -333,7 +333,6 @@
   function renderWeekDays() {
     const weekDaysEl = document.getElementById('weekDays');
     if (!weekDaysEl) return;
-    weekDaysEl.innerHTML = '';
 
     const defaultDays = [
       { day_index: 0, day_name: 'Mon', is_completed: 0 },
@@ -345,43 +344,43 @@
       { day_index: 6, day_name: 'Sun', is_completed: 0 }
     ];
 
-    const streaks = (appState.weekly_streaks && appState.weekly_streaks.length) ? appState.weekly_streaks : defaultDays;
+    if (!appState.weekly_streaks || appState.weekly_streaks.length === 0) {
+      appState.weekly_streaks = defaultDays;
+    }
+    const streaks = appState.weekly_streaks;
+    const todayIndex = (new Date().getDay() + 6) % 7;
+
+    weekDaysEl.innerHTML = '';
 
     streaks.forEach((item) => {
+      const dIdx = parseInt(item.day_index, 10);
+      const isToday = (dIdx === todayIndex);
+      const isChecked = parseInt(item.is_completed, 10) === 1;
+
       const col = document.createElement('div');
-      col.className = 'day-col';
+      col.className = 'day-col' + (isToday ? ' is-today' : '');
+      col.title = item.day_name + (isToday ? ' (Today)' : '');
 
       const name = document.createElement('span');
       name.className = 'day-name';
-      name.textContent = item.day_name;
+      name.innerHTML = escapeHtml(item.day_name) + (isToday ? ' &bull;' : '');
 
       const circle = document.createElement('div');
-      circle.className = 'day-circle' + (item.is_completed == 1 ? ' checked' : '');
+      circle.className = 'day-circle' + (isChecked ? ' checked' : '') + (isToday ? ' today-ring' : '');
+      circle.setAttribute('role', 'button');
+      circle.setAttribute('tabindex', '0');
+      circle.setAttribute('data-day-index', dIdx);
+      circle.setAttribute('data-day-name', item.day_name);
+      circle.setAttribute('aria-label', `${item.day_name}: ${isChecked ? 'Completed' : 'Not completed'}`);
       circle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17l9-10"/></svg>';
-      
-      // Interactive Toggle Click with SQL Database Sync
-      circle.addEventListener('click', async () => {
-        const newStatus = item.is_completed == 1 ? 0 : 1;
-        item.is_completed = newStatus;
-        renderWeekDays();
-        updateStreakCountUI();
 
-        try {
-          const res = await secureFetch('api/toggle_streak.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ day_index: item.day_index, status: newStatus })
-          });
-          const data = await res.json();
-          if (data.success) {
-            showToast(`${item.day_name} check-in updated. Streak: ${data.data.total_learning_streak} days`);
-            if (appState.stats) {
-              appState.stats.learning_streak = data.data.total_learning_streak;
-              renderStats();
-            }
-          }
-        } catch (e) {
-          console.error('Error toggling streak:', e);
+      circle.addEventListener('click', () => {
+        window.toggleStreakDay(dIdx, circle);
+      });
+      circle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          window.toggleStreakDay(dIdx, circle);
         }
       });
 
@@ -393,12 +392,93 @@
     updateStreakCountUI();
   }
 
+  window.toggleStreakDay = async function(dayIndex, circleEl) {
+    if (!circleEl) {
+      circleEl = document.querySelector(`.day-circle[data-day-index="${dayIndex}"]`);
+    }
+    if (!circleEl) return;
+
+    const wasChecked = circleEl.classList.contains('checked');
+    const newStatus = wasChecked ? 0 : 1;
+
+    // 1. Optimistic UI update
+    circleEl.classList.toggle('checked', newStatus === 1);
+    const dayName = circleEl.getAttribute('data-day-name') || 'Day';
+    circleEl.setAttribute('aria-label', `${dayName}: ${newStatus === 1 ? 'Completed' : 'Not completed'}`);
+
+    // Update in-memory state
+    if (appState && appState.weekly_streaks) {
+      const target = appState.weekly_streaks.find(s => parseInt(s.day_index, 10) === parseInt(dayIndex, 10));
+      if (target) target.is_completed = newStatus;
+    }
+
+    // 2. Count checked circles and update UI
+    updateStreakCountUI();
+
+    // 3. Persist to API
+    try {
+      const res = await secureFetch('api/toggle_streak.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ day_index: dayIndex, status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`${dayName} check-in ${newStatus === 1 ? 'completed! 🔥' : 'cleared'}`);
+
+        const totalStreak = data.data?.total_learning_streak;
+        const longestStreak = data.data?.longest_streak;
+
+        if (totalStreak !== undefined) {
+          if (appState && appState.stats) {
+            appState.stats.learning_streak = totalStreak;
+          }
+          const streakBig = document.getElementById('streakBig');
+          if (streakBig) streakBig.textContent = `${totalStreak} days`;
+          const streakVal = document.getElementById('statStreakVal');
+          if (streakVal) streakVal.textContent = totalStreak;
+        }
+
+        if (longestStreak !== undefined) {
+          if (appState && appState.stats) {
+            appState.stats.longest_streak = longestStreak;
+          }
+          const longestVal = document.getElementById('longestStreakVal');
+          if (longestVal) longestVal.textContent = `${longestStreak} days`;
+        }
+      } else {
+        // Rollback on server error
+        circleEl.classList.toggle('checked', wasChecked);
+        if (appState && appState.weekly_streaks) {
+          const target = appState.weekly_streaks.find(s => parseInt(s.day_index, 10) === parseInt(dayIndex, 10));
+          if (target) target.is_completed = wasChecked ? 1 : 0;
+        }
+        updateStreakCountUI();
+        showToast(data.message || 'Error updating streak');
+      }
+    } catch (e) {
+      console.error('Error toggling streak:', e);
+      circleEl.classList.toggle('checked', wasChecked);
+      if (appState && appState.weekly_streaks) {
+        const target = appState.weekly_streaks.find(s => parseInt(s.day_index, 10) === parseInt(dayIndex, 10));
+        if (target) target.is_completed = wasChecked ? 1 : 0;
+      }
+      updateStreakCountUI();
+      showToast('Could not save streak. Check connection.');
+    }
+  };
+
   function updateStreakCountUI() {
-    const streaks = appState.weekly_streaks || [];
+    const allCircles = document.querySelectorAll('#weekDays .day-circle');
     let count = 0;
-    for (let i = 0; i < streaks.length; i++) {
-      if (streaks[i].is_completed == 1) count++;
-      else break;
+    if (allCircles.length > 0) {
+      allCircles.forEach(c => {
+        if (c.classList.contains('checked')) count++;
+      });
+    } else if (appState && appState.weekly_streaks) {
+      appState.weekly_streaks.forEach(s => {
+        if (parseInt(s.is_completed, 10) === 1) count++;
+      });
     }
     const countEl = document.getElementById('streakCount');
     if (countEl) countEl.textContent = count;
@@ -761,6 +841,46 @@
           btnToggleTimer.textContent = 'Resume';
           document.title = 'Mindrift — Project & Learning Tracker';
           showToast('Session paused');
+        }
+      });
+    }
+
+    // 11b. Focus Timer Fullscreen Mode
+    const btnFocusFs = document.getElementById('btnFocusFullscreen');
+    const focusTimerCard = document.getElementById('focusTimerCard');
+
+    if (btnFocusFs && focusTimerCard) {
+      const toggleFocusFullscreen = () => {
+        const isFs = focusTimerCard.classList.toggle('is-fullscreen');
+        if (isFs) {
+          document.body.style.overflow = 'hidden';
+          if (focusTimerCard.requestFullscreen && !document.fullscreenElement) {
+            focusTimerCard.requestFullscreen().catch(() => {});
+          }
+          showToast('Focus Mode: Fullscreen activated');
+        } else {
+          document.body.style.overflow = '';
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
+        }
+      };
+
+      btnFocusFs.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleFocusFullscreen();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && focusTimerCard.classList.contains('is-fullscreen')) {
+          toggleFocusFullscreen();
+        }
+      });
+
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && focusTimerCard.classList.contains('is-fullscreen')) {
+          focusTimerCard.classList.remove('is-fullscreen');
+          document.body.style.overflow = '';
         }
       });
     }

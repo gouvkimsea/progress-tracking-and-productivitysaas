@@ -38,10 +38,43 @@ $stmtStreaks = $db->prepare("SELECT * FROM weekly_streaks WHERE user_id = :uid O
 $stmtStreaks->execute(['uid' => $userId]);
 $weeklyStreaks = $stmtStreaks->fetchAll();
 
+if (count($weeklyStreaks) < 7) {
+    $dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    $existingIndices = array_column($weeklyStreaks, 'day_index');
+    $stmtInsertDay = $db->prepare("INSERT INTO weekly_streaks (user_id, day_index, day_name, is_completed) VALUES (:uid, :didx, :dname, 0)");
+    foreach ($dayNames as $idx => $name) {
+        if (!in_array($idx, $existingIndices)) {
+            $stmtInsertDay->execute(['uid' => $userId, 'didx' => $idx, 'dname' => $name]);
+        }
+    }
+    $stmtStreaks->execute(['uid' => $userId]);
+    $weeklyStreaks = $stmtStreaks->fetchAll();
+}
+
 $completedStreakDays = 0;
 foreach ($weeklyStreaks as $ws) {
     if (!empty($ws['is_completed'])) $completedStreakDays++;
 }
+
+if ($completedStreakDays > 0 && (int)$stats['learning_streak'] === 0) {
+    $stats['learning_streak'] = $completedStreakDays;
+    $db->prepare("UPDATE user_stats SET learning_streak = :s WHERE user_id = :uid")
+       ->execute(['s' => $completedStreakDays, 'uid' => $userId]);
+}
+
+$todayDayIndex = (int)date('N') - 1; // 0=Mon, ..., 6=Sun
+
+// Fetch today's journal & todos
+$todayDate = date('Y-m-d');
+$stmtTodayJ = $db->prepare("SELECT * FROM daily_journal WHERE user_id = :uid AND entry_date = :dt");
+$stmtTodayJ->execute(['uid' => $userId, 'dt' => $todayDate]);
+$todayJournal = $stmtTodayJ->fetch();
+
+$stmtTodayTodos = $db->prepare("SELECT COUNT(*) AS total, SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) AS done FROM journal_todos WHERE user_id = :uid AND todo_date = :dt");
+$stmtTodayTodos->execute(['uid' => $userId, 'dt' => $todayDate]);
+$todayTodoCounts = $stmtTodayTodos->fetch();
+$todayTodosTotal = (int)($todayTodoCounts['total'] ?? 0);
+$todayTodosDone = (int)($todayTodoCounts['done'] ?? 0);
 
 $pageTitle = 'Mindrift — Dashboard';
 include __DIR__ . '/includes/head.php';
@@ -89,14 +122,21 @@ include __DIR__ . '/includes/head.php';
         </button>
       </div>
 
-      <div class="card stat-card" style="display:flex; flex-direction:column; justify-content:space-between;">
-        <div>
-          <div class="stat-head" style="display:flex; align-items:center; justify-content:space-between;">
+      <div class="card stat-card focus-timer-card" id="focusTimerCard" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div class="focus-timer-content">
+          <div class="stat-head focus-timer-header" style="display:flex; align-items:center; justify-content:space-between;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="dash" style="background:var(--brand-primary)"></span>
-              <span>Focus timer</span>
+              <span class="focus-timer-title">Focus timer</span>
             </div>
-            <span id="pomoSessionsBadge" class="badge badge-neutral">0 completed today</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="pomoSessionsBadge" class="badge badge-neutral">0 completed today</span>
+              <button type="button" class="btn-focus-fullscreen" id="btnFocusFullscreen" title="Full screen Focus Mode" aria-label="Full screen Focus Mode">
+                <svg class="ic-expand" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                <svg class="ic-compress" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+                <span class="fs-label" style="display:none;">Exit (Esc)</span>
+              </button>
+            </div>
           </div>
 
           <!-- Pomodoro Mode Tabs -->
@@ -107,12 +147,12 @@ include __DIR__ . '/includes/head.php';
           </div>
 
           <!-- Timer Display & Controls -->
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
-            <div>
+          <div class="focus-timer-body" style="display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
+            <div class="focus-timer-time-wrap">
               <div id="timerDisplay" style="font-size:32px; font-weight:700; letter-spacing:-0.03em; color:var(--text-primary); font-family:ui-monospace, SFMono-Regular, Menlo, monospace; line-height:1;">25:00</div>
-              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:6px;">Total study: <b id="statTimeVal"><?= (int)$stats['study_hours']; ?>h <?= (int)$stats['study_minutes']; ?>m</b></div>
+              <div class="focus-timer-subtext" style="font-size:11.5px; color:var(--text-secondary); margin-top:6px;">Total study: <b id="statTimeVal"><?= (int)$stats['study_hours']; ?>h <?= (int)$stats['study_minutes']; ?>m</b></div>
             </div>
-            <div style="display:flex; gap:6px;">
+            <div class="focus-timer-btn-wrap" style="display:flex; gap:6px;">
               <button id="btnToggleTimer" class="btn btn-primary" style="padding:6px 14px; font-size:12px;">Start</button>
               <button id="btnResetTimer" class="btn btn-secondary" title="Reset Session" style="padding:6px 10px; font-size:12px;">Reset</button>
             </div>
@@ -120,11 +160,62 @@ include __DIR__ . '/includes/head.php';
         </div>
 
         <!-- Mini Progress Bar -->
-        <div style="margin-top:16px; background:var(--border-base); border-radius:var(--radius-xs); height:4px; overflow:hidden;">
+        <div class="focus-timer-progress-wrap" style="margin-top:16px; background:var(--border-base); border-radius:var(--radius-xs); height:4px; overflow:hidden;">
           <div id="pomoProgressBar" style="width:0%; height:100%; background:var(--brand-primary); transition:width 0.3s ease;"></div>
+        </div>
+        <div class="focus-timer-zen-quote" style="display:none;">
+          <span>Deep focus mode · Distractions muted</span>
         </div>
       </div>
 
+    </section>
+
+    <!-- Daily Reflection & To-Do Check-in -->
+    <section class="card" style="margin-bottom: 24px; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-subtle) 100%); border-left: 4px solid var(--brand-primary); box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(59, 130, 246, 0.12); color: var(--brand-primary); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink:0;">
+          <?= $todayJournal ? '📔' : '✨'; ?>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">
+              <?= $todayJournal ? "Today's Reflection Logged" : "Daily Reflection & To-Do Check-in"; ?>
+            </h3>
+            <?php if ($todayJournal): ?>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700; font-size: 11.5px;">
+                Rated <?= (int)$todayJournal['rating']; ?>/5 (<?= htmlspecialchars($todayJournal['mood_label']); ?>)
+              </span>
+            <?php else: ?>
+              <span class="badge badge-neutral" style="font-size: 11px;">Pending Today</span>
+            <?php endif; ?>
+          </div>
+          <p style="margin: 4px 0 0; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
+            <?php if ($todayJournal): ?>
+              <?= !empty($todayJournal['accomplishments']) ? htmlspecialchars(substr($todayJournal['accomplishments'], 0, 90)) . '...' : 'Your daily journal entry is saved.'; ?>
+              &bull; <b><?= $todayTodosDone; ?>/<?= $todayTodosTotal; ?></b> daily to-dos completed today.
+            <?php else: ?>
+              Rate how your day went (1 to 5), record your accomplishments, and stay on top of your daily tasks.
+            <?php endif; ?>
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <?php if (!$todayJournal): ?>
+          <div style="display: flex; align-items: center; gap: 5px; background: var(--bg-surface); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-base);">
+            <span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-right: 2px;">Rate day:</span>
+            <a href="journal.php?action=quiz&rate=1" class="btn" style="padding: 3px 7px; font-size: 11.5px; background: transparent; border: 1px solid var(--border-base); text-decoration: none;" title="1 - Rough Day">1 🌧️</a>
+            <a href="journal.php?action=quiz&rate=2" class="btn" style="padding: 3px 7px; font-size: 11.5px; background: transparent; border: 1px solid var(--border-base); text-decoration: none;" title="2 - Slow Going">2 ⛅</a>
+            <a href="journal.php?action=quiz&rate=3" class="btn" style="padding: 3px 7px; font-size: 11.5px; background: transparent; border: 1px solid var(--border-base); text-decoration: none;" title="3 - Steady">3 🌤️</a>
+            <a href="journal.php?action=quiz&rate=4" class="btn" style="padding: 3px 7px; font-size: 11.5px; background: transparent; border: 1px solid var(--border-base); text-decoration: none;" title="4 - Great">4 😊</a>
+            <a href="journal.php?action=quiz&rate=5" class="btn" style="padding: 3px 7px; font-size: 11.5px; background: var(--brand-primary); color: #fff; font-weight: 700; border: none; text-decoration: none;" title="5 - Phenomenal">5 🚀</a>
+          </div>
+        <?php endif; ?>
+        <a href="journal.php<?= $todayJournal ? '' : '?action=quiz'; ?>" class="btn <?= $todayJournal ? 'btn-secondary' : 'btn-primary'; ?>" style="font-size: 12.5px; padding: 7px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+          <span><?= $todayJournal ? 'Open Daily Journal' : 'Take Daily Quiz ✨'; ?></span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
     </section>
 
     <!-- Timeline Heatmap -->
@@ -182,10 +273,35 @@ include __DIR__ . '/includes/head.php';
         </div>
 
         <div class="streak-big" id="streakBig"><?= (int)$stats['learning_streak']; ?> days</div>
-        <div class="week-days" id="weekDays"></div>
+        <div class="week-days" id="weekDays">
+          <?php foreach ($weeklyStreaks as $ws): 
+            $isDone = !empty($ws['is_completed']);
+            $didx = (int)$ws['day_index'];
+            $dname = htmlspecialchars($ws['day_name']);
+            $isToday = ($didx === $todayDayIndex);
+          ?>
+            <div class="day-col <?= $isToday ? 'is-today' : ''; ?>" title="<?= $dname; ?><?= $isToday ? ' (Today)' : ''; ?>">
+              <span class="day-name">
+                <?= $dname; ?><?= $isToday ? ' •' : ''; ?>
+              </span>
+              <div class="day-circle <?= $isDone ? 'checked' : ''; ?> <?= $isToday ? 'today-ring' : ''; ?>" 
+                   role="button" 
+                   tabindex="0" 
+                   data-day-index="<?= $didx; ?>"
+                   data-day-name="<?= $dname; ?>"
+                   aria-label="<?= $dname; ?>: <?= $isDone ? 'Completed' : 'Not completed'; ?>"
+                   onclick="window.toggleStreakDay(<?= $didx; ?>, this)"
+                   onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.toggleStreakDay(<?= $didx; ?>, this);}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12.5 10 17l9-10"/>
+                </svg>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
 
         <div class="streak-foot">
-          <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Current: <b id="streakCount"><?= (int)$completedStreakDays; ?></b>/7</div>
+          <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5Z"/></svg> Current: <b id="streakCount"><?= (int)$completedStreakDays; ?></b>/7</div>
           <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Goal: <b>7 days</b></div>
         </div>
       </div>
@@ -223,6 +339,6 @@ include __DIR__ . '/includes/head.php';
 
 </div>
 
-<script src="assets/js/app.js"></script>
+<script src="assets/js/app.js?v=<?= assetVersion(); ?>"></script>
 </body>
 </html>

@@ -23,11 +23,22 @@ if (file_exists($envFile)) {
     }
 }
 
-define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-define('DB_PORT', getenv('DB_PORT') ?: '3306');
-define('DB_NAME', getenv('DB_NAME') ?: 'mindrift_db');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
+if (!function_exists('envValue')) {
+    function envValue(string $key, ?string $default = null): ?string {
+        $val = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+        return ($val !== false && $val !== null && $val !== '') ? (string)$val : $default;
+    }
+}
+
+if (!defined('DB_DRIVER')) define('DB_DRIVER', envValue('DB_DRIVER', 'mysql'));
+if (!defined('DB_HOST')) define('DB_HOST', envValue('DB_HOST', '127.0.0.1'));
+if (!defined('DB_PORT')) define('DB_PORT', envValue('DB_PORT', '3306'));
+if (!defined('DB_NAME')) define('DB_NAME', envValue('DB_NAME', 'mindrift_db'));
+if (!defined('DB_USER')) define('DB_USER', envValue('DB_USER', 'root'));
+if (!defined('DB_PASS')) define('DB_PASS', envValue('DB_PASS', ''));
+if (!defined('DB_CHARSET')) define('DB_CHARSET', envValue('DB_CHARSET', 'utf8mb4'));
+if (!defined('DB_TIMEOUT')) define('DB_TIMEOUT', (int)envValue('DB_TIMEOUT', '5'));
+if (!defined('DB_SOCKET')) define('DB_SOCKET', envValue('DB_SOCKET', ''));
 
 // Safe session starter with security headers
 function startSecureSession(): void {
@@ -143,141 +154,149 @@ function clearLoginAttempts(PDO $db, string $ip): void {
     }
 }
 
-function getDbConnection(): PDO {
-    static $pdo = null;
-    if ($pdo !== null) {
-        return $pdo;
+/**
+ * Database Connection Manager
+ * Manages request-scoped singleton PDO instances with high-performance native
+ * prepared statements, timeout protections, standardized character set collation,
+ * and seamless fallback between MySQL and SQLite.
+ */
+class DatabaseConnectionManager {
+    private static ?PDO $instance = null;
+
+    /**
+     * Get or create the singleton PDO connection.
+     *
+     * @param bool $forceNew If true, drops any existing connection and establishes a fresh one.
+     * @return PDO
+     */
+    public static function getConnection(bool $forceNew = false): PDO {
+        if (self::$instance !== null && !$forceNew) {
+            return self::$instance;
+        }
+
+        self::$instance = null;
+        $driver = strtolower(trim(DB_DRIVER));
+
+        // 1. Explicit SQLite Driver Requested
+        if ($driver === 'sqlite') {
+            self::$instance = self::createSqliteConnection();
+            return self::$instance;
+        }
+
+        // 2. MySQL Connection with Graceful Fallback
+        try {
+            self::$instance = self::createMysqlConnection();
+            return self::$instance;
+        } catch (PDOException $e) {
+            // Log connection failure without exposing credentials
+            error_log("[Mindrift DB] MySQL connection failure: " . $e->getMessage() . " -> Falling back to SQLite.");
+
+            // If app is configured strictly for mysql in production with no fallback allowed, throw sanitized exception
+            if (envValue('APP_ENV') === 'production' && envValue('DB_ALLOW_SQLITE_FALLBACK') === 'false') {
+                throw new RuntimeException("Database connection failure. Please verify MySQL service status.");
+            }
+
+            self::$instance = self::createSqliteConnection();
+            return self::$instance;
+        }
     }
 
-    // Try MySQL First
-    try {
-        $dsnWithoutDb = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";charset=utf8mb4";
-        $pdo = new PDO($dsnWithoutDb, DB_USER, DB_PASS, [
+    /**
+     * Cleanly close the active database connection and reset the singleton instance.
+     */
+    public static function closeConnection(): void {
+        self::$instance = null;
+    }
+
+    /**
+     * Create optimized MySQL PDO instance with security options.
+     */
+    private static function createMysqlConnection(): PDO {
+        $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
-        ]);
-        
-        $pdo->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-        $pdo->exec("USE `" . DB_NAME . "`");
-        
-        // Only run DDL schema checks if users table does not exist
-        $tableCheck = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
-        if (!$tableCheck) {
-            ensureMysqlTables($pdo);
-        } else {
-            // Check if default user 1 has null password and seed it
-            try {
-                $checkPass = $pdo->query("SELECT id, password FROM users WHERE id = 1")->fetch();
-                if ($checkPass && empty($checkPass['password'])) {
-                    $defaultHash = password_hash('password123', PASSWORD_DEFAULT);
-                    $pdo->prepare("UPDATE users SET password = :p WHERE id = 1")->execute(['p' => $defaultHash]);
-                }
-            } catch (Throwable $e) {}
+            PDO::ATTR_TIMEOUT => DB_TIMEOUT,
+        ];
+
+        // Found rows attribute compatibility (PHP 8.5+ vs older)
+        if (defined('Pdo\Mysql::ATTR_FOUND_ROWS')) {
+            $options[\Pdo\Mysql::ATTR_FOUND_ROWS] = true;
+        } elseif (defined('PDO::MYSQL_ATTR_FOUND_ROWS')) {
+            $options[@constant('PDO::MYSQL_ATTR_FOUND_ROWS')] = true;
         }
-        try { $pdo->exec("ALTER TABLE tasks ADD COLUMN priority VARCHAR(20) DEFAULT 'Medium'"); } catch (Throwable $e) {}
-        try { $pdo->exec("ALTER TABLE tasks ADD COLUMN due_date VARCHAR(50) NULL"); } catch (Throwable $e) {}
-        try { $pdo->exec("ALTER TABLE tasks ADD COLUMN deleted_at DATETIME NULL"); } catch (Throwable $e) {}
-        try { $pdo->exec("ALTER TABLE users ADD COLUMN schedule_token VARCHAR(64) NULL"); } catch (Throwable $e) {}
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS project_goals (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            title VARCHAR(150) NOT NULL,
-            category VARCHAR(50) DEFAULT 'Productivity',
-            target_value INT DEFAULT 100,
-            current_value INT DEFAULT 0,
-            unit VARCHAR(20) DEFAULT '%',
-            due_date VARCHAR(50) NULL,
-            status VARCHAR(30) DEFAULT 'On Track',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        if (envValue('DB_PERSISTENT') === 'true') {
+            $options[PDO::ATTR_PERSISTENT] = true;
+        }
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS flashcards (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            course_name VARCHAR(100) NOT NULL,
-            question TEXT NOT NULL,
-            answer TEXT NOT NULL,
-            interval_days INT DEFAULT 1,
-            ease_factor DECIMAL(3,2) DEFAULT 2.50,
-            due_date DATE NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        if (!empty(DB_SOCKET)) {
+            $dsnWithDb = "mysql:unix_socket=" . DB_SOCKET . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+        } else {
+            $dsnWithDb = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+        }
 
         try {
-            $checkGoals = $pdo->query("SELECT COUNT(*) as cnt FROM project_goals WHERE user_id = 1")->fetch();
-            if (($checkGoals['cnt'] ?? 0) == 0) {
-                $pdo->exec("INSERT INTO project_goals (user_id, title, category, target_value, current_value, unit, due_date, status) VALUES
-                    (1, 'Complete Q3 Design System Roadmap', 'Productivity', 100, 75, '%', 'End of Quarter', 'On Track'),
-                    (1, 'Log 40 Hours of Deep Focus Work', 'Learning', 40, 28, 'hrs', 'This Month', 'On Track'),
-                    (1, 'Publish Multi-Cloud API Integration', 'Engineering', 100, 30, '%', 'Next Month', 'At Risk')");
+            $pdo = new PDO($dsnWithDb, DB_USER, DB_PASS, $options);
+            $pdo->exec("SET NAMES " . DB_CHARSET . " COLLATE utf8mb4_unicode_ci");
+            return $pdo;
+        } catch (PDOException $ex) {
+            // Database might not exist yet; connect without DB name, create it, and ensure schema
+            if (!empty(DB_SOCKET)) {
+                $dsnWithoutDb = "mysql:unix_socket=" . DB_SOCKET . ";charset=" . DB_CHARSET;
+            } else {
+                $dsnWithoutDb = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";charset=" . DB_CHARSET;
             }
 
-            $checkFC = $pdo->query("SELECT COUNT(*) as cnt FROM flashcards WHERE user_id = 1")->fetch();
-            if (($checkFC['cnt'] ?? 0) == 0) {
-                $pdo->exec("INSERT INTO flashcards (user_id, course_name, question, answer, interval_days, ease_factor, due_date) VALUES
-                    (1, 'UI Design Mastery', 'What is the 60-30-10 Rule in UI design?', 'A classic aesthetic rule: 60% dominant base color, 30% secondary structure color, and 10% accent color for key call-to-actions and focal points.', 1, 2.50, CURDATE()),
-                    (1, 'Learn JavaScript', 'What is the key difference between Promise.all and Promise.allSettled?', 'Promise.all rejects immediately when any promise fails, whereas Promise.allSettled waits for all promises to settle and returns an array with status and value/reason for each.', 1, 2.50, CURDATE()),
-                    (1, 'Python for Data', 'In Pandas, what is the difference between loc and iloc?', 'loc accesses rows and columns by label/index names, whereas iloc accesses strictly by integer positional index coordinates.', 1, 2.50, CURDATE()),
-                    (1, 'Learn JavaScript', 'What is a closure in JavaScript?', 'A closure is the combination of a function bundled together with references to its surrounding lexical state, allowing an inner function to access an outer function scope even after it has returned.', 1, 2.50, CURDATE())");
-            }
-        } catch (Throwable $e) {}
+            $pdo = new PDO($dsnWithoutDb, DB_USER, DB_PASS, $options);
+            $pdo->exec("SET NAMES " . DB_CHARSET . " COLLATE utf8mb4_unicode_ci");
+            $pdo->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "` DEFAULT CHARACTER SET " . DB_CHARSET . " COLLATE utf8mb4_unicode_ci");
+            $pdo->exec("USE `" . DB_NAME . "`");
+            ensureMysqlTables($pdo);
+            return $pdo;
+        }
+    }
 
-        return $pdo;
-    } catch (PDOException $e) {
-        // Fallback to SQLite if MySQL server is not accessible
+    /**
+     * Create optimized SQLite fallback PDO instance with WAL mode.
+     */
+    private static function createSqliteConnection(): PDO {
         $sqliteFile = __DIR__ . '/../mindrift.sqlite';
         $dsn = "sqlite:" . $sqliteFile;
         $pdo = new PDO($dsn, null, null, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT => DB_TIMEOUT,
         ]);
         $pdo->exec("PRAGMA foreign_keys = ON;");
+        $pdo->exec("PRAGMA journal_mode = WAL;");
 
-        // Only run DDL schema checks if users table does not exist
+        // Ensure tables exist on SQLite
         $tableCheck = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")->fetch();
         if (!$tableCheck) {
             ensureSqliteTables($pdo);
-        } else {
-            try {
-                $checkPass = $pdo->query("SELECT id, password FROM users WHERE id = 1")->fetch();
-                if ($checkPass && empty($checkPass['password'])) {
-                    $defaultHash = password_hash('password123', PASSWORD_DEFAULT);
-                    $pdo->prepare("UPDATE users SET password = :p WHERE id = 1")->execute(['p' => $defaultHash]);
-                }
-            } catch (Throwable $e) {}
         }
-        try { $pdo->exec("ALTER TABLE tasks ADD COLUMN priority TEXT DEFAULT 'Medium'"); } catch (Throwable $e) {}
-        try { $pdo->exec("ALTER TABLE tasks ADD COLUMN due_date TEXT NULL"); } catch (Throwable $e) {}
-        try { $pdo->exec("ALTER TABLE tasks ADD COLUMN deleted_at DATETIME NULL"); } catch (Throwable $e) {}
-        try { $pdo->exec("ALTER TABLE users ADD COLUMN schedule_token TEXT NULL"); } catch (Throwable $e) {}
-
-        $pdo->exec("CREATE TABLE IF NOT EXISTS project_goals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            category TEXT DEFAULT 'Productivity',
-            target_value INTEGER DEFAULT 100,
-            current_value INTEGER DEFAULT 0,
-            unit TEXT DEFAULT '%',
-            due_date TEXT NULL,
-            status TEXT DEFAULT 'On Track',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );");
-
-        try {
-            $checkGoals = $pdo->query("SELECT COUNT(*) as cnt FROM project_goals WHERE user_id = 1")->fetch();
-            if (($checkGoals['cnt'] ?? 0) == 0) {
-                $pdo->exec("INSERT INTO project_goals (user_id, title, category, target_value, current_value, unit, due_date, status) VALUES
-                    (1, 'Complete Q3 Design System Roadmap', 'Productivity', 100, 75, '%', 'End of Quarter', 'On Track'),
-                    (1, 'Log 40 Hours of Deep Focus Work', 'Learning', 40, 28, 'hrs', 'This Month', 'On Track'),
-                    (1, 'Publish Multi-Cloud API Integration', 'Engineering', 100, 30, '%', 'Next Month', 'At Risk')");
-            }
-        } catch (Throwable $e) {}
 
         return $pdo;
     }
+}
+
+/**
+ * Global database connection helper.
+ * Preserves complete backwards compatibility with all existing application calls.
+ *
+ * @param bool $forceNew
+ * @return PDO
+ */
+function getDbConnection(bool $forceNew = false): PDO {
+    return DatabaseConnectionManager::getConnection($forceNew);
+}
+
+/**
+ * Cleanly close the active database connection.
+ */
+function closeDbConnection(): void {
+    DatabaseConnectionManager::closeConnection();
 }
 
 function ensureMysqlTables(PDO $pdo): void {
@@ -370,6 +389,8 @@ function ensureMysqlTables(PDO $pdo): void {
         title VARCHAR(200) NOT NULL,
         course_name VARCHAR(150) NOT NULL,
         due_date VARCHAR(50) NOT NULL,
+        description TEXT NULL,
+        task_planning TEXT NULL,
         status VARCHAR(30) DEFAULT 'In Progress',
         completed_by_user_id INT NULL,
         completed_by_user_name VARCHAR(100) NULL,
@@ -437,7 +458,8 @@ function ensureMysqlTables(PDO $pdo): void {
         user_id INT NOT NULL,
         action_type VARCHAR(100) NOT NULL,
         description TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_activity_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS flashcards (
@@ -449,7 +471,57 @@ function ensureMysqlTables(PDO $pdo): void {
         interval_days INT DEFAULT 1,
         ease_factor DECIMAL(3,2) DEFAULT 2.50,
         due_date DATE NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_flashcards_user_due (user_id, due_date),
+        INDEX idx_flashcards_user_course (user_id, course_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS project_goals (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(150) NOT NULL,
+        category VARCHAR(50) DEFAULT 'Productivity',
+        target_value INT DEFAULT 100,
+        current_value INT DEFAULT 0,
+        unit VARCHAR(20) DEFAULT '%',
+        due_date VARCHAR(50) NULL,
+        status VARCHAR(30) DEFAULT 'On Track',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_goals_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS daily_journal (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        entry_date DATE NOT NULL,
+        rating INT NOT NULL DEFAULT 3,
+        mood_label VARCHAR(50) DEFAULT 'Okay',
+        accomplishments TEXT NULL,
+        challenges TEXT NULL,
+        learning_notes TEXT NULL,
+        journal_text TEXT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY user_date_unique (user_id, entry_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS journal_todos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        task_text VARCHAR(255) NOT NULL,
+        is_completed TINYINT(1) DEFAULT 0,
+        todo_date DATE NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME NULL,
+        INDEX idx_todos_user_date (user_id, todo_date, is_completed)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        ip_address VARCHAR(45) NOT NULL,
+        email VARCHAR(190) NOT NULL,
+        attempted_at INT NOT NULL,
+        INDEX idx_login_ip_time (ip_address, attempted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
     try {
@@ -578,6 +650,8 @@ function ensureSqliteTables(PDO $pdo): void {
         title TEXT NOT NULL,
         course_name TEXT NOT NULL,
         due_date TEXT NOT NULL,
+        description TEXT NULL,
+        task_planning TEXT NULL,
         status TEXT DEFAULT 'In Progress',
         completed_by_user_id INTEGER NULL,
         completed_by_user_name TEXT NULL,
@@ -660,6 +734,62 @@ function ensureSqliteTables(PDO $pdo): void {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS project_goals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        category TEXT DEFAULT 'Productivity',
+        target_value INTEGER DEFAULT 100,
+        current_value INTEGER DEFAULT 0,
+        unit TEXT DEFAULT '%',
+        due_date TEXT NULL,
+        status TEXT DEFAULT 'On Track',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS daily_journal (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        entry_date TEXT NOT NULL,
+        rating INTEGER NOT NULL DEFAULT 3,
+        mood_label TEXT DEFAULT 'Okay',
+        accomplishments TEXT NULL,
+        challenges TEXT NULL,
+        learning_notes TEXT NULL,
+        journal_text TEXT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, entry_date)
+    );");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS journal_todos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        task_text TEXT NOT NULL,
+        is_completed INTEGER DEFAULT 0,
+        todo_date TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME NULL
+    );");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip_address TEXT NOT NULL,
+        email TEXT NOT NULL,
+        attempted_at INTEGER NOT NULL
+    );");
+
+    try {
+        $stmtFC = $pdo->query("SELECT COUNT(*) as cnt FROM flashcards");
+        if ($stmtFC && $stmtFC->fetch()['cnt'] == 0) {
+            $pdo->exec("INSERT INTO flashcards (user_id, course_name, question, answer, interval_days, ease_factor, due_date) VALUES
+                (1, 'UI Design Mastery', 'What is the 60-30-10 Rule in UI design?', 'A classic aesthetic rule: 60% dominant base color, 30% secondary structure color, and 10% accent color for key call-to-actions and focal points.', 1, 2.50, date('now')),
+                (1, 'Learn JavaScript', 'What is the key difference between Promise.all and Promise.allSettled?', 'Promise.all rejects immediately when any promise fails, whereas Promise.allSettled waits for all promises to settle and returns an array with status and value/reason for each.', 1, 2.50, date('now')),
+                (1, 'Python for Data', 'In Pandas, what is the difference between loc and iloc?', 'loc accesses rows and columns by label/index names, whereas iloc accesses strictly by integer positional index coordinates.', 1, 2.50, date('now')),
+                (1, 'Learn JavaScript', 'What is a closure in JavaScript?', 'A closure is the combination of a function bundled together with references to its surrounding lexical state, allowing an inner function to access an outer function scope even after it has returned.', 1, 2.50, date('now'))");
+        }
+    } catch (Throwable $e) {}
+
     // Seed default user if empty
     $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM users");
     if ($stmt->fetch()['cnt'] == 0) {
@@ -686,9 +816,40 @@ function ensureSqliteTables(PDO $pdo): void {
 }
 
 /**
+ * Safely parse incoming JSON request body with POST fallback
+ */
+function getJsonRequestData(): array {
+    $raw = file_get_contents('php://input');
+    if (!empty($raw)) {
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+    }
+    if (!empty($_POST)) {
+        return $_POST;
+    }
+    // CLI fallback
+    if (php_sapi_name() === 'cli') {
+        $stdin = @file_get_contents('php://stdin');
+        if (!empty($stdin)) {
+            $decoded = json_decode($stdin, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+    }
+    return [];
+}
+
+/**
  * Helper to emit JSON response safely with security headers.
  */
 function sendJsonResponse(array $data, int $statusCode = 200): void {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        @session_write_close();
+    }
+
     header('Content-Type: application/json; charset=utf-8');
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: SAMEORIGIN');

@@ -7,11 +7,9 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     checkCsrfToken();
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true) ?? $_POST;
+    $data = getJsonRequestData();
 
     $name = isset($data['name']) ? trim($data['name']) : '';
     $email = isset($data['email']) ? strtolower(trim($data['email'])) : '';
@@ -25,8 +23,10 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Please provide a valid email address.'], 400);
     }
 
-    // Check if email taken by another user
-    $stmtCheck = $db->prepare("SELECT id FROM users WHERE LOWER(email) = :email AND id != :uid");
+    $db = getDbConnection();
+
+    // Check if email taken by another user (uses idx_users_email index directly)
+    $stmtCheck = $db->prepare("SELECT id FROM users WHERE email = :email AND id != :uid");
     $stmtCheck->execute(['email' => $email, 'uid' => $userId]);
     if ($stmtCheck->fetch()) {
         sendJsonResponse(['success' => false, 'message' => 'This email address is already in use by another account.'], 400);
@@ -44,9 +44,10 @@ try {
         $stmtUpdate->execute(['name' => $name, 'email' => $email, 'uid' => $userId]);
     }
 
-    // Update active session values
+    // Update active session values & write close
     $_SESSION['user_name'] = $name;
     $_SESSION['user_email'] = $email;
+    session_write_close();
 
     sendJsonResponse([
         'success' => true,
@@ -60,4 +61,3 @@ try {
     error_log('Update profile error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred updating profile.'], 500);
 }
-

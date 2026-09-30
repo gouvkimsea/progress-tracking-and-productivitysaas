@@ -43,6 +43,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <span class="gantt-nav-text">Tasks</span>
       </a>
 
+      <!-- Daily Journal & To-Do -->
+      <a href="journal.php" class="gantt-nav-item <?= ($currentPage === 'journal.php') ? 'active' : ''; ?>">
+        <svg class="gantt-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="gantt-nav-text">Daily Journal</span>
+      </a>
+
       <!-- Kanban Board -->
       <a href="kanban.php" class="gantt-nav-item <?= ($currentPage === 'kanban.php') ? 'active' : ''; ?>">
         <svg class="gantt-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="11" y="3" width="5" height="12" rx="1"/><rect x="19" y="3" width="5" height="15" rx="1"/></svg>

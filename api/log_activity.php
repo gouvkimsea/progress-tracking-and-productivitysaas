@@ -7,16 +7,21 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     checkCsrfToken();
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true) ?? $_POST;
+    $data = getJsonRequestData();
+    session_write_close();
+    $db = getDbConnection();
 
     $date = isset($data['activity_date']) ? trim($data['activity_date']) : date('Y-m-d');
-    $lessons = isset($data['lessons_completed']) ? (int)$data['lessons_completed'] : 1;
-    $minutes = isset($data['study_minutes']) ? (int)$data['study_minutes'] : 30;
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        $date = date('Y-m-d');
+    }
+    $lessons = isset($data['lessons_completed']) ? max(0, (int)$data['lessons_completed']) : 1;
+    $minutes = isset($data['study_minutes']) ? max(0, (int)$data['study_minutes']) : 30;
     $category = isset($data['category']) ? trim($data['category']) : 'General';
+
+    $db->beginTransaction();
 
     // Upsert into daily_activities
     $isSqlite = $db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
@@ -48,11 +53,11 @@ try {
     // Recalculate total study time & total lessons from daily_activities table
     $stmtTotals = $db->prepare("SELECT SUM(study_minutes) as total_mins, SUM(lessons_completed) as total_lessons FROM daily_activities WHERE user_id = :uid");
     $stmtTotals->execute(['uid' => $userId]);
-    $totals = $stmtTotals->fetch();
+    $totals = $stmtTotals->fetch(PDO::FETCH_ASSOC);
 
     $totalMins = (int)($totals['total_mins'] ?? 0);
     $totalLessons = (int)($totals['total_lessons'] ?? 0);
-    $hours = floor($totalMins / 60);
+    $hours = (int)floor($totalMins / 60);
     $mins = $totalMins % 60;
 
     // Update user_stats in database
@@ -63,6 +68,8 @@ try {
         'wl' => $totalLessons,
         'uid' => $userId
     ]);
+
+    $db->commit();
 
     sendJsonResponse([
         'success' => true,
@@ -77,6 +84,9 @@ try {
         ]
     ]);
 } catch (Throwable $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     error_log('Log activity error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred logging activity.'], 500);
 }

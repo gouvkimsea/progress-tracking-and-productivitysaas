@@ -7,11 +7,11 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     checkCsrfToken();
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true) ?? $_POST;
+    $data = getJsonRequestData();
+    session_write_close();
+    $db = getDbConnection();
 
     $action = $data['action'] ?? 'create';
     if ($action === 'delete') {
@@ -24,7 +24,7 @@ try {
     $code = strtoupper(trim($data['code'] ?? 'PRJ'));
     $category = trim($data['category'] ?? 'Design');
     $level = trim($data['level'] ?? 'Intermediate');
-    $totalModules = (int)($data['total_modules'] ?? 10);
+    $totalModules = max(1, (int)($data['total_modules'] ?? 10));
 
     if (empty($name)) {
         sendJsonResponse(['success' => false, 'message' => 'Project Name is required.'], 400);
@@ -58,7 +58,7 @@ try {
     sendJsonResponse([
         'success' => true,
         'message' => 'New project created successfully!',
-        'project_id' => $db->lastInsertId()
+        'project_id' => (int)$db->lastInsertId()
     ]);
 } catch (Throwable $e) {
     error_log('Create project error: ' . $e->getMessage());

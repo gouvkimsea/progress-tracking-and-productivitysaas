@@ -772,6 +772,178 @@ button, input, select, textarea {
   color: #ffffff;
 }
 
+/* Focus Timer Button & Fullscreen Focus Mode */
+.focus-timer-card {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-focus-fullscreen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.btn-focus-fullscreen:hover {
+  background: var(--brand-subtle);
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.focus-timer-card.is-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  z-index: 99999 !important;
+  padding: 36px 48px !important;
+  background: var(--bg-surface) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: stretch !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-header {
+  width: 100%;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-base);
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.focus-timer-card.is-fullscreen .btn-focus-fullscreen {
+  width: auto;
+  height: auto;
+  padding: 6px 14px;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--brand-subtle);
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.focus-timer-card.is-fullscreen .btn-focus-fullscreen .ic-expand {
+  display: none;
+}
+
+.focus-timer-card.is-fullscreen .btn-focus-fullscreen .ic-compress {
+  display: inline-block !important;
+}
+
+.focus-timer-card.is-fullscreen .btn-focus-fullscreen .fs-label {
+  display: inline !important;
+}
+
+.focus-timer-card.is-fullscreen .pomo-mode-tabs {
+  margin: 36px auto 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: 5px;
+}
+
+.focus-timer-card.is-fullscreen .pomo-tab {
+  padding: 10px 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-body {
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 0 !important;
+  flex: 1;
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-time-wrap {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.focus-timer-card.is-fullscreen #timerDisplay {
+  font-size: clamp(80px, 15vw, 150px) !important;
+  letter-spacing: -0.04em !important;
+  margin: 8px 0 !important;
+  line-height: 1 !important;
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-subtext {
+  font-size: 14px !important;
+  color: var(--text-muted) !important;
+  margin-top: 12px !important;
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-btn-wrap {
+  gap: 14px !important;
+  margin-bottom: 20px;
+}
+
+.focus-timer-card.is-fullscreen #btnToggleTimer {
+  padding: 12px 36px !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  border-radius: var(--radius-md) !important;
+  min-width: 140px;
+  box-shadow: 0 4px 14px rgba(15, 95, 194, 0.25);
+}
+
+.focus-timer-card.is-fullscreen #btnResetTimer {
+  padding: 12px 24px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-progress-wrap {
+  width: 100% !important;
+  max-width: 560px !important;
+  margin: 16px auto 0 !important;
+  height: 8px !important;
+  border-radius: 9999px !important;
+}
+
+.focus-timer-card.is-fullscreen .focus-timer-zen-quote {
+  display: block !important;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 14px;
+  letter-spacing: 0.02em;
+}
+
 /* ==========================================================================
    Dashboard Timeline & Activity Heatmap
    ========================================================================== */
@@ -1213,10 +1385,28 @@ button, input, select, textarea {
   border-color: var(--brand-primary);
 }
 
+.day-circle:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
 .day-circle.checked {
   background: var(--brand-primary);
   border-color: var(--brand-primary);
   color: #FFFFFF;
+}
+
+.day-circle.today-ring {
+  box-shadow: 0 0 0 2px var(--brand-primary);
+}
+
+.day-circle.today-ring:not(.checked) {
+  border-color: var(--brand-primary);
+}
+
+.day-col.is-today .day-name {
+  color: var(--brand-primary);
+  font-weight: 700;
 }
 
 .streak-foot {

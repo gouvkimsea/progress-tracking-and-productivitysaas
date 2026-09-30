@@ -7,27 +7,34 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     $method = $_SERVER['REQUEST_METHOD'];
 
     if ($method === 'GET') {
-        // Fetch tasks
-        $stmtTasks = $db->prepare("SELECT * FROM tasks WHERE user_id = :uid AND (deleted_at IS NULL) ORDER BY id ASC");
-        $stmtTasks->execute(['uid' => $userId]);
-        $tasks = $stmtTasks->fetchAll();
+        session_write_close();
+        $db = getDbConnection();
 
-        // Fetch milestones
-        $stmtMilestones = $db->query("SELECT * FROM milestones ORDER BY id ASC");
-        $milestones = $stmtMilestones->fetchAll();
+        // Fetch tasks with explicit columns
+        $stmtTasks = $db->prepare("SELECT id, user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log, created_at 
+                                   FROM tasks 
+                                   WHERE user_id = :uid AND deleted_at IS NULL 
+                                   ORDER BY id ASC");
+        $stmtTasks->execute(['uid' => $userId]);
+        $tasks = $stmtTasks->fetchAll(PDO::FETCH_ASSOC);
+
+        // Fetch milestones with explicit columns
+        $stmtMilestones = $db->query("SELECT id, project_id, name, due_date, status, created_at FROM milestones ORDER BY id ASC");
+        $milestones = $stmtMilestones ? $stmtMilestones->fetchAll(PDO::FETCH_ASSOC) : [];
 
         // Fetch dependencies for current user's tasks
-        $stmtDeps = $db->prepare("SELECT d.* FROM task_dependencies d 
+        $stmtDeps = $db->prepare("SELECT d.id, d.task_id, d.depends_on_task_id, d.dependency_type 
+                                  FROM task_dependencies d 
                                   JOIN tasks t ON d.task_id = t.id 
-                                  WHERE t.user_id = :uid AND (t.deleted_at IS NULL)
+                                  WHERE t.user_id = :uid AND t.deleted_at IS NULL 
                                   ORDER BY d.id ASC");
         $stmtDeps->execute(['uid' => $userId]);
-        $dependencies = $stmtDeps->fetchAll();
+        $dependencies = $stmtDeps->fetchAll(PDO::FETCH_ASSOC);
+
         if (empty($dependencies) && count($tasks) >= 2) {
             try {
                 $db->prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id, dependency_type) VALUES (:t2, :t1, 'finish_to_start')")
@@ -37,7 +44,7 @@ try {
                        ->execute(['t3' => $tasks[2]['id'], 't2' => $tasks[1]['id']]);
                 }
                 $stmtDeps->execute(['uid' => $userId]);
-                $dependencies = $stmtDeps->fetchAll();
+                $dependencies = $stmtDeps->fetchAll(PDO::FETCH_ASSOC);
             } catch (Throwable $e) {}
         }
 
@@ -49,8 +56,9 @@ try {
         ]);
     } elseif ($method === 'POST') {
         checkCsrfToken();
-        $rawInput = file_get_contents('php://input');
-        $data = json_decode($rawInput, true) ?? $_POST;
+        $data = getJsonRequestData();
+        session_write_close();
+        $db = getDbConnection();
         $action = $data['action'] ?? 'update_dates';
 
         if ($action === 'update_dates') {
@@ -72,9 +80,9 @@ try {
             $dependsOnId = (int)($data['depends_on_task_id'] ?? 0);
             if ($taskId > 0 && $dependsOnId > 0 && $taskId !== $dependsOnId) {
                 // Verify user owns both tasks
-                $stmtCheckOwner = $db->prepare("SELECT COUNT(*) as cnt FROM tasks WHERE id IN (:tid, :did) AND user_id = :uid AND (deleted_at IS NULL)");
+                $stmtCheckOwner = $db->prepare("SELECT COUNT(*) as cnt FROM tasks WHERE id IN (:tid, :did) AND user_id = :uid AND deleted_at IS NULL");
                 $stmtCheckOwner->execute(['tid' => $taskId, 'did' => $dependsOnId, 'uid' => $userId]);
-                $row = $stmtCheckOwner->fetch();
+                $row = $stmtCheckOwner->fetch(PDO::FETCH_ASSOC);
                 if (($row['cnt'] ?? 0) < 2) {
                     sendJsonResponse(['success' => false, 'message' => 'Tasks not found or unauthorized'], 403);
                 }
@@ -90,6 +98,7 @@ try {
             sendJsonResponse(['success' => false, 'message' => 'Invalid task IDs for dependency'], 400);
         } elseif ($action === 'delete_dependency') {
             $depId = (int)($data['dependency_id'] ?? 0);
+            // Verify and delete dependency belonging to current user
             $stmtDel = $db->prepare("DELETE FROM task_dependencies WHERE id = :id AND task_id IN (SELECT id FROM tasks WHERE user_id = :uid)");
             $stmtDel->execute(['id' => $depId, 'uid' => $userId]);
             sendJsonResponse(['success' => true, 'message' => 'Dependency removed.']);
@@ -103,4 +112,3 @@ try {
     error_log('Gantt API error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred fetching Gantt chart data.'], 500);
 }
-

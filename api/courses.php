@@ -7,20 +7,27 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
-    $method = $_SERVER['REQUEST_METHOD'];
     $userId = (int)$_SESSION['user_id'];
+    $method = $_SERVER['REQUEST_METHOD'];
 
     if ($method === 'GET') {
-        $stmt = $db->prepare("SELECT * FROM courses WHERE user_id = :uid ORDER BY id ASC");
+        session_write_close();
+        $db = getDbConnection();
+
+        $stmt = $db->prepare("SELECT id, user_id, code, name, category, level, total_modules, completed_modules, progress_pct, 
+                                     bg_gradient, ring_color, is_starred, status, created_at 
+                              FROM courses 
+                              WHERE user_id = :uid 
+                              ORDER BY id ASC");
         $stmt->execute(['uid' => $userId]);
-        $courses = $stmt->fetchAll();
+        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         sendJsonResponse(['success' => true, 'courses' => $courses]);
     } elseif ($method === 'POST') {
         checkCsrfToken();
-        $rawInput = file_get_contents('php://input');
-        $data = json_decode($rawInput, true) ?? $_POST;
+        $data = getJsonRequestData();
+        session_write_close();
+        $db = getDbConnection();
 
         if (!isset($data['course_id'])) {
             sendJsonResponse(['success' => false, 'message' => 'course_id is required'], 400);
@@ -28,10 +35,10 @@ try {
 
         $courseId = (int)$data['course_id'];
 
-        // Fetch current course
-        $stmtCourse = $db->prepare("SELECT * FROM courses WHERE id = :id AND user_id = :uid");
+        // Fetch only the needed fields for progress calculation
+        $stmtCourse = $db->prepare("SELECT total_modules, completed_modules FROM courses WHERE id = :id AND user_id = :uid");
         $stmtCourse->execute(['id' => $courseId, 'uid' => $userId]);
-        $course = $stmtCourse->fetch();
+        $course = $stmtCourse->fetch(PDO::FETCH_ASSOC);
 
         if (!$course) {
             sendJsonResponse(['success' => false, 'message' => 'Course not found'], 404);
@@ -48,7 +55,9 @@ try {
             $newCompleted = min($totalModules, $currentCompleted + 1);
         }
 
-        $newPct = $totalModules > 0 ? round(($newCompleted / $totalModules) * 100) : 0;
+        $newPct = $totalModules > 0 ? (int)round(($newCompleted / $totalModules) * 100) : 0;
+
+        $db->beginTransaction();
 
         // Update course record
         $stmtUpdate = $db->prepare("UPDATE courses SET completed_modules = :cm, progress_pct = :pct WHERE id = :id AND user_id = :uid");
@@ -57,12 +66,14 @@ try {
         // Recalculate average progress across all user courses
         $stmtAvg = $db->prepare("SELECT AVG(progress_pct) as avg_pct FROM courses WHERE user_id = :uid");
         $stmtAvg->execute(['uid' => $userId]);
-        $avgRow = $stmtAvg->fetch();
-        $overallProgress = round($avgRow['avg_pct'] ?? 0, 2);
+        $avgRow = $stmtAvg->fetch(PDO::FETCH_ASSOC);
+        $overallProgress = round((float)($avgRow['avg_pct'] ?? 0), 2);
 
         // Update user_stats in database
         $stmtUpdateStats = $db->prepare("UPDATE user_stats SET course_progress_pct = :cpct WHERE user_id = :uid");
         $stmtUpdateStats->execute(['cpct' => $overallProgress, 'uid' => $userId]);
+
+        $db->commit();
 
         sendJsonResponse([
             'success' => true,
@@ -79,6 +90,9 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Method not allowed'], 405);
     }
 } catch (Throwable $e) {
+    if (isset($db) && $db->inTransaction()) {
+        $db->rollBack();
+    }
     error_log('Courses API error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred updating course data.'], 500);
 }

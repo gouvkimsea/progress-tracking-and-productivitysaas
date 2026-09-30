@@ -101,7 +101,12 @@ include __DIR__ . '/includes/head.php';
                   <h4 class="card-task-title"><?= htmlspecialchars($t['task_name']); ?></h4>
                   <div class="card-footer-flex">
                     <span><?= htmlspecialchars($t['due_date'] ?? $t['start_date']); ?></span>
-                    <select class="move-status-select" onchange="moveKanbanTask(<?= $t['id']; ?>, this.value)">
+                    <select class="move-status-select" 
+                            onchange="moveKanbanTask(<?= (int)$t['id']; ?>, this.value, this)"
+                            onclick="event.stopPropagation();"
+                            onmousedown="event.stopPropagation();"
+                            draggable="false"
+                            aria-label="Change status">
                       <?php foreach (['Open', 'In Progress', 'Review', 'Done'] as $opt): ?>
                         <option value="<?= $opt; ?>" <?= ($opt === $colName) ? 'selected' : ''; ?>><?= $opt; ?></option>
                       <?php endforeach; ?>
@@ -162,7 +167,50 @@ include __DIR__ . '/includes/head.php';
 
 <script src="assets/js/app.js"></script>
 <script>
-async function moveKanbanTask(taskId, newStatus) {
+// Recount column badges & empty hints
+function updateColumnCounts() {
+  document.querySelectorAll('.kanban-column').forEach(c => {
+    const colStatus = c.getAttribute('data-status') || '';
+    const badge = c.querySelector('.column-count-badge');
+    const list = c.querySelector('.kanban-card-list');
+    const cards = list ? list.querySelectorAll('.kanban-card') : [];
+    if (badge) badge.textContent = cards.length;
+
+    // Show empty placeholder if no cards
+    if (cards.length === 0) {
+      let hint = list.querySelector('.kanban-empty-hint');
+      if (!hint) {
+        hint = document.createElement('div');
+        hint.className = 'kanban-empty-hint';
+        hint.style.cssText = 'text-align:center; padding:32px 10px; color:var(--text-muted); font-size:12px; font-style:italic;';
+        hint.textContent = 'No tasks in ' + colStatus;
+        list.appendChild(hint);
+      }
+    } else {
+      const hint = list.querySelector('.kanban-empty-hint');
+      if (hint) hint.remove();
+    }
+  });
+}
+
+// Move Task via Select Dropdown
+window.moveKanbanTask = async function(taskId, newStatus, selectEl) {
+  const card = selectEl ? selectEl.closest('.kanban-card') : document.querySelector(`.kanban-card[data-task-id="${taskId}"]`);
+  const previousColumn = card ? card.closest('.kanban-column') : null;
+  const previousStatus = previousColumn ? previousColumn.getAttribute('data-status') : null;
+  const targetCol = document.querySelector(`.kanban-column[data-status="${newStatus}"]`);
+
+  // Optimistic DOM Move
+  if (card && targetCol && previousColumn !== targetCol) {
+    const targetList = targetCol.querySelector('.kanban-card-list');
+    if (targetList) {
+      const hint = targetList.querySelector('.kanban-empty-hint');
+      if (hint) hint.remove();
+      targetList.appendChild(card);
+      updateColumnCounts();
+    }
+  }
+
   try {
     const res = await secureFetch('api/kanban.php', {
       method: 'POST',
@@ -172,14 +220,17 @@ async function moveKanbanTask(taskId, newStatus) {
     const data = await res.json();
     if (data.success) {
       if (typeof showToast === 'function') {
-        showToast(`Task updated to ${newStatus}`);
+        showToast(`Task moved to ${newStatus}`);
       }
-      setTimeout(() => location.reload(), 400);
+    } else {
+      alert(data.message || 'Failed to update task status');
+      location.reload();
     }
   } catch (err) {
-    console.error(err);
+    console.error('Error moving task:', err);
+    location.reload();
   }
-}
+};
 
 // Interactive HTML5 Drag-and-Drop
 document.addEventListener('DOMContentLoaded', () => {
@@ -187,6 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.kanban-card').forEach(card => {
     card.addEventListener('dragstart', (e) => {
+      // Don't drag if user is clicking on select or button
+      if (e.target.closest('select') || e.target.closest('button')) {
+        e.preventDefault();
+        return;
+      }
       draggedCard = card;
       card.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
@@ -233,11 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
       targetList.appendChild(draggedCard);
 
       // Recount column badges
-      document.querySelectorAll('.kanban-column').forEach(c => {
-        const badge = c.querySelector('.column-count-badge');
-        const count = c.querySelectorAll('.kanban-card').length;
-        if (badge) badge.textContent = count;
-      });
+      updateColumnCounts();
 
       // Persist to backend API
       try {
@@ -248,7 +300,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`Task moved to ${newStatus}`);
+          if (typeof showToast === 'function') {
+            showToast(`Task moved to ${newStatus}`);
+          }
         } else {
           location.reload();
         }
@@ -256,60 +310,65 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error(err);
         location.reload();
       }
-  // Kanban Task Modal Functions
-  window.openKanbanAddModal = function(colStatus) {
-    const modal = document.getElementById('kanbanAddModal');
-    if (!modal) return;
-    document.getElementById('kanbanColTitle').textContent = colStatus;
-    document.getElementById('kanbanTaskStatus').value = colStatus;
-    modal.classList.add('active');
-    setTimeout(() => document.getElementById('kanbanTaskName')?.focus(), 100);
-  };
-
-  window.handleKanbanAddTask = async function(e) {
-    e.preventDefault();
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Adding...';
-    }
-
-    const payload = {
-      action: 'create',
-      task_name: document.getElementById('kanbanTaskName').value.trim(),
-      project_name: document.getElementById('kanbanTaskProject').value.trim(),
-      priority: document.getElementById('kanbanTaskPriority').value,
-      due_date: document.getElementById('kanbanTaskDue').value.trim(),
-      start_date: '<?= date('d-m-Y'); ?>',
-      assigned_to: 'Alex Morgan',
-      status: document.getElementById('kanbanTaskStatus').value
-    };
-
-    try {
-      const res = await secureFetch('api/tasks.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('Task added to ' + payload.status);
-        document.getElementById('kanbanAddModal').classList.remove('active');
-        document.getElementById('kanbanAddTaskForm').reset();
-        setTimeout(() => location.reload(), 400);
-      } else {
-        alert(data.message || 'Failed to add task');
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Add Task';
-      }
-    }
-  };
+    });
+  });
 });
+
+// Kanban Task Modal Functions
+window.openKanbanAddModal = function(colStatus) {
+  const modal = document.getElementById('kanbanAddModal');
+  if (!modal) return;
+  document.getElementById('kanbanColTitle').textContent = colStatus;
+  document.getElementById('kanbanTaskStatus').value = colStatus;
+  modal.classList.add('active');
+  setTimeout(() => document.getElementById('kanbanTaskName')?.focus(), 100);
+};
+
+window.handleKanbanAddTask = async function(e) {
+  e.preventDefault();
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+  }
+
+  const payload = {
+    action: 'create',
+    task_name: document.getElementById('kanbanTaskName').value.trim(),
+    project_name: document.getElementById('kanbanTaskProject').value.trim(),
+    priority: document.getElementById('kanbanTaskPriority').value,
+    due_date: document.getElementById('kanbanTaskDue').value.trim(),
+    start_date: '<?= date('d-m-Y'); ?>',
+    assigned_to: 'Alex Morgan',
+    status: document.getElementById('kanbanTaskStatus').value
+  };
+
+  try {
+    const res = await secureFetch('api/tasks.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (typeof showToast === 'function') {
+        showToast('Task added to ' + payload.status);
+      }
+      document.getElementById('kanbanAddModal').classList.remove('active');
+      document.getElementById('kanbanAddTaskForm').reset();
+      setTimeout(() => location.reload(), 400);
+    } else {
+      alert(data.message || 'Failed to add task');
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Add Task';
+    }
+  }
+};
 </script>
 </body>
 </html>

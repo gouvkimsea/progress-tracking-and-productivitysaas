@@ -2,15 +2,7 @@
 require_once __DIR__ . '/../config/db.php';
 startSecureSession();
 
-try {
-    if (!isset($_SESSION['user_id'])) {
-        sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
-    }
-
-    $db = getDbConnection();
-    $userId = (int)$_SESSION['user_id'];
-    $method = $_SERVER['REQUEST_METHOD'];
-
+if (!function_exists('buildScheduleUrls')) {
     function buildScheduleUrls(string $token): array {
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
@@ -27,8 +19,19 @@ try {
             'webcal_url' => $webcalUrl
         ];
     }
+}
+
+try {
+    if (!isset($_SESSION['user_id'])) {
+        sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+    }
+
+    $userId = (int)$_SESSION['user_id'];
+    $method = $_SERVER['REQUEST_METHOD'];
 
     if ($method === 'GET') {
+        session_write_close();
+        $db = getDbConnection();
         $token = getUserScheduleToken($db, $userId);
         $urls = buildScheduleUrls($token);
 
@@ -41,8 +44,9 @@ try {
         ]);
     } elseif ($method === 'POST') {
         checkCsrfToken();
-        $raw = file_get_contents('php://input');
-        $body = json_decode($raw, true) ?? $_POST;
+        $body = getJsonRequestData();
+        session_write_close();
+        $db = getDbConnection();
         $action = $body['action'] ?? '';
 
         if ($action === 'regenerate') {
@@ -64,5 +68,6 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Method not allowed'], 405);
     }
 } catch (Throwable $e) {
-    sendJsonResponse(['success' => false, 'message' => 'Server error: ' . $e->getMessage()], 500);
+    error_log("Schedule share API error: " . $e->getMessage());
+    sendJsonResponse(['success' => false, 'message' => 'Server error occurred.'], 500);
 }

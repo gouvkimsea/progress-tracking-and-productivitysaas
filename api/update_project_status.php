@@ -7,14 +7,18 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     checkCsrfToken();
-    $rawInput = file_get_contents('php://input');
-    $data = json_decode($rawInput, true) ?? $_POST;
+    $data = getJsonRequestData();
+    session_write_close();
+    $db = getDbConnection();
 
     $projectId = (int)($data['project_id'] ?? 0);
     $status = trim($data['status'] ?? 'No status');
+
+    if ($projectId <= 0) {
+        sendJsonResponse(['success' => false, 'message' => 'Valid project_id is required'], 400);
+    }
 
     $stmt = $db->prepare("UPDATE courses SET status = :status WHERE id = :id AND user_id = :uid");
     $stmt->execute([
@@ -32,4 +36,3 @@ try {
     error_log('Update project status error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred updating project status.'], 500);
 }
-

@@ -7,18 +7,25 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     $method = $_SERVER['REQUEST_METHOD'];
 
     if ($method === 'GET') {
+        session_write_close();
+        $db = getDbConnection();
         // Auto-detect overdue and due-today tasks to populate dynamic notifications
-        $stmtTasks = $db->prepare("SELECT * FROM tasks WHERE user_id = :uid AND (deleted_at IS NULL) AND status != 'Done'");
+        $stmtTasks = $db->prepare("SELECT id, task_name, project_name, due_date FROM tasks WHERE user_id = :uid AND (deleted_at IS NULL) AND status != 'Done'");
         $stmtTasks->execute(['uid' => $userId]);
-        $activeTasks = $stmtTasks->fetchAll();
+        $activeTasks = $stmtTasks->fetchAll(PDO::FETCH_ASSOC);
 
         $todayStr = date('Y-m-d');
-        $todayTs = strtotime('today');
+
+        // Fetch existing notification titles in 1 batch query to eliminate N+1 round-trips
+        $stmtExisting = $db->prepare("SELECT title FROM notifications WHERE user_id = :uid AND (title LIKE 'Task Overdue:%' OR title LIKE 'Due Today:%')");
+        $stmtExisting->execute(['uid' => $userId]);
+        $existingTitles = array_flip($stmtExisting->fetchAll(PDO::FETCH_COLUMN));
+
+        $stmtInsertNotif = null;
 
         foreach ($activeTasks as $t) {
             $due = $t['due_date'] ?? '';
@@ -31,30 +38,36 @@ try {
                     if ($dueFormatted < $todayStr) {
                         // Overdue notification
                         $notifTitle = "Task Overdue: {$taskTitle}";
-                        $checkStmt = $db->prepare("SELECT id FROM notifications WHERE user_id = :uid AND title = :title");
-                        $checkStmt->execute(['uid' => $userId, 'title' => $notifTitle]);
-                        if (!$checkStmt->fetch()) {
-                            $db->prepare("INSERT INTO notifications (user_id, title, message, is_read) VALUES (:uid, :title, :msg, 0)")
-                               ->execute(['uid' => $userId, 'title' => $notifTitle, 'msg' => "Deadline passed on " . date('M j', $dueTs) . ". Project: " . ($t['project_name'] ?? 'General')]);
+                        if (!isset($existingTitles[$notifTitle])) {
+                            if (!$stmtInsertNotif) {
+                                $stmtInsertNotif = $db->prepare("INSERT INTO notifications (user_id, title, message, is_read) VALUES (:uid, :title, :msg, 0)");
+                            }
+                            $stmtInsertNotif->execute(['uid' => $userId, 'title' => $notifTitle, 'msg' => "Deadline passed on " . date('M j', $dueTs) . ". Project: " . ($t['project_name'] ?? 'General')]);
+                            $existingTitles[$notifTitle] = true;
                         }
                     } elseif ($dueFormatted === $todayStr) {
                         // Due today notification
                         $notifTitle = "Due Today: {$taskTitle}";
-                        $checkStmt = $db->prepare("SELECT id FROM notifications WHERE user_id = :uid AND title = :title");
-                        $checkStmt->execute(['uid' => $userId, 'title' => $notifTitle]);
-                        if (!$checkStmt->fetch()) {
-                            $db->prepare("INSERT INTO notifications (user_id, title, message, is_read) VALUES (:uid, :title, :msg, 0)")
-                               ->execute(['uid' => $userId, 'title' => $notifTitle, 'msg' => "Scheduled for completion today! Project: " . ($t['project_name'] ?? 'General')]);
+                        if (!isset($existingTitles[$notifTitle])) {
+                            if (!$stmtInsertNotif) {
+                                $stmtInsertNotif = $db->prepare("INSERT INTO notifications (user_id, title, message, is_read) VALUES (:uid, :title, :msg, 0)");
+                            }
+                            $stmtInsertNotif->execute(['uid' => $userId, 'title' => $notifTitle, 'msg' => "Scheduled for completion today! Project: " . ($t['project_name'] ?? 'General')]);
+                            $existingTitles[$notifTitle] = true;
                         }
                     }
                 }
             }
         }
 
-        // Fetch user notifications
-        $stmt = $db->prepare("SELECT * FROM notifications WHERE user_id = :uid ORDER BY is_read ASC, id DESC LIMIT 20");
+        // Fetch user notifications with explicit columns
+        $stmt = $db->prepare("SELECT id, user_id, title, message, is_read, created_at 
+                              FROM notifications 
+                              WHERE user_id = :uid 
+                              ORDER BY is_read ASC, id DESC 
+                              LIMIT 20");
         $stmt->execute(['uid' => $userId]);
-        $notifications = $stmt->fetchAll();
+        $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $unreadCount = 0;
         foreach ($notifications as $n) {
@@ -68,8 +81,9 @@ try {
         ]);
     } elseif ($method === 'POST') {
         checkCsrfToken();
-        $rawInput = file_get_contents('php://input');
-        $data = json_decode($rawInput, true) ?? $_POST;
+        $data = getJsonRequestData();
+        session_write_close();
+        $db = getDbConnection();
         $action = $data['action'] ?? 'mark_all_read';
 
         if ($action === 'mark_all_read') {

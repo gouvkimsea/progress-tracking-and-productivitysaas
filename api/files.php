@@ -7,25 +7,27 @@ try {
         sendJsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
     }
 
-    $db = getDbConnection();
     $userId = (int)$_SESSION['user_id'];
     $method = $_SERVER['REQUEST_METHOD'];
 
     if ($method === 'GET') {
-        $stmt = $db->prepare("SELECT id, file_name, file_path, file_size, uploaded_at FROM files WHERE user_id = :uid ORDER BY id DESC");
+        session_write_close();
+        $db = getDbConnection();
+        $stmt = $db->prepare("SELECT id, file_name, file_path, file_size, uploaded_at FROM files WHERE user_id = :uid ORDER BY id DESC LIMIT 100");
         $stmt->execute(['uid' => $userId]);
-        $files = $stmt->fetchAll();
+        $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
         sendJsonResponse(['success' => true, 'files' => $files]);
     } elseif ($method === 'POST') {
         checkCsrfToken();
-        $rawInput = file_get_contents('php://input');
-        $json = json_decode($rawInput, true);
+        $json = getJsonRequestData();
+        session_write_close();
+        $db = getDbConnection();
 
-        if ($json && isset($json['action']) && $json['action'] === 'delete') {
+        if (isset($json['action']) && $json['action'] === 'delete') {
             $fileId = (int)($json['file_id'] ?? 0);
             $stmt = $db->prepare("SELECT file_path FROM files WHERE id = :id AND user_id = :uid");
             $stmt->execute(['id' => $fileId, 'uid' => $userId]);
-            $f = $stmt->fetch();
+            $f = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($f) {
                 $diskFile = __DIR__ . '/../' . $f['file_path'];
                 if (file_exists($diskFile) && is_file($diskFile)) {
@@ -88,7 +90,7 @@ try {
             sendJsonResponse([
                 'success' => true,
                 'message' => 'File uploaded successfully!',
-                'file_id' => $db->lastInsertId(),
+                'file_id' => (int)$db->lastInsertId(),
                 'file_name' => htmlspecialchars($originalName, ENT_QUOTES, 'UTF-8')
             ]);
         } else {
@@ -101,4 +103,3 @@ try {
     error_log('File upload error: ' . $e->getMessage());
     sendJsonResponse(['success' => false, 'message' => 'An error occurred processing the file.'], 500);
 }
-
