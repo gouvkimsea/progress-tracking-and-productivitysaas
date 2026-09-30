@@ -58,12 +58,15 @@ Your application will be live at `http://localhost:8080`.
 
 ### Option 4: Local Development
 To run locally without Docker:
-```bash
-php -S 127.0.0.1:8000
-```
+- **Windows (1-Click)**: Double-click `serve.bat`
+- **Manual Command Line**:
+  ```bash
+  php -S 127.0.0.1:8000
+  ```
 Then navigate to `http://127.0.0.1:8000` in your browser.
 
 ---
+
 
 ## 🔑 Default Credentials
 - **Email:** `alex@mindrift.io`
