@@ -71,6 +71,20 @@ Then navigate to `http://127.0.0.1:8000` in your browser.
 
 ---
 
+## 🌟 Key Application Features
+- 📊 **Interactive Dashboard**: Real-time study streak tracking, course module progress, and weekly learning contribution heatmap.
+- 🎯 **Objectives & Key Results (Goals)**: Track quantified targets, deliverables, and progress percentages with status indicators (`goals.php`).
+- 📓 **Daily Reflection Journal**: Mood tracking, daily reflection quiz, and daily to-do checklists (`journal.php`).
+- 📋 **Kanban Workflow**: Visual task pipeline with drag-and-drop state transitions (`kanban.php`).
+- 📅 **Calendar & Schedule**: Integrated monthly view with public read-only schedule sharing (`schedule.php`) and live iCalendar subscription feeds (`api/calendar_export.php`).
+- 📈 **Gantt Chart & Dependencies**: Timeline visualization with task dependency mapping (`gantt.php`).
+- 👥 **Team Workload**: Optimized resource allocation and task distribution view (`workload.php`).
+- 🃏 **Spaced Repetition Flashcards**: Leitner-style active recall study deck (`flashcards.php`).
+- 📁 **Secure Document Management**: Attachment uploads with streaming download delivery (`files.php`).
+- ⚡ **High-Performance Architecture**: Zero runtime DDL, multi-tenant composite B-tree indexing, and non-blocking session release.
+
+---
+
 ## 🛡️ Built-in Security Features
 - **OWASP ASVS Compliance**:
   - Universal CSRF token validation on all mutating API calls (`secureFetch`).
