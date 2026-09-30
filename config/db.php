@@ -353,6 +353,21 @@ function ensureMysqlTables(PDO $pdo): void {
 
     try { $pdo->exec("ALTER TABLE courses ADD COLUMN is_starred INT DEFAULT 0"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE courses ADD COLUMN status VARCHAR(30) DEFAULT 'No status'"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE courses ADD COLUMN start_date VARCHAR(50) NULL"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE courses ADD COLUMN due_date VARCHAR(50) NULL"); } catch (PDOException $e) {}
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS user_holidays (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        holiday_name VARCHAR(150) NOT NULL,
+        holiday_date VARCHAR(50) NOT NULL,
+        holiday_type VARCHAR(50) DEFAULT 'custom',
+        country_code VARCHAR(10) DEFAULT 'KH',
+        is_day_off TINYINT(1) DEFAULT 1,
+        notes TEXT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_holidays (user_id, holiday_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS daily_activities (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -614,6 +629,20 @@ function ensureSqliteTables(PDO $pdo): void {
 
     try { $pdo->exec("ALTER TABLE courses ADD COLUMN is_starred INTEGER DEFAULT 0"); } catch (PDOException $e) {}
     try { $pdo->exec("ALTER TABLE courses ADD COLUMN status TEXT DEFAULT 'No status'"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE courses ADD COLUMN start_date TEXT NULL"); } catch (PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE courses ADD COLUMN due_date TEXT NULL"); } catch (PDOException $e) {}
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS user_holidays (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        holiday_name TEXT NOT NULL,
+        holiday_date TEXT NOT NULL,
+        holiday_type TEXT DEFAULT 'custom',
+        country_code TEXT DEFAULT 'KH',
+        is_day_off INTEGER DEFAULT 1,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS daily_activities (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

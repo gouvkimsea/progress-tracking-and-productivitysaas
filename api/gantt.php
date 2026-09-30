@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/holidays.php';
 startSecureSession();
 
 try {
@@ -14,13 +15,46 @@ try {
         session_write_close();
         $db = getDbConnection();
 
+        $country = isset($_GET['country']) ? strtoupper(trim($_GET['country'])) : 'KH';
+        $projectId = isset($_GET['project_id']) && $_GET['project_id'] !== 'all' ? (int)$_GET['project_id'] : null;
+
+        // Fetch User's Projects
+        $stmtProjects = $db->prepare("SELECT id, code, name, category, ring_color, progress_pct, start_date, due_date FROM courses WHERE user_id = :uid ORDER BY is_starred DESC, id ASC");
+        $stmtProjects->execute(['uid' => $userId]);
+        $projects = $stmtProjects->fetchAll(PDO::FETCH_ASSOC);
+
+        $projectsByName = [];
+        $projectsById = [];
+        foreach ($projects as $p) {
+            $projectsByName[strtolower(trim($p['name']))] = $p;
+            $projectsById[$p['id']] = $p;
+        }
+
         // Fetch tasks with explicit columns
-        $stmtTasks = $db->prepare("SELECT id, user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log, created_at 
-                                   FROM tasks 
-                                   WHERE user_id = :uid AND deleted_at IS NULL 
-                                   ORDER BY id ASC");
-        $stmtTasks->execute(['uid' => $userId]);
-        $tasks = $stmtTasks->fetchAll(PDO::FETCH_ASSOC);
+        $taskSql = "SELECT id, user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log, created_at 
+                    FROM tasks 
+                    WHERE user_id = :uid AND deleted_at IS NULL";
+        $taskParams = ['uid' => $userId];
+
+        if ($projectId !== null && isset($projectsById[$projectId])) {
+            $taskSql .= " AND project_name = :pname";
+            $taskParams['pname'] = $projectsById[$projectId]['name'];
+        }
+
+        $taskSql .= " ORDER BY id ASC";
+        $stmtTasks = $db->prepare($taskSql);
+        $stmtTasks->execute($taskParams);
+        $rawTasks = $stmtTasks->fetchAll(PDO::FETCH_ASSOC);
+
+        // Decorate tasks with project ring color and code
+        $tasks = [];
+        foreach ($rawTasks as $t) {
+            $pKey = strtolower(trim($t['project_name'] ?? ''));
+            $matchedP = $projectsByName[$pKey] ?? null;
+            $t['project_code'] = $matchedP['code'] ?? 'PRJ';
+            $t['ring_color'] = $matchedP['ring_color'] ?? '#6C5CE7';
+            $tasks[] = $t;
+        }
 
         // Fetch milestones with explicit columns
         $stmtMilestones = $db->query("SELECT id, project_id, name, due_date, status, created_at FROM milestones ORDER BY id ASC");
@@ -48,11 +82,17 @@ try {
             } catch (Throwable $e) {}
         }
 
+        // Fetch official holidays for current year
+        $curYear = (int)date('Y');
+        $holidays = getOfficialGovernmentHolidays($curYear, $country);
+
         sendJsonResponse([
             'success' => true,
+            'projects' => $projects,
             'tasks' => $tasks,
             'milestones' => $milestones,
-            'dependencies' => $dependencies
+            'dependencies' => $dependencies,
+            'holidays' => $holidays
         ]);
     } elseif ($method === 'POST') {
         checkCsrfToken();

@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS `courses` (
   `ring_color` VARCHAR(30) DEFAULT '#6C5CE7',
   `is_starred` INT DEFAULT 0,
   `status` VARCHAR(30) DEFAULT 'No status',
+  `start_date` VARCHAR(50) NULL,
+  `due_date` VARCHAR(50) NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_courses_user` (`user_id`),
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
@@ -269,6 +271,21 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
   `email` VARCHAR(190) NOT NULL,
   `attempted_at` INT NOT NULL,
   INDEX `idx_login_ip_time` (`ip_address`, `attempted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 20. User Holidays & Days Off Table
+CREATE TABLE IF NOT EXISTS `user_holidays` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `holiday_name` VARCHAR(150) NOT NULL,
+  `holiday_date` VARCHAR(50) NOT NULL,
+  `holiday_type` VARCHAR(50) DEFAULT 'custom',
+  `country_code` VARCHAR(10) DEFAULT 'KH',
+  `is_day_off` TINYINT(1) DEFAULT 1,
+  `notes` TEXT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_user_holidays` (`user_id`, `holiday_date`),
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========================================================

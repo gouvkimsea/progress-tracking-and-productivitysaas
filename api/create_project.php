@@ -34,6 +34,9 @@ try {
         $code = substr($code, 0, 4);
     }
 
+    $startDate = !empty($data['start_date']) ? trim($data['start_date']) : null;
+    $dueDate = !empty($data['due_date']) ? trim($data['due_date']) : null;
+
     // Default gradient colors
     $gradients = [
         'linear-gradient(145deg,#8B7CF0,#5A46E0)',
@@ -43,8 +46,8 @@ try {
     ];
     $bgGradient = $gradients[array_rand($gradients)];
 
-    $stmt = $db->prepare("INSERT INTO courses (user_id, code, name, category, level, total_modules, completed_modules, progress_pct, bg_gradient, ring_color)
-        VALUES (:uid, :code, :name, :cat, :lvl, :tm, 0, 0, :bg, '#6C5CE7')");
+    $stmt = $db->prepare("INSERT INTO courses (user_id, code, name, category, level, total_modules, completed_modules, progress_pct, bg_gradient, ring_color, start_date, due_date)
+        VALUES (:uid, :code, :name, :cat, :lvl, :tm, 0, 0, :bg, '#6C5CE7', :sdate, :ddate)");
     $stmt->execute([
         'uid' => $userId,
         'code' => $code,
@@ -52,7 +55,9 @@ try {
         'cat' => $category,
         'lvl' => $level,
         'tm' => $totalModules,
-        'bg' => $bgGradient
+        'bg' => $bgGradient,
+        'sdate' => $startDate,
+        'ddate' => $dueDate
     ]);
 
     sendJsonResponse([

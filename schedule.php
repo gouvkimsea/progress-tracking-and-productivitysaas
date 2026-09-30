@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/includes/holidays.php';
 startSecureSession();
 
 $db = getDbConnection();
@@ -74,6 +75,23 @@ if ($prevMonth < 1) { $prevMonth = 12; $prevYear--; }
 
 $nextMonth = $reqMonth + 1; $nextYear = $reqYear;
 if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
+
+// Fetch official government days off & user projects
+$holidaysByDay = getMonthHolidaysByDay($db, $userId, $reqYear, $reqMonth, 'KH');
+
+$stmtProj = $db->prepare("SELECT id, code, name, category, progress_pct, status, start_date, due_date, ring_color FROM courses WHERE user_id = :uid");
+$stmtProj->execute(['uid' => $userId]);
+$projects = $stmtProj->fetchAll(PDO::FETCH_ASSOC);
+
+$projectEventsByDay = [];
+foreach ($projects as $p) {
+    if (!empty($p['due_date'])) {
+        $tsDue = strtotime(str_replace('/', '-', $p['due_date']));
+        if ($tsDue && (int)date('n', $tsDue) === $reqMonth && (int)date('Y', $tsDue) === $reqYear) {
+            $projectEventsByDay[(int)date('j', $tsDue)][] = $p;
+        }
+    }
+}
 
 // Map tasks by day
 $tasksByDay = [];
@@ -349,15 +367,34 @@ $pageTitle = "{$ownerName}'s Schedule — Mindrift";
         for ($d = 1; $d <= $daysInMonth; $d++): 
           $isToday = ($d === $todayNum && $reqMonth === (int)date('n') && $reqYear === (int)date('Y'));
           $hasTasks = !empty($tasksByDay[$d]);
+          $hasHolidays = !empty($holidaysByDay[$d]);
+          $hasProj = !empty($projectEventsByDay[$d]);
         ?>
           <div class="cal-day-box <?= $isToday ? 'today' : ''; ?> <?= $hasTasks ? 'has-tasks' : ''; ?>" 
-               <?= $hasTasks ? 'onclick="showDayTasks(' . $d . ')"' : ''; ?>>
+               style="<?= $hasHolidays ? 'background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.35);' : ''; ?> cursor:pointer;"
+               onclick="showDayTasks(<?= $d; ?>)">
             <div style="display:flex; align-items:center; justify-content:space-between;">
               <span><?= $d; ?></span>
               <?php if ($isToday): ?>
                 <span style="font-size:9px; background:var(--brand-primary); color:#fff; padding:1px 4px; border-radius:var(--radius-xs);">TODAY</span>
               <?php endif; ?>
             </div>
+
+            <?php if ($hasHolidays): ?>
+              <?php foreach ($holidaysByDay[$d] as $h): ?>
+                <span class="event-dot" style="background:#D97706; font-size:9.5px;" title="<?= htmlspecialchars($h['name']); ?> (Official Day Off)">
+                  <?= $h['flag'] ?? '🏛️'; ?> <?= htmlspecialchars($h['name']); ?>
+                </span>
+              <?php endforeach; ?>
+            <?php endif; ?>
+
+            <?php if ($hasProj): ?>
+              <?php foreach ($projectEventsByDay[$d] as $pe): ?>
+                <span class="event-dot" style="background:#DC2626; font-size:9.5px;" title="Project Deadline: <?= htmlspecialchars($pe['name']); ?>">
+                  🚀 [<?= htmlspecialchars($pe['code']); ?>] <?= htmlspecialchars($pe['name']); ?>
+                </span>
+              <?php endforeach; ?>
+            <?php endif; ?>
 
             <?php if ($hasTasks): ?>
               <?php foreach (array_slice($tasksByDay[$d], 0, 2) as $t): 

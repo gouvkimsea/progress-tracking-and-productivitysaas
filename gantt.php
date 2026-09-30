@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/includes/holidays.php';
 startSecureSession();
 
 if (!isset($_SESSION['user_id'])) {
@@ -14,10 +15,66 @@ $stmtUser = $db->prepare("SELECT * FROM users WHERE id = :uid");
 $stmtUser->execute(['uid' => $userId]);
 $user = $stmtUser->fetch();
 
-// Fetch Tasks
-$stmtTasks = $db->prepare("SELECT * FROM tasks WHERE user_id = :uid AND (deleted_at IS NULL) ORDER BY id ASC");
-$stmtTasks->execute(['uid' => $userId]);
-$tasks = $stmtTasks->fetchAll();
+// Request parameters
+$reqCountry = isset($_GET['country']) ? strtoupper(trim($_GET['country'])) : 'KH';
+$reqProject = isset($_GET['project_id']) && $_GET['project_id'] !== 'all' ? (int)$_GET['project_id'] : null;
+
+if (!in_array($reqCountry, ['KH', 'US', 'GLOBAL'], true)) $reqCountry = 'KH';
+
+// Fetch User's Projects
+$stmtProjects = $db->prepare("SELECT id, code, name, category, level, total_modules, completed_modules, progress_pct, 
+                                     bg_gradient, ring_color, is_starred, status, start_date, due_date 
+                              FROM courses 
+                              WHERE user_id = :uid 
+                              ORDER BY is_starred DESC, id ASC");
+$stmtProjects->execute(['uid' => $userId]);
+$projects = $stmtProjects->fetchAll(PDO::FETCH_ASSOC);
+
+$projectsById = [];
+$projectsByName = [];
+foreach ($projects as $p) {
+    $projectsById[$p['id']] = $p;
+    $projectsByName[strtolower(trim($p['name']))] = $p;
+}
+
+// Fetch Tasks for user (filtered by project if specified)
+$taskSql = "SELECT id, user_id, task_name, project_name, start_date, due_date, priority, assigned_to, status, time_log, created_at 
+            FROM tasks 
+            WHERE user_id = :uid AND (deleted_at IS NULL)";
+$taskParams = ['uid' => $userId];
+
+if ($reqProject !== null && isset($projectsById[$reqProject])) {
+    $taskSql .= " AND project_name = :pname";
+    $taskParams['pname'] = $projectsById[$reqProject]['name'];
+}
+$taskSql .= " ORDER BY id ASC";
+$stmtTasks = $db->prepare($taskSql);
+$stmtTasks->execute($taskParams);
+$rawTasks = $stmtTasks->fetchAll(PDO::FETCH_ASSOC);
+
+// Attach parent project attributes to tasks
+$tasks = [];
+foreach ($rawTasks as $t) {
+    $pKey = strtolower(trim($t['project_name'] ?? ''));
+    $matchedP = $projectsByName[$pKey] ?? null;
+    $t['project_code'] = $matchedP['code'] ?? 'PRJ';
+    $t['ring_color'] = $matchedP['ring_color'] ?? '#6C5CE7';
+    $tasks[] = $t;
+}
+
+// Fetch Milestones for user's projects
+$milestones = [];
+if (!empty($projects)) {
+    $pIds = array_keys($projectsById);
+    $inClause = implode(',', array_map('intval', $pIds));
+    $stmtMilestones = $db->query("SELECT m.id, m.project_id, m.name, m.due_date, m.status, 
+                                         c.name as project_name, c.code as project_code, c.ring_color 
+                                  FROM milestones m 
+                                  JOIN courses c ON m.project_id = c.id 
+                                  WHERE m.project_id IN ($inClause) 
+                                  ORDER BY m.id ASC");
+    $milestones = $stmtMilestones ? $stmtMilestones->fetchAll(PDO::FETCH_ASSOC) : [];
+}
 
 // Dynamic Timeline Range (Starts 3 days ago and runs 35 days)
 $timelineStartTs = strtotime('today -3 days');
@@ -26,28 +83,108 @@ $todayTs = strtotime('today');
 $todayDayIndex = max(0, round(($todayTs - $timelineStartTs) / 86400));
 $todayLeftPx = $todayDayIndex * 44;
 
-$pageTitle = 'Mindrift — Gantt Chart';
+// Calculate Government Public Holidays across timeline range
+$timelineEndTs = $timelineStartTs + ($totalTimelineDays * 86400);
+$startYear = (int)date('Y', $timelineStartTs);
+$endYear = (int)date('Y', $timelineEndTs);
+$yearsToCheck = array_unique([$startYear, $endYear]);
+
+$allHolidays = [];
+foreach ($yearsToCheck as $y) {
+    $gov = getOfficialGovernmentHolidays($y, $reqCountry);
+    foreach ($gov as $dStr => $h) {
+        $allHolidays[$dStr] = $h;
+    }
+}
+
+// Pre-index timeline days with holiday and weekend data
+$timelineDaysData = [];
+$timelineHolidaysCount = 0;
+
+for ($i = 0; $i < $totalTimelineDays; $i++) {
+    $dayTs = $timelineStartTs + ($i * 86400);
+    $isoDate = date('Y-m-d', $dayTs);
+    $isHoliday = isset($allHolidays[$isoDate]);
+    $dayOfWeek = (int)date('N', $dayTs);
+    $isWeekend = ($dayOfWeek >= 6);
+
+    if ($isHoliday) $timelineHolidaysCount++;
+
+    $timelineDaysData[$i] = [
+        'day_index' => $i,
+        'timestamp' => $dayTs,
+        'iso_date' => $isoDate,
+        'day_num' => date('j', $dayTs),
+        'month_name' => date('M', $dayTs),
+        'day_name' => date('D', $dayTs),
+        'is_today' => ($isoDate === date('Y-m-d', $todayTs)),
+        'is_weekend' => $isWeekend,
+        'is_holiday' => $isHoliday,
+        'holiday' => $allHolidays[$isoDate] ?? null
+    ];
+}
+
+$pageTitle = 'Mindrift — Gantt Timeline & Schedule';
 include __DIR__ . '/includes/head.php';
 ?>
 <style>
-  .gantt-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .gantt-page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
   .gantt-title-wrap { display: flex; align-items: center; gap: 10px; }
   .gantt-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+  .gantt-subtitle { margin: 3px 0 0; color: var(--text-secondary); font-size: 13px; font-weight: 400; }
 
+  /* Controls Bar */
   .gantt-controls-bar {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: var(--bg-surface);
-    padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-base);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; background: var(--bg-surface);
+    padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-base);
   }
   .zoom-btn-group { display: flex; align-items: center; gap: 4px; }
   .zoom-btn {
-    padding: 5px 10px; font-size: 12px; font-weight: 500; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border-base);
+    padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border-base);
     border-radius: var(--radius-xs); cursor: pointer; transition: all 0.15s ease;
   }
-  .zoom-btn.active { background: var(--brand-primary); color: #FFF; border-color: var(--brand-primary); font-weight: 600; }
+  .zoom-btn.active { background: var(--brand-primary); color: #FFF; border-color: var(--brand-primary); font-weight: 700; }
 
+  /* Project Pills Row */
+  .gantt-pills-row {
+    display: flex; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px;
+    scrollbar-width: thin;
+  }
+  .gantt-pill-btn {
+    white-space: nowrap; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+    background: var(--bg-surface); border: 1px solid var(--border-base); color: var(--text-secondary);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: all 0.15s;
+  }
+  .gantt-pill-btn:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
+  .gantt-pill-btn.active {
+    background: var(--brand-primary); color: #FFF; border-color: var(--brand-primary); box-shadow: 0 2px 6px rgba(108,92,231,0.25);
+  }
+  .gantt-pill-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* Gantt Holiday Columns */
+  .gantt-date-cell.is-holiday {
+    background: rgba(245, 158, 11, 0.12) !important;
+    border-bottom: 2px solid #D97706;
+    color: #D97706 !important;
+    font-weight: 700;
+  }
+  .gantt-date-cell.weekend { background: rgba(148, 163, 184, 0.05); }
+
+  .gantt-holiday-stripe {
+    position: absolute; top: 0; bottom: 0; width: 44px;
+    background: rgba(245, 158, 11, 0.06);
+    border-left: 1px dashed rgba(245, 158, 11, 0.3);
+    border-right: 1px dashed rgba(245, 158, 11, 0.3);
+    pointer-events: none; z-index: 1;
+  }
+
+  .holiday-flag-icon {
+    font-size: 11px; margin-left: 2px; vertical-align: middle;
+  }
+
+  /* Task Bar Interactions */
   .gantt-task-bar.dragging {
-    cursor: grabbing; opacity: 0.9; z-index: 20;
-    background: var(--brand-hover);
+    cursor: grabbing; opacity: 0.9; z-index: 20; filter: brightness(1.1);
   }
   .gantt-resize-handle {
     position: absolute; right: 0; top: 0; bottom: 0; width: 8px; cursor: ew-resize;
@@ -58,6 +195,16 @@ include __DIR__ . '/includes/head.php';
   }
   .today-badge-tag {
     position: absolute; top: 2px; left: -16px; background: var(--status-urgent-text); color: #FFF; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px;
+  }
+
+  /* Critical Task Highlight */
+  .critical-task {
+    box-shadow: 0 0 0 2px #F59E0B, 0 4px 8px rgba(245, 158, 11, 0.35) !important;
+  }
+
+  /* Project Badge Chip inside task sidebar */
+  .proj-code-badge {
+    font-size: 9px; font-weight: 800; color: #FFF; padding: 1px 5px; border-radius: 3px; margin-right: 6px; flex-shrink: 0;
   }
 </style>
 </head>
@@ -70,25 +217,79 @@ include __DIR__ . '/includes/head.php';
     <?php include __DIR__ . '/includes/header.php'; ?>
 
     <div class="gantt-page-header">
-      <div class="gantt-title-wrap">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h6"/><path d="M10 12h8"/><path d="M7 16h5"/></svg>
-        <h2 class="gantt-title">Gantt Timeline</h2>
+      <div>
+        <div class="gantt-title-wrap">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h6"/><path d="M10 12h8"/><path d="M7 16h5"/></svg>
+          <h2 class="gantt-title">Gantt Timeline</h2>
+        </div>
+        <p class="gantt-subtitle">Drag bars to reschedule, resize durations, inspect task dependencies, and track official government days off.</p>
       </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <a href="calendar.php" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; text-decoration:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Month Calendar
+        </a>
+        <a href="assignments.php" class="btn btn-save" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; text-decoration:none;">
+          + New Task
+        </a>
+      </div>
+    </div>
+
+    <!-- Project Filter Pills Row -->
+    <div class="gantt-pills-row">
+      <a href="?country=<?= htmlspecialchars($reqCountry); ?>" class="gantt-pill-btn <?= ($reqProject === null) ? 'active' : ''; ?>">
+        <span>All Projects (<?= count($projects); ?>)</span>
+      </a>
+      <?php foreach ($projects as $p): 
+        $isActive = ($reqProject === (int)$p['id']);
+        $ring = $p['ring_color'] ?? '#6C5CE7';
+      ?>
+        <a href="?project_id=<?= $p['id']; ?>&country=<?= htmlspecialchars($reqCountry); ?>" class="gantt-pill-btn <?= $isActive ? 'active' : ''; ?>">
+          <span class="gantt-pill-dot" style="background:<?= htmlspecialchars($ring); ?>;"></span>
+          <span><?= htmlspecialchars($p['name']); ?></span>
+          <?php if (!empty($p['due_date'])): ?>
+            <span style="font-size:10px; opacity:0.8;">• Due <?= htmlspecialchars($p['due_date']); ?></span>
+          <?php endif; ?>
+        </a>
+      <?php endforeach; ?>
     </div>
 
     <!-- Controls Bar -->
     <div class="gantt-controls-bar">
-      <div class="zoom-level-toggle">
-        <button class="zoom-btn active">Days</button>
-        <button class="zoom-btn">Weeks</button>
-        <button class="zoom-btn">Months</button>
+      <!-- Zoom Controls -->
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">Zoom:</span>
+        <div class="zoom-btn-group">
+          <button type="button" class="zoom-btn active">Days</button>
+          <button type="button" class="zoom-btn">Weeks</button>
+          <button type="button" class="zoom-btn">Months</button>
+        </div>
       </div>
 
+      <!-- Government Holidays Selector -->
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="font-size:12px; font-weight:700; color:var(--text-secondary);">Holidays:</label>
+          <select class="cal-select" onchange="changeGanttCountry(this.value)" style="padding:4px 8px; font-size:12px; border-radius:var(--radius-xs);">
+            <option value="KH" <?= ($reqCountry === 'KH') ? 'selected' : ''; ?>>🇰🇭 Cambodia</option>
+            <option value="US" <?= ($reqCountry === 'US') ? 'selected' : ''; ?>>🇺🇸 United States</option>
+            <option value="GLOBAL" <?= ($reqCountry === 'GLOBAL') ? 'selected' : ''; ?>>🌐 International</option>
+          </select>
+        </div>
+
+        <!-- Toggle Holiday Highlight Stripes -->
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-secondary); cursor:pointer;">
+          <input type="checkbox" id="chkShowGanttHolidays" checked onchange="toggleGanttHolidayStripes(this.checked)" />
+          <span>Shade Days Off</span>
+        </label>
+      </div>
+
+      <!-- Critical Path & Auto Scheduling -->
       <div style="display:flex; align-items:center; gap:12px;">
         <button type="button" class="btn-step" id="btnToggleCriticalPath" onclick="toggleCriticalPath()" style="display:inline-flex; align-items:center; gap:6px; font-weight:700;">
           Highlight Critical Path
         </button>
-        <div style="font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; user-select:none;" onclick="toggleAutoSchedule()" title="Click to toggle auto-scheduling">
+        <div style="font-size:12.5px; font-weight:600; color:var(--text-primary); cursor:pointer; user-select:none;" onclick="toggleAutoSchedule()" title="Click to toggle auto-scheduling">
           <span>Auto Scheduling: <b id="autoScheduleBadge" style="color:var(--status-done-text);">ON</b></span>
         </div>
       </div>
@@ -98,18 +299,27 @@ include __DIR__ . '/includes/head.php';
     <div class="gantt-container-wrap">
       <!-- Left Task List Sidebar -->
       <div class="gantt-sidebar-col">
-        <div class="gantt-sidebar-head">Task Name</div>
+        <div class="gantt-sidebar-head" style="display:flex; align-items:center; justify-content:space-between;">
+          <span>Tasks (<?= count($tasks); ?>)</span>
+          <span style="font-size:10.5px; color:var(--text-muted); font-weight:500;">Project / Priority</span>
+        </div>
         <?php if (empty($tasks)): ?>
           <div style="padding:24px 16px; font-size:12px; color:var(--text-muted); font-style:italic;">No tasks scheduled</div>
         <?php else: ?>
-          <?php foreach ($tasks as $t): ?>
-            <div class="gantt-task-row"><?= htmlspecialchars($t['task_name']); ?></div>
+          <?php foreach ($tasks as $t): 
+            $ring = $t['ring_color'] ?? '#6C5CE7';
+            $code = $t['project_code'] ?? 'PRJ';
+          ?>
+            <div class="gantt-task-row" title="<?= htmlspecialchars($t['task_name']); ?> • Project: <?= htmlspecialchars($t['project_name']); ?>">
+              <span class="proj-code-badge" style="background:<?= htmlspecialchars($ring); ?>;"><?= htmlspecialchars($code); ?></span>
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?= htmlspecialchars($t['task_name']); ?></span>
+            </div>
           <?php endforeach; ?>
         <?php endif; ?>
       </div>
 
       <!-- Right Timeline Grid -->
-      <div class="gantt-timeline-col" style="position:relative;">
+      <div class="gantt-timeline-col" id="ganttTimelineCol" style="position:relative;">
         <!-- SVG Dependency Arrow Layer -->
         <svg class="gantt-svg-overlay" id="ganttSvgOverlay">
           <defs>
@@ -122,21 +332,43 @@ include __DIR__ . '/includes/head.php';
           </defs>
         </svg>
 
+        <!-- Red Today Indicator Line -->
         <div class="today-indicator-line" data-today-idx="<?= $todayDayIndex; ?>" style="left: <?= $todayLeftPx; ?>px;">
           <span class="today-badge-tag">TODAY</span>
         </div>
 
+        <!-- Vertical Holiday Shading Stripes -->
+        <div id="ganttHolidayStripesContainer">
+          <?php foreach ($timelineDaysData as $td): ?>
+            <?php if ($td['is_holiday']): 
+              $hLeft = $td['day_index'] * 44;
+            ?>
+              <div class="gantt-holiday-stripe" 
+                   data-day-idx="<?= $td['day_index']; ?>" 
+                   style="left: <?= $hLeft; ?>px;" 
+                   title="🏛️ Official Government Day Off: <?= htmlspecialchars($td['holiday']['name']); ?>">
+              </div>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        </div>
+
+        <!-- Dates Header Row -->
         <div class="gantt-dates-head">
-          <?php for ($i = 0; $i < $totalTimelineDays; $i++): 
-            $dayTs = $timelineStartTs + ($i * 86400);
-            $dNum = date('j', $dayTs);
-            $mName = date('M', $dayTs);
-            $isToday = (date('Y-m-d', $dayTs) === date('Y-m-d', $todayTs));
+          <?php foreach ($timelineDaysData as $td): 
+            $isToday = $td['is_today'];
+            $isHoliday = $td['is_holiday'];
+            $isWeekend = $td['is_weekend'];
           ?>
-            <div class="gantt-date-cell" style="<?= $isToday ? 'background:var(--bg-subtle); font-weight:700; color:var(--brand-primary);' : ''; ?>">
-              <?= $dNum; ?><br/><span style="font-size:10px; font-weight:600;"><?= $mName; ?></span>
+            <div class="gantt-date-cell <?= $isToday ? 'today' : ''; ?> <?= $isWeekend ? 'weekend' : ''; ?> <?= $isHoliday ? 'is-holiday' : ''; ?>" 
+                 title="<?= $isHoliday ? '🏛️ Official Government Day Off: ' . htmlspecialchars($td['holiday']['name']) : date('l, M j, Y', $td['timestamp']); ?>">
+              <span><?= $td['day_num']; ?></span>
+              <?php if ($isHoliday): ?>
+                <span class="holiday-flag-icon"><?= $td['holiday']['flag'] ?? '🏛️'; ?></span>
+              <?php endif; ?>
+              <br/>
+              <span style="font-size:9.5px; font-weight:600;"><?= $td['month_name']; ?></span>
             </div>
-          <?php endfor; ?>
+          <?php endforeach; ?>
         </div>
 
         <!-- Task Bars Rows -->
@@ -169,10 +401,18 @@ include __DIR__ . '/includes/head.php';
 
             $leftPx = $dayOffset * 44;
             $widthPx = $daySpan * 44;
+            $barColor = $t['ring_color'] ?? '#6C5CE7';
           ?>
             <div class="gantt-bar-row">
-              <div class="gantt-task-bar" data-task-id="<?= $t['id']; ?>" data-day-offset="<?= $dayOffset; ?>" data-duration-days="<?= $daySpan; ?>" style="left: <?= $leftPx; ?>px; width: <?= $widthPx; ?>px;" title="Drag bar to reschedule • Drag right edge to resize duration">
-                <span style="pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?= htmlspecialchars($t['task_name']); ?></span>
+              <div class="gantt-task-bar" 
+                   data-task-id="<?= $t['id']; ?>" 
+                   data-day-offset="<?= $dayOffset; ?>" 
+                   data-duration-days="<?= $daySpan; ?>" 
+                   style="left: <?= $leftPx; ?>px; width: <?= $widthPx; ?>px; background: <?= htmlspecialchars($barColor); ?>;" 
+                   title="<?= htmlspecialchars($t['task_name']); ?> • Project: <?= htmlspecialchars($t['project_name']); ?> (Drag bar to reschedule • Drag edge to adjust duration)">
+                <span style="pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  [<?= htmlspecialchars($t['project_code']); ?>] <?= htmlspecialchars($t['task_name']); ?>
+                </span>
                 <div class="gantt-resize-handle" title="Drag to adjust duration"></div>
               </div>
             </div>
@@ -186,9 +426,22 @@ include __DIR__ . '/includes/head.php';
 
 <script src="assets/js/app.js"></script>
 <script>
+window.changeGanttCountry = function(newCountry) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('country', newCountry);
+  window.location.href = url.toString();
+};
+
+window.toggleGanttHolidayStripes = function(show) {
+  const container = document.getElementById('ganttHolidayStripesContainer');
+  if (container) {
+    container.style.display = show ? 'block' : 'none';
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   const bars = document.querySelectorAll('.gantt-task-bar');
-  const dayCellWidth = 44;
+  let dayCellWidth = 44;
   const timelineStartTs = <?= $timelineStartTs; ?>;
   let activeAction = null; // 'drag' or 'resize'
   let currentBar = null;
@@ -203,7 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Dependencies from backend
   async function loadDependencies() {
     try {
-      const res = await secureFetch('api/gantt.php');
+      const url = new URL('api/gantt.php', window.location.href);
+      const res = await secureFetch(url.toString());
       const data = await res.json();
       if (data.success && data.dependencies) {
         loadedDependencies = data.dependencies;
@@ -218,13 +472,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderDependencyArrows() {
     if (!svgOverlay) return;
 
-    // Remove existing paths
     const oldPaths = svgOverlay.querySelectorAll('.gantt-dep-arrow');
     oldPaths.forEach(p => p.remove());
 
     const timelineRect = svgOverlay.parentElement.getBoundingClientRect();
 
-    loadedDependencies.forEach((dep, idx) => {
+    loadedDependencies.forEach((dep) => {
       const predBar = document.querySelector(`.gantt-task-bar[data-task-id="${dep.depends_on_task_id}"]`);
       const succBar = document.querySelector(`.gantt-task-bar[data-task-id="${dep.task_id}"]`);
 
@@ -233,7 +486,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const pRect = predBar.getBoundingClientRect();
       const sRect = succBar.getBoundingClientRect();
 
-      // Relative coordinates inside the timeline
       const x1 = (pRect.right - timelineRect.left);
       const y1 = (pRect.top - timelineRect.top) + (pRect.height / 2);
       const x2 = (sRect.left - timelineRect.left);
@@ -302,7 +554,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const snappedLeft = Math.round(newLeft / dayCellWidth) * dayCellWidth;
       currentBar.style.left = `${snappedLeft}px`;
 
-      // Auto-cascade: shift dependent tasks if predecessor pushes past them
       const curId = currentBar.dataset.taskId;
       const curRight = snappedLeft + (parseInt(currentBar.style.width, 10) || 0);
       loadedDependencies.forEach(dep => {
@@ -351,9 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await secureFetch('api/gantt.php', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update_dates',
           task_id: taskId,
@@ -362,10 +611,8 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       });
       const data = await res.json();
-      if (data.success) {
-        if (typeof showToast === 'function') {
-          showToast(`Rescheduled to ${fmtStart} (${durationDays} days)`);
-        }
+      if (data.success && typeof showToast === 'function') {
+        showToast(`Rescheduled to ${fmtStart} (${durationDays} days)`);
       }
     } catch (err) {
       console.error(err);
@@ -385,6 +632,13 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.gantt-date-cell').forEach(cell => {
         cell.style.minWidth = dayCellWidth + 'px';
         cell.style.width = dayCellWidth + 'px';
+      });
+
+      // Recalibrate holiday stripes
+      document.querySelectorAll('.gantt-holiday-stripe').forEach(stripe => {
+        const dIdx = parseInt(stripe.dataset.dayIdx || 0, 10);
+        stripe.style.left = (dIdx * dayCellWidth) + 'px';
+        stripe.style.width = dayCellWidth + 'px';
       });
 
       // Recalibrate task bars
@@ -421,7 +675,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Initial draw
   loadDependencies();
   window.addEventListener('resize', () => renderDependencyArrows());
 });
