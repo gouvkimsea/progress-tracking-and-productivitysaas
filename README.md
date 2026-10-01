@@ -79,10 +79,14 @@ Then navigate to `http://127.0.0.1:8000` in your browser.
 - 🎯 **Objectives & Key Results (Goals)**: Track quantified targets, deliverables, and progress percentages with status indicators (`goals.php`).
 - 📓 **Daily Reflection Journal**: Mood tracking, daily reflection quiz, and daily to-do checklists (`journal.php`).
 - 📋 **Kanban Workflow**: Visual task pipeline with drag-and-drop state transitions (`kanban.php`).
-- 📅 **Calendar & Schedule**: Integrated monthly view with public read-only schedule sharing (`schedule.php`) and live iCalendar subscription feeds (`api/calendar_export.php`).
-- 📈 **Gantt Chart & Dependencies**: Timeline visualization with task dependency mapping (`gantt.php`).
+- 📅 **Interactive Calendar & Government Holidays**:
+  - **Official Public Holidays Engine**: Native support for government days off (Cambodia Prakas default, US Federal, and International/Global) with customizable user day-off rules.
+  - **Project Milestones & Deadlines**: Multi-project color-coded schedule pills, kickoff markers, and delivery dates.
+  - **Conflict Detection**: Automated alerts when project tasks or milestones collide with official government days off.
+  - **Live Subscription & Export**: Public read-only schedule sharing (`schedule.php`) and standard iCalendar `.ics` export feeds (`api/calendar_export.php`).
+- 📈 **Gantt Chart & Holiday Timeline**: Interactive timeline with task dependency mapping, project filtering, and vertical holiday column shading to avoid scheduling during days off (`gantt.php`).
 - 👥 **Team Workload**: Optimized resource allocation and task distribution view (`workload.php`).
-- 🃏 **Spaced Repetition Flashcards**: Leitner-style active recall study deck (`flashcards.php`).
+- 🃏 **Spaced Repetition Flashcards**: Active recall study deck with Leitner box categorization (`flashcards.php`).
 - 📁 **Secure Document Management**: Attachment uploads with streaming download delivery (`files.php`).
 - ⚡ **High-Performance Architecture**: Zero runtime DDL, multi-tenant composite B-tree indexing, and non-blocking session release.
 
