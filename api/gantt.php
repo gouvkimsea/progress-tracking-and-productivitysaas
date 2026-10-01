@@ -56,9 +56,14 @@ try {
             $tasks[] = $t;
         }
 
-        // Fetch milestones with explicit columns
-        $stmtMilestones = $db->query("SELECT id, project_id, name, due_date, status, created_at FROM milestones ORDER BY id ASC");
-        $milestones = $stmtMilestones ? $stmtMilestones->fetchAll(PDO::FETCH_ASSOC) : [];
+        // Fetch milestones with explicit columns for user's projects
+        $milestones = [];
+        if (!empty($projects)) {
+            $pIds = array_keys($projectsById);
+            $inClause = implode(',', array_map('intval', $pIds));
+            $stmtMilestones = $db->query("SELECT id, project_id, name, due_date, status, created_at FROM milestones WHERE project_id IN ($inClause) ORDER BY id ASC");
+            $milestones = $stmtMilestones ? $stmtMilestones->fetchAll(PDO::FETCH_ASSOC) : [];
+        }
 
         // Fetch dependencies for current user's tasks
         $stmtDeps = $db->prepare("SELECT d.id, d.task_id, d.depends_on_task_id, d.dependency_type 

@@ -1657,10 +1657,10 @@ include __DIR__ . '/includes/head.php';
                         $renderedCount++;
                       ?>
                         <div class="gcal-chip-holiday gcal-layer-holiday" 
-                             onclick="event.stopPropagation(); openEventDetailModal('holiday', <?= htmlspecialchars(json_encode($h)); ?>, '<?= $dateFormatted; ?>')"
-                             title="🏛️ Official Public Holiday: <?= htmlspecialchars($h['name']); ?> (<?= htmlspecialchars($h['description']); ?>)">
+                             onclick="event.stopPropagation(); openEventDetailModal('holiday', <?= htmlspecialchars(json_encode($h), ENT_QUOTES, 'UTF-8'); ?>, '<?= $dateFormatted; ?>')"
+                             title="🏛️ Official Public Holiday: <?= htmlspecialchars($h['name'], ENT_QUOTES, 'UTF-8'); ?> (<?= htmlspecialchars($h['description'], ENT_QUOTES, 'UTF-8'); ?>)">
                           <span><?= $h['flag'] ?? '🏛️'; ?></span>
-                          <span><?= htmlspecialchars($h['name']); ?></span>
+                          <span><?= htmlspecialchars($h['name'], ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                       <?php endforeach; ?>
                     <?php endif; ?>
@@ -1673,11 +1673,11 @@ include __DIR__ . '/includes/head.php';
                         $isDue = ($pe['type'] === 'project_due');
                       ?>
                         <div class="gcal-chip-solid gcal-layer-project" 
-                             style="background:<?= htmlspecialchars($pe['ring_color']); ?>;"
-                             onclick="event.stopPropagation(); openEventDetailModal('project', <?= htmlspecialchars(json_encode($pe)); ?>, '<?= $dateFormatted; ?>')"
-                             title="<?= htmlspecialchars($pe['title']); ?> • <?= $pe['progress_pct']; ?>% Complete">
+                             style="background:<?= htmlspecialchars($pe['ring_color'], ENT_QUOTES, 'UTF-8'); ?>;"
+                             onclick="event.stopPropagation(); openEventDetailModal('project', <?= htmlspecialchars(json_encode($pe), ENT_QUOTES, 'UTF-8'); ?>, '<?= $dateFormatted; ?>')"
+                             title="<?= htmlspecialchars($pe['title'], ENT_QUOTES, 'UTF-8'); ?> • <?= $pe['progress_pct']; ?>% Complete">
                           <span><?= $isDue ? '🚀' : '🏁'; ?></span>
-                          <span>[<?= htmlspecialchars($pe['project_code']); ?>] <?= htmlspecialchars($pe['title']); ?></span>
+                          <span>[<?= htmlspecialchars($pe['project_code'], ENT_QUOTES, 'UTF-8'); ?>] <?= htmlspecialchars($pe['title'], ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                       <?php endforeach; ?>
                     <?php endif; ?>
@@ -1690,10 +1690,10 @@ include __DIR__ . '/includes/head.php';
                       ?>
                         <div class="gcal-chip-solid gcal-layer-milestone" 
                              style="background:#1A73E8;"
-                             onclick="event.stopPropagation(); openEventDetailModal('milestone', <?= htmlspecialchars(json_encode($m)); ?>, '<?= $dateFormatted; ?>')"
-                             title="Milestone: <?= htmlspecialchars($m['name']); ?> (<?= htmlspecialchars($m['project_name']); ?>)">
+                             onclick="event.stopPropagation(); openEventDetailModal('milestone', <?= htmlspecialchars(json_encode($m), ENT_QUOTES, 'UTF-8'); ?>, '<?= $dateFormatted; ?>')"
+                             title="Milestone: <?= htmlspecialchars($m['name'], ENT_QUOTES, 'UTF-8'); ?> (<?= htmlspecialchars($m['project_name'], ENT_QUOTES, 'UTF-8'); ?>)">
                           <span>🎯</span>
-                          <span><?= htmlspecialchars($m['name']); ?></span>
+                          <span><?= htmlspecialchars($m['name'], ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                       <?php endforeach; ?>
                     <?php endif; ?>
@@ -1706,11 +1706,11 @@ include __DIR__ . '/includes/head.php';
                         $isDone = ($t['status'] === 'Done');
                       ?>
                         <div class="gcal-chip-timed gcal-layer-task" 
-                             onclick="event.stopPropagation(); openEventDetailModal('task', <?= htmlspecialchars(json_encode($t)); ?>, '<?= $dateFormatted; ?>')"
-                             title="<?= htmlspecialchars($t['task_name']); ?> [<?= htmlspecialchars($t['project_name']); ?>]">
-                          <span class="gcal-chip-timed-dot" style="background:<?= htmlspecialchars($t['ring_color']); ?>;"></span>
+                             onclick="event.stopPropagation(); openEventDetailModal('task', <?= htmlspecialchars(json_encode($t), ENT_QUOTES, 'UTF-8'); ?>, '<?= $dateFormatted; ?>')"
+                             title="<?= htmlspecialchars($t['task_name'], ENT_QUOTES, 'UTF-8'); ?> [<?= htmlspecialchars($t['project_name'], ENT_QUOTES, 'UTF-8'); ?>]">
+                          <span class="gcal-chip-timed-dot" style="background:<?= htmlspecialchars($t['ring_color'], ENT_QUOTES, 'UTF-8'); ?>;"></span>
                           <span class="gcal-chip-time-lbl"><?= $t['time_str']; ?></span>
-                          <span style="<?= $isDone ? 'text-decoration:line-through; opacity:0.6;' : ''; ?>"><?= htmlspecialchars($t['task_name']); ?></span>
+                          <span style="<?= $isDone ? 'text-decoration:line-through; opacity:0.6;' : ''; ?>"><?= htmlspecialchars($t['task_name'], ENT_QUOTES, 'UTF-8'); ?></span>
                         </div>
                       <?php endforeach; ?>
                     <?php endif; ?>
@@ -2046,11 +2046,11 @@ window.__CAL_DATA = {
   country: '<?= htmlspecialchars($reqCountry); ?>',
   projectId: <?= $reqProject !== null ? $reqProject : 'null'; ?>,
   view: '<?= $reqView; ?>',
-  holidays: <?= json_encode($holidaysByDay); ?>,
-  projects: <?= json_encode($projects); ?>,
-  projectEvents: <?= json_encode($projectEventsByDay); ?>,
-  milestones: <?= json_encode($milestonesByDay); ?>,
-  tasks: <?= json_encode($tasksByDay); ?>
+  holidays: <?= json_encode($holidaysByDay, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  projects: <?= json_encode($projects, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  projectEvents: <?= json_encode($projectEventsByDay, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  milestones: <?= json_encode($milestonesByDay, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  tasks: <?= json_encode($tasksByDay, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
 };
 </script>
 
