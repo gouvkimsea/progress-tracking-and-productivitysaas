@@ -15,15 +15,19 @@ $stmtUser = $db->prepare("SELECT * FROM users WHERE id = :uid");
 $stmtUser->execute(['uid' => $userId]);
 $user = $stmtUser->fetch();
 
-// Request parameters: Month, Year, Country, Project Filter
+// Request parameters: Month, Year, Day, Country, Project Filter, View
 $reqMonth = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('n');
 $reqYear = isset($_GET['year']) ? (int)$_GET['year'] : (int)date('Y');
+$reqDay = isset($_GET['day']) ? (int)$_GET['day'] : (int)date('j');
 $reqCountry = isset($_GET['country']) ? strtoupper(trim($_GET['country'])) : 'KH';
 $reqProject = isset($_GET['project_id']) && $_GET['project_id'] !== 'all' ? (int)$_GET['project_id'] : null;
+$reqView = isset($_GET['view']) ? strtolower(trim($_GET['view'])) : 'month';
 
 if ($reqMonth < 1 || $reqMonth > 12) $reqMonth = (int)date('n');
 if ($reqYear < 2000 || $reqYear > 2100) $reqYear = (int)date('Y');
+if ($reqDay < 1 || $reqDay > 31) $reqDay = (int)date('j');
 if (!in_array($reqCountry, ['KH', 'US', 'GLOBAL'], true)) $reqCountry = 'KH';
+if (!in_array($reqView, ['month', 'week', 'day', 'schedule'], true)) $reqView = 'month';
 
 $prevMonth = ($reqMonth === 1) ? 12 : $reqMonth - 1;
 $prevYear = ($reqMonth === 1) ? $reqYear - 1 : $reqYear;
@@ -32,11 +36,18 @@ $nextYear = ($reqMonth === 12) ? $reqYear + 1 : $reqYear;
 
 $monthTs = mktime(0, 0, 0, $reqMonth, 1, $reqYear);
 $monthLabel = date('F Y', $monthTs);
-$firstDayOfMonth = (int)date('N', $monthTs); // 1 (Mon) to 7 (Sun)
+$firstDayOfWeek = (int)date('w', $monthTs); // 0 (Sun) to 6 (Sat) - Google Calendar Sunday-first
 $daysInMonth = (int)date('t', $monthTs);
+
+// Days in previous month for grid leading padding
+$prevMonthDays = (int)date('t', mktime(0, 0, 0, $prevMonth, 1, $prevYear));
 
 // 1. Fetch Government Days Off & Custom Holidays for this month
 $holidaysByDay = getMonthHolidaysByDay($db, $userId, $reqYear, $reqMonth, $reqCountry);
+
+// Also fetch surrounding months for overflow display
+$prevMonthHolidays = getMonthHolidaysByDay($db, $userId, $prevYear, $prevMonth, $reqCountry);
+$nextMonthHolidays = getMonthHolidaysByDay($db, $userId, $nextYear, $nextMonth, $reqCountry);
 
 // 2. Fetch User's Projects (courses)
 $projSql = "SELECT id, code, name, category, level, total_modules, completed_modules, progress_pct, 
@@ -73,15 +84,17 @@ foreach ($projects as $p) {
             if ((int)date('n', $tsDue) === $reqMonth && (int)date('Y', $tsDue) === $reqYear) {
                 $dayNum = (int)date('j', $tsDue);
                 $projectEventsByDay[$dayNum][] = [
+                    'id' => 'p_due_' . $p['id'],
                     'type' => 'project_due',
                     'project_id' => $p['id'],
                     'project_name' => $p['name'],
                     'project_code' => $p['code'],
-                    'ring_color' => $p['ring_color'] ?? '#6C5CE7',
+                    'ring_color' => $p['ring_color'] ?? '#EA4335',
                     'progress_pct' => (int)$p['progress_pct'],
                     'status' => $p['status'] ?? 'In Progress',
                     'date_str' => date('d-m-Y', $tsDue),
-                    'title' => "Project Deadline: {$p['name']}"
+                    'time_str' => '11:59 PM',
+                    'title' => "Launch: {$p['name']}"
                 ];
             }
             if ($tsDue >= strtotime('today')) {
@@ -101,15 +114,17 @@ foreach ($projects as $p) {
         if ($tsStart && (int)date('n', $tsStart) === $reqMonth && (int)date('Y', $tsStart) === $reqYear) {
             $dayNum = (int)date('j', $tsStart);
             $projectEventsByDay[$dayNum][] = [
+                'id' => 'p_start_' . $p['id'],
                 'type' => 'project_start',
                 'project_id' => $p['id'],
                 'project_name' => $p['name'],
                 'project_code' => $p['code'],
-                'ring_color' => $p['ring_color'] ?? '#6C5CE7',
+                'ring_color' => $p['ring_color'] ?? '#34A853',
                 'progress_pct' => (int)$p['progress_pct'],
                 'status' => $p['status'] ?? 'In Progress',
                 'date_str' => date('d-m-Y', $tsStart),
-                'title' => "Project Kickoff: {$p['name']}"
+                'time_str' => '9:00 AM',
+                'title' => "Kickoff: {$p['name']}"
             ];
         }
     }
@@ -132,6 +147,7 @@ if (!empty($projects)) {
             if ($ts) {
                 if ((int)date('n', $ts) === $reqMonth && (int)date('Y', $ts) === $reqYear) {
                     $dayNum = (int)date('j', $ts);
+                    $m['time_str'] = '2:00 PM';
                     $milestonesByDay[$dayNum][] = $m;
                 }
                 if ($ts >= strtotime('today')) {
@@ -170,8 +186,9 @@ foreach ($allTasks as $t) {
         if ($ts) {
             $pNameKey = strtolower(trim($t['project_name'] ?? ''));
             $matchedProj = $projectsByName[$pNameKey] ?? null;
-            $t['ring_color'] = $matchedProj['ring_color'] ?? '#6C5CE7';
-            $t['project_code'] = $matchedProj['code'] ?? 'PRJ';
+            $t['ring_color'] = $matchedProj['ring_color'] ?? '#1A73E8';
+            $t['project_code'] = $matchedProj['code'] ?? 'TASK';
+            $t['time_str'] = '10:00 AM';
 
             if ((int)date('n', $ts) === $reqMonth && (int)date('Y', $ts) === $reqYear) {
                 $dayNum = (int)date('j', $ts);
@@ -221,207 +238,921 @@ foreach ($holidaysByDay as $dNum => $hList) {
 
 // Country flags and labels
 $countryLabels = [
-    'KH' => '🇰🇭 Cambodia (Default)',
+    'KH' => '🇰🇭 Cambodia (Prakas)',
     'US' => '🇺🇸 United States',
     'GLOBAL' => '🌐 International'
 ];
 
-$pageTitle = 'Mindrift — Study & Project Calendar';
+$pageTitle = 'Google Calendar — Mindrift Workspace';
 include __DIR__ . '/includes/head.php';
 ?>
 <style>
+  /* ======================================================== */
+  /* GOOGLE CALENDAR AUTHENTIC DESIGN SYSTEM & COLOR TOKENS   */
+  /* ======================================================== */
   :root {
-    --cal-holiday-bg: rgba(245, 158, 11, 0.08);
-    --cal-holiday-border: rgba(245, 158, 11, 0.35);
-    --cal-holiday-badge-bg: #D97706;
-    --cal-holiday-badge-text: #FFFFFF;
-    --cal-weekend-bg: rgba(148, 163, 184, 0.04);
+    --gcal-bg: #FFFFFF;
+    --gcal-surface: #FFFFFF;
+    --gcal-sidebar-bg: #FFFFFF;
+    --gcal-border: #DADCE0;
+    --gcal-border-subtle: #E8EAED;
+    --gcal-text-primary: #3C4043;
+    --gcal-text-secondary: #70757A;
+    --gcal-text-muted: #80868B;
+    --gcal-blue: #1A73E8;
+    --gcal-blue-hover: #1765CC;
+    --gcal-blue-light: #E8F0FE;
+    --gcal-today-bg: #1A73E8;
+    --gcal-today-text: #FFFFFF;
+    --gcal-holiday-chip-bg: #FEF3C7;
+    --gcal-holiday-chip-text: #92400E;
+    --gcal-holiday-border: #F59E0B;
+    --gcal-hover-bg: #F1F3F4;
+    --gcal-cell-active: #F8F9FA;
+    --gcal-chip-deadline: #D93025;
+    --gcal-chip-kickoff: #1E8E3E;
+    --gcal-chip-milestone: #1A73E8;
+    --gcal-chip-task: #1A73E8;
+    --gcal-shadow-sm: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    --gcal-shadow-md: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+    --gcal-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
   }
 
   [data-theme="dark"] {
-    --cal-holiday-bg: rgba(245, 158, 11, 0.12);
-    --cal-holiday-border: rgba(245, 158, 11, 0.4);
-    --cal-weekend-bg: rgba(255, 255, 255, 0.015);
+    --gcal-bg: #1F1F1F;
+    --gcal-surface: #28292A;
+    --gcal-sidebar-bg: #1F1F1F;
+    --gcal-border: #3C4043;
+    --gcal-border-subtle: #2F3133;
+    --gcal-text-primary: #E8EAED;
+    --gcal-text-secondary: #9AA0A6;
+    --gcal-text-muted: #80868B;
+    --gcal-blue: #8AB4F8;
+    --gcal-blue-hover: #AECBFA;
+    --gcal-blue-light: rgba(138, 180, 248, 0.15);
+    --gcal-today-bg: #8AB4F8;
+    --gcal-today-text: #202124;
+    --gcal-holiday-chip-bg: rgba(245, 158, 11, 0.2);
+    --gcal-holiday-chip-text: #FCD34D;
+    --gcal-holiday-border: rgba(245, 158, 11, 0.5);
+    --gcal-hover-bg: #303134;
+    --gcal-cell-active: #2D2E30;
+    --gcal-chip-deadline: #F28B82;
+    --gcal-chip-kickoff: #81C995;
+    --gcal-chip-milestone: #8AB4F8;
+    --gcal-chip-task: #8AB4F8;
+    --gcal-shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
+    --gcal-shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --gcal-shadow-lg: 0 6px 20px rgba(0,0,0,0.6);
   }
 
-  /* Layout and Shell */
-  .cal-topbar { margin-bottom: 18px; }
-  .cal-title-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
-  .cal-title { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.025em; color: var(--text-primary); }
-  .cal-subtitle { margin: 3px 0 0; color: var(--text-secondary); font-size: 13px; font-weight: 400; }
-  
-  /* Quick Metrics Strip */
-  .cal-metrics-strip {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+  /* Full Screen Calendar Canvas Wrapper */
+  .gcal-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 84px);
+    background: var(--gcal-bg);
+    border: 1px solid var(--gcal-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    box-shadow: var(--gcal-shadow-sm);
   }
-  .cal-stat-card {
-    background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-sm);
-    padding: 12px 14px; display: flex; align-items: center; gap: 12px; transition: transform 0.15s, border-color 0.15s;
-  }
-  .cal-stat-card:hover { border-color: var(--brand-primary); }
-  .cal-stat-icon {
-    width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
-  }
-  .cal-stat-val { font-size: 18px; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
-  .cal-stat-lbl { font-size: 11.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 2px; }
 
-  /* Conflict Alert Banner */
-  .conflict-alert-banner {
-    background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-sm);
-    padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  /* -------------------------------------------------------- */
+  /* GOOGLE CALENDAR TOPBAR HEADER                            */
+  /* -------------------------------------------------------- */
+  .gcal-header {
+    height: 64px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--gcal-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--gcal-surface);
+    gap: 12px;
+    user-select: none;
+    flex-shrink: 0;
   }
-  .conflict-alert-text { font-size: 12.5px; color: #DC2626; font-weight: 600; }
 
-  /* Filter and Navigation Toolbar */
-  .cal-toolbar {
-    background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-sm);
-    padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;
+  .gcal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
-  .cal-nav-group { display: flex; align-items: center; gap: 8px; }
-  .btn-nav-cal {
-    background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: var(--radius-xs);
-    color: var(--text-primary); padding: 5px 11px; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none;
+
+  /* Hamburger Toggle */
+  .gcal-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gcal-text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .gcal-icon-btn:hover {
+    background: var(--gcal-hover-bg);
+    color: var(--gcal-text-primary);
+  }
+
+  /* Google Calendar Logo Badge */
+  .gcal-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    margin-right: 8px;
+  }
+  .gcal-logo-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #4285F4 0%, #1A73E8 100%);
+    box-shadow: 0 2px 5px rgba(66, 133, 244, 0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-weight: 800;
+    line-height: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  .gcal-logo-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: #EA4335;
+  }
+  .gcal-logo-num {
+    font-size: 15px;
+    font-weight: 900;
+    margin-top: 6px;
+    font-family: 'Inter', sans-serif;
+  }
+  .gcal-logo-title {
+    font-size: 21px;
+    font-weight: 600;
+    color: var(--gcal-text-primary);
+    letter-spacing: -0.02em;
+  }
+  .gcal-logo-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--gcal-blue-light);
+    color: var(--gcal-blue);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 2px;
+  }
+
+  /* "Today" Google Button */
+  .gcal-btn-today {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 4px;
+    border: 1px solid var(--gcal-border);
+    background: transparent;
+    color: var(--gcal-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .gcal-btn-today:hover {
+    background: var(--gcal-hover-bg);
+    border-color: var(--gcal-border);
+  }
+
+  /* Nav Chevrons */
+  .gcal-nav-arrows {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .gcal-nav-arrow-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gcal-text-secondary);
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 700;
+    transition: background 0.15s, color 0.15s;
+  }
+  .gcal-nav-arrow-btn:hover {
+    background: var(--gcal-hover-bg);
+    color: var(--gcal-text-primary);
+  }
+
+  .gcal-header-date-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gcal-text-primary);
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+
+  /* Header Right Section */
+  .gcal-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Google Search Box */
+  .gcal-search-box {
+    position: relative;
+    width: 240px;
+    transition: width 0.2s;
+  }
+  .gcal-search-input {
+    width: 100%;
+    height: 38px;
+    border-radius: 8px;
+    background: var(--gcal-hover-bg);
+    border: 1px solid transparent;
+    padding: 0 12px 0 36px;
+    font-size: 13px;
+    color: var(--gcal-text-primary);
+    outline: none;
+    transition: all 0.15s;
+  }
+  .gcal-search-input:focus {
+    background: var(--gcal-surface);
+    border-color: var(--gcal-blue);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    width: 280px;
+  }
+  .gcal-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gcal-text-muted);
+    pointer-events: none;
+  }
+
+  /* Country Selector Dropdown Pill */
+  .gcal-select-pill {
+    height: 36px;
+    border-radius: 18px;
+    border: 1px solid var(--gcal-border);
+    background: var(--gcal-surface);
+    color: var(--gcal-text-primary);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 0 12px;
+    cursor: pointer;
+    outline: none;
+  }
+  .gcal-select-pill:focus { border-color: var(--gcal-blue); }
+
+  /* Google Calendar View Switcher Dropdown (Month / Week / Day / Schedule) */
+  .gcal-view-dropdown {
+    position: relative;
+  }
+  .gcal-view-btn {
+    height: 36px;
+    border-radius: 4px;
+    border: 1px solid var(--gcal-border);
+    background: var(--gcal-surface);
+    color: var(--gcal-text-primary);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .gcal-view-btn:hover { background: var(--gcal-hover-bg); }
+
+  .gcal-dropdown-menu {
+    position: absolute;
+    top: 42px;
+    right: 0;
+    background: var(--gcal-surface);
+    border: 1px solid var(--gcal-border);
+    border-radius: 6px;
+    box-shadow: var(--gcal-shadow-md);
+    min-width: 150px;
+    z-index: 1000;
+    display: none;
+    padding: 6px 0;
+  }
+  .gcal-dropdown-menu.active { display: block; }
+  .gcal-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gcal-text-primary);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .gcal-dropdown-item:hover { background: var(--gcal-hover-bg); }
+  .gcal-dropdown-item.active { font-weight: 700; color: var(--gcal-blue); background: var(--gcal-blue-light); }
+  .gcal-shortcut-kbd { font-size: 10.5px; color: var(--gcal-text-muted); font-family: monospace; background: var(--gcal-hover-bg); padding: 1px 4px; border-radius: 3px; }
+
+  /* -------------------------------------------------------- */
+  /* GCAL MAIN BODY SPLIT: SIDEBAR + CALENDAR CANVAS          */
+  /* -------------------------------------------------------- */
+  .gcal-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Left Sidebar */
+  .gcal-sidebar {
+    width: 256px;
+    background: var(--gcal-sidebar-bg);
+    border-right: 1px solid var(--gcal-border);
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gcal-sidebar.collapsed {
+    margin-left: -256px;
+  }
+
+  /* Google "+ Create" Pill Button */
+  .gcal-btn-create {
+    height: 48px;
+    padding: 0 24px 0 16px;
+    border-radius: 24px;
+    background: var(--gcal-surface);
+    border: 1px solid var(--gcal-border-subtle);
+    box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gcal-text-primary);
+    cursor: pointer;
+    transition: box-shadow 0.2s, background 0.15s;
+    user-select: none;
+    align-self: flex-start;
+  }
+  .gcal-btn-create:hover {
+    box-shadow: 0 2px 6px 2px rgba(60,64,67,0.25), 0 6px 14px 4px rgba(60,64,67,0.18);
+    background: var(--gcal-hover-bg);
+  }
+  .gcal-btn-create-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Mini Calendar (Date Picker) */
+  .gcal-mini-cal {
+    user-select: none;
+  }
+  .gcal-mini-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+  .gcal-mini-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gcal-text-primary);
+  }
+  .gcal-mini-nav {
+    display: flex;
+    gap: 2px;
+  }
+  .gcal-mini-nav-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--gcal-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .gcal-mini-nav-btn:hover { background: var(--gcal-hover-bg); }
+
+  .gcal-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    gap: 2px;
+  }
+  .gcal-mini-day-hdr {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gcal-text-muted);
+    padding: 4px 0;
+  }
+  .gcal-mini-cell {
+    font-size: 11px;
+    font-weight: 500;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--gcal-text-primary);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .gcal-mini-cell:hover {
+    background: var(--gcal-hover-bg);
+  }
+  .gcal-mini-cell.other-month {
+    color: var(--gcal-text-muted);
+    opacity: 0.4;
+  }
+  .gcal-mini-cell.today {
+    background: var(--gcal-blue);
+    color: #FFFFFF;
+    font-weight: 700;
+  }
+  .gcal-mini-cell.has-events::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--gcal-blue);
+  }
+
+  /* Sidebar Collapsible Section */
+  .gcal-sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .gcal-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gcal-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    padding: 4px 2px;
+  }
+  .gcal-section-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* Google-Style Checkbox Item */
+  .gcal-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gcal-text-primary);
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .gcal-check-item:hover { background: var(--gcal-hover-bg); }
+
+  .gcal-custom-checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
     transition: background 0.15s, border-color 0.15s;
   }
-  .btn-nav-cal:hover { background: var(--border-base); border-color: var(--brand-primary); }
-  .cal-current-label { font-size: 17px; font-weight: 800; color: var(--text-primary); min-width: 140px; text-align: center; }
 
-  .cal-filters-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .cal-select {
-    background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: var(--radius-xs);
-    color: var(--text-primary); padding: 5px 10px; font-size: 12.5px; font-weight: 600; outline: none; cursor: pointer;
-  }
-  .cal-select:focus { border-color: var(--brand-primary); }
-
-  /* Project Pill Filters */
-  .project-pills-row {
-    display: flex; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 14px;
-    scrollbar-width: thin;
-  }
-  .project-pill-btn {
-    white-space: nowrap; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
-    background: var(--bg-surface); border: 1px solid var(--border-base); color: var(--text-secondary);
-    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: all 0.15s;
-  }
-  .project-pill-btn:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
-  .project-pill-btn.active {
-    background: var(--brand-primary); color: #FFF; border-color: var(--brand-primary); box-shadow: 0 2px 6px rgba(108,92,231,0.25);
-  }
-  .project-pill-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-
-  /* Main Grid vs Sidebar Split */
-  .cal-layout-grid { display: grid; grid-template-columns: 8fr 4fr; gap: 16px; }
-
-  /* Calendar Month Grid */
-  .cal-month-card { background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-sm); padding: 16px; }
-  .cal-grid-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; }
-  .cal-day-name-col { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 6px 0; }
-  .cal-day-name-col.weekend { color: #DC2626; opacity: 0.8; }
-
-  .calendar-days-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-  .cal-day-cell {
-    background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-sm);
-    min-height: 98px; padding: 6px 8px; font-size: 12px; display: flex; flex-direction: column;
-    position: relative; transition: all 0.15s ease; cursor: pointer;
-  }
-  .cal-day-cell:hover {
-    border-color: var(--brand-primary); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-  }
-  .cal-day-cell.weekend { background: var(--cal-weekend-bg); }
-  .cal-day-cell.today {
-    border: 2px solid var(--brand-primary); background: var(--bg-subtle);
-  }
-  .cal-day-cell.is-holiday {
-    background: var(--cal-holiday-bg) !important;
-    border-color: var(--cal-holiday-border) !important;
+  /* -------------------------------------------------------- */
+  /* MAIN CALENDAR CANVAS & GRID                              */
+  /* -------------------------------------------------------- */
+  .gcal-canvas {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--gcal-bg);
+    overflow: hidden;
+    position: relative;
   }
 
-  .cal-cell-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-  .cal-num { font-weight: 700; font-size: 12.5px; color: var(--text-primary); }
-  .cal-today-badge {
-    font-size: 8.5px; font-weight: 800; background: var(--brand-primary); color: #FFF; padding: 1px 4px; border-radius: 3px;
+  /* Weekday Header Row (SUN to SAT) */
+  .gcal-grid-header {
+    height: 36px;
+    border-bottom: 1px solid var(--gcal-border);
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--gcal-surface);
+    flex-shrink: 0;
   }
-  .cal-cell-add-btn {
-    opacity: 0; background: none; border: none; font-size: 14px; font-weight: 700; color: var(--brand-primary);
-    cursor: pointer; padding: 0 2px; line-height: 1; transition: opacity 0.15s;
+  .gcal-day-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--gcal-text-muted);
+    border-right: 1px solid var(--gcal-border);
+    text-transform: uppercase;
   }
-  .cal-day-cell:hover .cal-cell-add-btn { opacity: 1; }
+  .gcal-day-col-header:last-child { border-right: none; }
+  .gcal-day-col-header.today { color: var(--gcal-blue); }
 
-  /* Badges inside day cell */
-  .cell-events-list { display: flex; flex-direction: column; gap: 3px; overflow: hidden; flex: 1; }
-  
-  /* Government Holiday Badge */
-  .badge-gov-holiday {
-    background: var(--cal-holiday-badge-bg); color: var(--cal-holiday-badge-text);
-    font-size: 9.5px; font-weight: 700; padding: 2px 5px; border-radius: 3px;
-    display: flex; align-items: center; gap: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    box-shadow: 0 1px 2px rgba(217, 119, 6, 0.2);
-  }
-
-  /* Project Badges */
-  .badge-proj-deadline {
-    background: linear-gradient(135deg, #DC2626, #B91C1C); color: #FFF;
-    font-size: 9.5px; font-weight: 700; padding: 2px 5px; border-radius: 3px;
-    display: flex; align-items: center; gap: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .badge-proj-start {
-    background: linear-gradient(135deg, #059669, #047857); color: #FFF;
-    font-size: 9.5px; font-weight: 700; padding: 2px 5px; border-radius: 3px;
-    display: flex; align-items: center; gap: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .badge-milestone {
-    background: #0284C7; color: #FFF;
-    font-size: 9.5px; font-weight: 700; padding: 2px 5px; border-radius: 3px;
-    display: flex; align-items: center; gap: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* Calendar Grid Body (Month View) */
+  .gcal-month-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 1fr;
+    overflow-y: auto;
+    background: var(--gcal-bg);
   }
 
-  /* Task Pill */
-  .badge-task-item {
-    font-size: 9.5px; font-weight: 600; padding: 2px 5px; border-radius: 3px; color: #FFF;
-    display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* Day Cell in Month Grid */
+  .gcal-day-box {
+    border-right: 1px solid var(--gcal-border);
+    border-bottom: 1px solid var(--gcal-border);
+    padding: 4px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 100px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.1s;
+    overflow: hidden;
   }
-  .badge-task-item.priority-urgent { background: #E11D48; }
-  .badge-task-item.priority-high { background: #EA580C; }
-  .badge-task-item.priority-medium { background: var(--brand-primary); }
-  .badge-task-item.priority-low { background: #64748B; }
-
-  .more-events-tag { font-size: 9px; font-weight: 700; color: var(--text-muted); margin-top: 1px; }
-
-  /* Right Side Panel & Tabs */
-  .cal-side-card { background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: var(--radius-sm); padding: 16px; }
-  .cal-side-tabs { display: flex; border-bottom: 1px solid var(--border-base); margin-bottom: 14px; gap: 6px; }
-  .side-tab-btn {
-    background: none; border: none; padding: 6px 12px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
-    cursor: pointer; position: relative; border-radius: 4px 4px 0 0;
+  .gcal-day-box:nth-child(7n) { border-right: none; }
+  .gcal-day-box:hover {
+    background: var(--gcal-hover-bg);
   }
-  .side-tab-btn.active { color: var(--brand-primary); font-weight: 700; }
-  .side-tab-btn.active::after {
-    content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--brand-primary);
+  .gcal-day-box.is-today {
+    background: var(--gcal-cell-active);
+  }
+  .gcal-day-box.is-other-month {
+    background: rgba(0, 0, 0, 0.015);
+  }
+  .gcal-day-box.is-holiday-day {
+    background: var(--gcal-holiday-chip-bg) !important;
   }
 
-  /* List items in panels */
-  .side-item-card {
-    padding: 10px 12px; background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: var(--radius-xs);
-    margin-bottom: 10px; transition: border-color 0.15s;
+  /* Day Number Top Circle */
+  .gcal-day-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    position: relative;
   }
-  .side-item-card:hover { border-color: var(--brand-primary); }
+  .gcal-day-num {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gcal-text-primary);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .gcal-day-box.is-today .gcal-day-num {
+    background: var(--gcal-today-bg);
+    color: var(--gcal-today-text);
+    font-weight: 700;
+    width: 26px;
+    height: 26px;
+  }
+  .gcal-day-box.is-other-month .gcal-day-num {
+    color: var(--gcal-text-muted);
+    opacity: 0.45;
+  }
 
-  .holiday-flag-pill {
-    display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700;
-    color: #D97706; background: rgba(245, 158, 11, 0.12); padding: 2px 6px; border-radius: 3px;
+  /* Floating quick add button on hover */
+  .gcal-day-add-icon {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    opacity: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: var(--gcal-blue);
+    color: #FFF;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .gcal-day-box:hover .gcal-day-add-icon {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+
+  /* Events Container Inside Day Cell */
+  .gcal-events-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+    flex: 1;
+  }
+
+  /* -------------------------------------------------------- */
+  /* GOOGLE CALENDAR EVENT CHIPS                              */
+  /* -------------------------------------------------------- */
+  /* 1. All-Day / High-Priority Pill (Solid colored) */
+  .gcal-chip-solid {
+    height: 22px;
+    line-height: 22px;
+    border-radius: 4px;
+    padding: 0 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #FFFFFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    transition: filter 0.15s, transform 0.08s;
+  }
+  .gcal-chip-solid:hover {
+    filter: brightness(0.92);
+    transform: translateY(-0.5px);
+  }
+
+  /* Government Holiday Chip (Iconic Google Calendar holiday styling) */
+  .gcal-chip-holiday {
+    height: 22px;
+    line-height: 22px;
+    border-radius: 4px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--gcal-holiday-chip-bg);
+    color: var(--gcal-holiday-chip-text);
+    border-left: 3px solid var(--gcal-holiday-border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .gcal-chip-holiday:hover { filter: brightness(0.95); }
+
+  /* 2. Timed Event / Task Pill (Colored dot on left, text on right) */
+  .gcal-chip-timed {
+    height: 20px;
+    line-height: 20px;
+    border-radius: 3px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gcal-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .gcal-chip-timed:hover {
+    background: var(--gcal-hover-bg);
+  }
+  .gcal-chip-timed-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .gcal-chip-time-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gcal-text-secondary);
+  }
+
+  /* "+X more" chip */
+  .gcal-more-link {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gcal-text-secondary);
+    padding: 1px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 1px;
+    display: inline-block;
+  }
+  .gcal-more-link:hover {
+    background: var(--gcal-hover-bg);
+    color: var(--gcal-blue);
+  }
+
+  /* -------------------------------------------------------- */
+  /* GOOGLE CALENDAR WEEK & AGENDA / SCHEDULE VIEWS           */
+  /* -------------------------------------------------------- */
+  .gcal-schedule-view {
+    padding: 24px 32px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: var(--gcal-bg);
+  }
+  .gcal-agenda-day-group {
+    display: flex;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--gcal-border-subtle);
+  }
+  .gcal-agenda-date-badge {
+    width: 110px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .gcal-agenda-day-num {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--gcal-text-primary);
+    line-height: 1;
+  }
+  .gcal-agenda-day-num.today {
+    color: var(--gcal-blue);
+  }
+  .gcal-agenda-day-name {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--gcal-text-muted);
+    margin-top: 4px;
+  }
+  .gcal-agenda-events-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .gcal-agenda-card {
+    background: var(--gcal-surface);
+    border: 1px solid var(--gcal-border);
+    border-left-width: 4px;
+    border-radius: 6px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.1s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .gcal-agenda-card:hover {
+    transform: translateX(2px);
+    box-shadow: var(--gcal-shadow-sm);
+  }
+
+  /* -------------------------------------------------------- */
+  /* GOOGLE FLOATING EVENT POPOVER CARD                       */
+  /* -------------------------------------------------------- */
+  .gcal-event-popover {
+    position: fixed;
+    z-index: 2500;
+    background: var(--gcal-surface);
+    border: 1px solid var(--gcal-border);
+    border-radius: 8px;
+    box-shadow: var(--gcal-shadow-lg);
+    width: 380px;
+    max-width: 90vw;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: gcalPopIn 0.15s cubic-bezier(0, 0, 0.2, 1);
+  }
+  .gcal-event-popover.active { display: flex; }
+  @keyframes gcalPopIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .gcal-popover-header {
+    height: 48px;
+    background: var(--gcal-surface);
+    border-bottom: 1px solid var(--gcal-border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 10px;
+    gap: 4px;
+  }
+  .gcal-popover-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .gcal-popover-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .gcal-popover-color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .gcal-popover-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gcal-text-primary);
+    line-height: 1.25;
+  }
+  .gcal-popover-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13.5px;
+    color: var(--gcal-text-secondary);
+  }
+
+  /* Quick conflict warning strip inside calendar */
+  .gcal-conflict-banner {
+    background: rgba(217, 48, 37, 0.08);
+    border: 1px solid rgba(217, 48, 37, 0.25);
+    border-radius: 6px;
+    padding: 8px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: #D93025;
+    font-weight: 600;
   }
 
   /* Responsive Rules */
-  @media (max-width: 1080px) {
-    .cal-layout-grid { grid-template-columns: 1fr; }
-    .cal-metrics-strip { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 640px) {
-    .calendar-days-container { gap: 3px; }
-    .cal-day-cell { min-height: 64px; padding: 3px 4px; font-size: 10px; }
-    .cal-metrics-strip { grid-template-columns: 1fr; }
-    .cal-toolbar { flex-direction: column; align-items: stretch; }
+  @media (max-width: 900px) {
+    .gcal-sidebar { position: fixed; top: 0; bottom: 0; left: 0; z-index: 1500; box-shadow: var(--gcal-shadow-lg); }
+    .gcal-sidebar.collapsed { margin-left: -280px; }
+    .gcal-search-box { display: none; }
   }
 </style>
 </head>
@@ -430,436 +1161,596 @@ include __DIR__ . '/includes/head.php';
 <div class="app" id="app">
   <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
-  <main class="main">
+  <main class="main" style="padding: 16px 20px;">
     <?php include __DIR__ . '/includes/header.php'; ?>
 
-    <div class="cal-topbar">
-      <!-- Title & Action Buttons -->
-      <div class="cal-title-row">
-        <div>
-          <h2 class="cal-title">Calendar & Project Schedule</h2>
-          <p class="cal-subtitle">Track project deadlines, upcoming milestones, tasks, and official government days off.</p>
+    <!-- Schedule Notice Alert if Holiday Conflicts -->
+    <?php if (!empty($holidayConflicts)): ?>
+      <div class="gcal-conflict-banner">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span>⚠️</span>
+          <span>
+            <strong>Schedule Conflict:</strong> You have <?= count($holidayConflicts); ?> date(s) with project deadlines or tasks scheduled during official government days off (<?= htmlspecialchars($holidayConflicts[0]['holiday_name']); ?>).
+          </span>
         </div>
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <button type="button" class="btn btn-save" onclick="openUniversalScheduleModal()" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Schedule Event
+        <button type="button" class="btn btn-secondary" onclick="openDayDetailModal(<?= (int)$holidayConflicts[0]['day']; ?>)" style="padding:3px 10px; font-size:11.5px; color:#D93025;">
+          Review
+        </button>
+      </div>
+    <?php endif; ?>
+
+    <!-- ======================================================== -->
+    <!-- GOOGLE CALENDAR CONTAINER CANVAS                         -->
+    <!-- ======================================================== -->
+    <div class="gcal-container">
+
+      <!-- TOPBAR: Google Calendar App Bar -->
+      <header class="gcal-header">
+        <!-- Left: Hamburger, App Logo, Today, Chevrons, Date Heading -->
+        <div class="gcal-header-left">
+          <button type="button" class="gcal-icon-btn" id="btnToggleGcalSidebar" title="Main menu" onclick="toggleGcalSidebar()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
-          <button type="button" class="btn btn-secondary" onclick="openShareScheduleModal()" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-            Share Schedule
+
+          <a href="calendar.php" class="gcal-logo" title="Google Calendar style Workspace">
+            <div class="gcal-logo-icon">
+              <span class="gcal-logo-num"><?= date('j'); ?></span>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:4px;">
+              <span class="gcal-logo-title">Calendar</span>
+              <span class="gcal-logo-badge">PRO</span>
+            </div>
+          </a>
+
+          <!-- "Today" Button -->
+          <a href="?month=<?= (int)date('n'); ?>&year=<?= (int)date('Y'); ?>&day=<?= (int)date('j'); ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?>" class="gcal-btn-today" title="Jump to Today (t)">
+            Today
+          </a>
+
+          <!-- Previous / Next Chevrons -->
+          <div class="gcal-nav-arrows">
+            <a href="?month=<?= $prevMonth; ?>&year=<?= $prevYear; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>" class="gcal-nav-arrow-btn" title="Previous month (p)">
+              ‹
+            </a>
+            <a href="?month=<?= $nextMonth; ?>&year=<?= $nextYear; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>" class="gcal-nav-arrow-btn" title="Next month (n)">
+              ›
+            </a>
+          </div>
+
+          <!-- Month & Year Title -->
+          <h2 class="gcal-header-date-title" id="gcalHeaderDateTitle">
+            <?= $monthLabel; ?>
+          </h2>
+        </div>
+
+        <!-- Right: Search, Government Country Selector, View Switcher, Share/Export -->
+        <div class="gcal-header-right">
+          <!-- Real-Time Search Bar -->
+          <div class="gcal-search-box">
+            <svg class="gcal-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="gcalSearchInput" class="gcal-search-input" placeholder="Search tasks, events..." oninput="handleGcalSearch(this.value)" />
+          </div>
+
+          <!-- Country Selector Dropdown -->
+          <select class="gcal-select-pill" id="gcalCountrySelector" onchange="changeCountry(this.value)" title="Government Public Holidays Region">
+            <option value="KH" <?= ($reqCountry === 'KH') ? 'selected' : ''; ?>>🇰🇭 Cambodia</option>
+            <option value="US" <?= ($reqCountry === 'US') ? 'selected' : ''; ?>>🇺🇸 United States</option>
+            <option value="GLOBAL" <?= ($reqCountry === 'GLOBAL') ? 'selected' : ''; ?>>🌐 International</option>
+          </select>
+
+          <!-- View Switcher Dropdown (Month / Week / Day / Schedule) -->
+          <div class="gcal-view-dropdown">
+            <button type="button" class="gcal-view-btn" id="btnGcalViewSelect" onclick="toggleViewDropdown()">
+              <span id="currentViewLabel">
+                <?= ucfirst($reqView); ?>
+              </span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="gcal-dropdown-menu" id="gcalViewMenu">
+              <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=month" class="gcal-dropdown-item <?= ($reqView === 'month') ? 'active' : ''; ?>">
+                <span>Month</span>
+                <span class="gcal-shortcut-kbd">M</span>
+              </a>
+              <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=week" class="gcal-dropdown-item <?= ($reqView === 'week') ? 'active' : ''; ?>">
+                <span>Week</span>
+                <span class="gcal-shortcut-kbd">W</span>
+              </a>
+              <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=day" class="gcal-dropdown-item <?= ($reqView === 'day') ? 'active' : ''; ?>">
+                <span>Day</span>
+                <span class="gcal-shortcut-kbd">D</span>
+              </a>
+              <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=schedule" class="gcal-dropdown-item <?= ($reqView === 'schedule') ? 'active' : ''; ?>">
+                <span>Schedule</span>
+                <span class="gcal-shortcut-kbd">S</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Share Schedule Action -->
+          <button type="button" class="gcal-icon-btn" onclick="openShareScheduleModal()" title="Share Schedule & WebCal Feed">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
-          <a href="api/calendar_export.php?country=<?= htmlspecialchars($reqCountry); ?>" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-size:12.5px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Export (.ics)
+
+          <!-- Export iCal (.ics) -->
+          <a href="api/calendar_export.php?country=<?= htmlspecialchars($reqCountry); ?>" class="gcal-icon-btn" title="Export to iCalendar (.ics)" style="text-decoration:none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </a>
         </div>
-      </div>
+      </header>
 
-      <!-- Quick Metrics Strip -->
-      <div class="cal-metrics-strip">
-        <div class="cal-stat-card">
-          <div class="cal-stat-icon" style="background:rgba(245,158,11,0.12); color:#D97706;">🏛️</div>
-          <div>
-            <div class="cal-stat-val"><?= count($holidaysByDay); ?></div>
-            <div class="cal-stat-lbl">Government Days Off</div>
-          </div>
-        </div>
+      <!-- BODY: Left Sidebar + Calendar Canvas -->
+      <div class="gcal-body">
 
-        <div class="cal-stat-card">
-          <div class="cal-stat-icon" style="background:rgba(108,92,231,0.12); color:var(--brand-primary);">🚀</div>
-          <div>
-            <div class="cal-stat-val"><?= count($projects); ?></div>
-            <div class="cal-stat-lbl">Active Projects</div>
-          </div>
-        </div>
+        <!-- ==================================================== -->
+        <!-- LEFT SIDEBAR: + Create, Mini Cal, Categories, Projs -->
+        <!-- ==================================================== -->
+        <aside class="gcal-sidebar" id="gcalSidebar">
 
-        <div class="cal-stat-card">
-          <div class="cal-stat-icon" style="background:rgba(239,68,68,0.1); color:#DC2626;">🎯</div>
-          <div>
-            <div class="cal-stat-val"><?= count($projectEventsByDay) + count($milestonesByDay); ?></div>
-            <div class="cal-stat-lbl">Project Deadlines</div>
-          </div>
-        </div>
+          <!-- Google Calendar Iconic "+ Create" Pill Button -->
+          <button type="button" class="gcal-btn-create" onclick="openUniversalScheduleModal()">
+            <svg class="gcal-btn-create-icon" viewBox="0 0 36 36">
+              <path fill="#4285F4" d="M16 16v14h4V16h14v-4H20V2h-4v10H2v4h14z"/>
+            </svg>
+            <span>Create</span>
+          </button>
 
-        <div class="cal-stat-card">
-          <div class="cal-stat-icon" style="background:rgba(14,165,233,0.1); color:#0284C7;">📋</div>
-          <div>
-            <div class="cal-stat-val"><?= count($allTasks); ?></div>
-            <div class="cal-stat-lbl">Scheduled Tasks</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Schedule Intelligence Conflict Alert -->
-      <?php if (!empty($holidayConflicts)): ?>
-        <div class="conflict-alert-banner">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:18px;">⚠️</span>
-            <div>
-              <div class="conflict-alert-text">Schedule Notice: Work Scheduled on Official Government Day Off</div>
-              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">
-                You have <?= count($holidayConflicts); ?> date(s) where tasks or project milestones land on an official day off (e.g. 
-                <?php 
-                  $previewNames = array_map(fn($c) => htmlspecialchars($c['holiday_name']), array_slice($holidayConflicts, 0, 2));
-                  echo implode(', ', $previewNames);
-                ?>).
+          <!-- Interactive Mini Datepicker Calendar -->
+          <div class="gcal-mini-cal">
+            <div class="gcal-mini-header">
+              <span class="gcal-mini-title"><?= date('F Y', $monthTs); ?></span>
+              <div class="gcal-mini-nav">
+                <a href="?month=<?= $prevMonth; ?>&year=<?= $prevYear; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?>" class="gcal-mini-nav-btn" title="Previous Month">‹</a>
+                <a href="?month=<?= $nextMonth; ?>&year=<?= $nextYear; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?>" class="gcal-mini-nav-btn" title="Next Month">›</a>
               </div>
             </div>
-          </div>
-          <button type="button" class="btn btn-secondary" onclick="openDayDetailModal(<?= (int)$holidayConflicts[0]['day']; ?>)" style="font-size:11.5px; padding:4px 10px; color:#DC2626; border-color:rgba(220,38,38,0.3);">
-            Review Dates
-          </button>
-        </div>
-      <?php endif; ?>
 
-      <!-- Filter and Month Navigation Toolbar -->
-      <div class="cal-toolbar">
-        <div class="cal-nav-group">
-          <a href="?month=<?= $prevMonth; ?>&year=<?= $prevYear; ?>&country=<?= $reqCountry; ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>" class="btn-nav-cal" title="Previous Month">‹</a>
-          <span class="cal-current-label"><?= $monthLabel; ?></span>
-          <a href="?month=<?= $nextMonth; ?>&year=<?= $nextYear; ?>&country=<?= $reqCountry; ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>" class="btn-nav-cal" title="Next Month">›</a>
-          <a href="?month=<?= (int)date('n'); ?>&year=<?= (int)date('Y'); ?>&country=<?= $reqCountry; ?>" class="btn-nav-cal" style="font-size:11.5px; font-weight:600;">Today</a>
-        </div>
+            <div class="gcal-mini-grid">
+              <div class="gcal-mini-day-hdr">S</div>
+              <div class="gcal-mini-day-hdr">M</div>
+              <div class="gcal-mini-day-hdr">T</div>
+              <div class="gcal-mini-day-hdr">W</div>
+              <div class="gcal-mini-day-hdr">T</div>
+              <div class="gcal-mini-day-hdr">F</div>
+              <div class="gcal-mini-day-hdr">S</div>
 
-        <div class="cal-filters-group">
-          <!-- Country Selector for Government Holidays -->
-          <div style="display:flex; align-items:center; gap:6px;">
-            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">Government:</label>
-            <select class="cal-select" id="countrySelector" onchange="changeCountry(this.value)">
-              <option value="KH" <?= ($reqCountry === 'KH') ? 'selected' : ''; ?>>🇰🇭 Cambodia (Prakas)</option>
-              <option value="US" <?= ($reqCountry === 'US') ? 'selected' : ''; ?>>🇺🇸 United States</option>
-              <option value="GLOBAL" <?= ($reqCountry === 'GLOBAL') ? 'selected' : ''; ?>>🌐 International</option>
-            </select>
-          </div>
+              <?php
+              // Leading padding from prev month
+              for ($p = 0; $p < $firstDayOfWeek; $p++):
+                $pDay = $prevMonthDays - ($firstDayOfWeek - 1 - $p);
+              ?>
+                <a href="?month=<?= $prevMonth; ?>&year=<?= $prevYear; ?>&day=<?= $pDay; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?>" class="gcal-mini-cell other-month"><?= $pDay; ?></a>
+              <?php endfor; ?>
 
-          <!-- Project Filter Dropdown -->
-          <div style="display:flex; align-items:center; gap:6px;">
-            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">Project:</label>
-            <select class="cal-select" id="projectFilterSelect" onchange="filterByProject(this.value)">
-              <option value="all">All Projects (<?= count($projects); ?>)</option>
-              <?php foreach ($projects as $p): ?>
-                <option value="<?= $p['id']; ?>" <?= ($reqProject === (int)$p['id']) ? 'selected' : ''; ?>>
-                  [<?= htmlspecialchars($p['code']); ?>] <?= htmlspecialchars($p['name']); ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-
-          <!-- Show/Hide Holidays Toggle -->
-          <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-secondary); cursor:pointer;">
-            <input type="checkbox" id="chkShowHolidays" checked onchange="toggleHolidayHighlight(this.checked)" />
-            <span>Show Days Off</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Quick Project Horizontal Pill Bar -->
-      <div class="project-pills-row">
-        <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>" class="project-pill-btn <?= ($reqProject === null) ? 'active' : ''; ?>">
-          <span>All Projects</span>
-        </a>
-        <?php foreach ($projects as $p): 
-          $isActive = ($reqProject === (int)$p['id']);
-          $ring = $p['ring_color'] ?? '#6C5CE7';
-        ?>
-          <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&project_id=<?= $p['id']; ?>" class="project-pill-btn <?= $isActive ? 'active' : ''; ?>">
-            <span class="project-pill-dot" style="background:<?= htmlspecialchars($ring); ?>;"></span>
-            <span><?= htmlspecialchars($p['name']); ?></span>
-            <?php if (!empty($p['due_date'])): ?>
-              <span style="font-size:10px; opacity:0.8;">• Due <?= htmlspecialchars($p['due_date']); ?></span>
-            <?php endif; ?>
-          </a>
-        <?php endforeach; ?>
-      </div>
-    </div>
-
-    <!-- Main Layout: Calendar Grid + Side Panel -->
-    <div class="cal-layout-grid">
-
-      <!-- Calendar Month View Card -->
-      <div class="cal-month-card">
-        <!-- Weekday Headers -->
-        <div class="cal-grid-header">
-          <div class="cal-day-name-col">Mon</div>
-          <div class="cal-day-name-col">Tue</div>
-          <div class="cal-day-name-col">Wed</div>
-          <div class="cal-day-name-col">Thu</div>
-          <div class="cal-day-name-col">Fri</div>
-          <div class="cal-day-name-col weekend">Sat</div>
-          <div class="cal-day-name-col weekend">Sun</div>
-        </div>
-
-        <!-- Days Grid -->
-        <div class="calendar-days-container" id="calendarDaysContainer">
-          <?php 
-          // Preceding blank day pads
-          for ($pad = 1; $pad < $firstDayOfMonth; $pad++): ?>
-            <div class="cal-day-cell" style="background:transparent; border-color:transparent; cursor:default;"></div>
-          <?php endfor; ?>
-
-          <?php 
-          $todayNum = (int)date('j');
-          $isCurrentMonthAndYear = ($reqMonth === (int)date('n') && $reqYear === (int)date('Y'));
-
-          for ($d = 1; $d <= $daysInMonth; $d++): 
-            $isToday = ($isCurrentMonthAndYear && $d === $todayNum);
-            $dayOfWeek = (int)date('N', mktime(0, 0, 0, $reqMonth, $d, $reqYear));
-            $isWeekend = ($dayOfWeek >= 6);
-            $hasHolidays = !empty($holidaysByDay[$d]);
-            $dateFormatted = sprintf('%02d-%02d-%04d', $d, $reqMonth, $reqYear);
-
-            $dayTasks = $tasksByDay[$d] ?? [];
-            $dayProjEvents = $projectEventsByDay[$d] ?? [];
-            $dayMilestones = $milestonesByDay[$d] ?? [];
-            $totalDayItems = count($dayTasks) + count($dayProjEvents) + count($dayMilestones);
-          ?>
-            <div class="cal-day-cell <?= $isToday ? 'today' : ''; ?> <?= $isWeekend ? 'weekend' : ''; ?> <?= $hasHolidays ? 'is-holiday' : ''; ?>" 
-                 data-day="<?= $d; ?>" 
-                 data-date="<?= $dateFormatted; ?>" 
-                 onclick="openDayDetailModal(<?= $d; ?>)"
-                 title="<?= $hasHolidays ? '🏛️ Official Government Day Off: ' . htmlspecialchars($holidaysByDay[$d][0]['name']) : 'Click to view day schedule & add items'; ?>">
-              
-              <div class="cal-cell-head">
-                <span class="cal-num"><?= $d; ?></span>
-                <div style="display:flex; align-items:center; gap:4px;">
-                  <?php if ($isToday): ?>
-                    <span class="cal-today-badge">TODAY</span>
-                  <?php endif; ?>
-                  <button type="button" class="cal-cell-add-btn" title="Add event on this date" onclick="event.stopPropagation(); quickAddEventOnDate('<?= $dateFormatted; ?>')">+</button>
-                </div>
-              </div>
-
-              <div class="cell-events-list">
-                <!-- 1. Government Holiday Badges -->
-                <?php if ($hasHolidays): ?>
-                  <?php foreach ($holidaysByDay[$d] as $h): ?>
-                    <div class="badge-gov-holiday" title="<?= htmlspecialchars($h['name']); ?> (<?= htmlspecialchars($h['description']); ?>)">
-                      <span><?= $h['flag'] ?? '🏛️'; ?></span>
-                      <span><?= htmlspecialchars($h['name']); ?></span>
-                    </div>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-
-                <!-- 2. Project Deadline / Kickoff Badges -->
-                <?php if (!empty($dayProjEvents)): ?>
-                  <?php foreach ($dayProjEvents as $pe): ?>
-                    <?php if ($pe['type'] === 'project_due'): ?>
-                      <div class="badge-proj-deadline" title="Project Launch Deadline: <?= htmlspecialchars($pe['project_name']); ?> (<?= $pe['progress_pct']; ?>% completed)">
-                        <span>🚀</span>
-                        <span>[<?= htmlspecialchars($pe['project_code']); ?>] <?= htmlspecialchars($pe['project_name']); ?></span>
-                      </div>
-                    <?php else: ?>
-                      <div class="badge-proj-start" title="Project Kickoff: <?= htmlspecialchars($pe['project_name']); ?>">
-                        <span>🏁</span>
-                        <span>[<?= htmlspecialchars($pe['project_code']); ?>] <?= htmlspecialchars($pe['project_name']); ?></span>
-                      </div>
-                    <?php endif; ?>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-
-                <!-- 3. Milestones -->
-                <?php if (!empty($dayMilestones)): ?>
-                  <?php foreach ($dayMilestones as $m): ?>
-                    <div class="badge-milestone" title="Milestone: <?= htmlspecialchars($m['name']); ?> (<?= htmlspecialchars($m['project_name']); ?>)">
-                      <span>🎯</span>
-                      <span><?= htmlspecialchars($m['name']); ?></span>
-                    </div>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-
-                <!-- 4. Tasks -->
-                <?php if (!empty($dayTasks)): ?>
-                  <?php foreach (array_slice($dayTasks, 0, 2) as $t): 
-                    $prio = strtolower($t['priority'] ?? 'medium');
-                    $prioClass = 'priority-' . $prio;
-                  ?>
-                    <div class="badge-task-item <?= $prioClass; ?>" title="<?= htmlspecialchars($t['task_name']); ?> [<?= htmlspecialchars($t['project_name']); ?>] (Priority: <?= htmlspecialchars($t['priority'] ?? 'Medium'); ?>)">
-                      <span style="font-weight:700;">[<?= htmlspecialchars($t['project_code'] ?? 'T'); ?>]</span>
-                      <span><?= htmlspecialchars($t['task_name']); ?></span>
-                    </div>
-                  <?php endforeach; ?>
-
-                  <?php if (count($dayTasks) > 2): ?>
-                    <span class="more-events-tag">+<?= count($dayTasks) - 2; ?> more tasks</span>
-                  <?php endif; ?>
-                <?php endif; ?>
-              </div>
-
+              <?php 
+              $todayNum = (int)date('j');
+              $isCurrentMonthAndYear = ($reqMonth === (int)date('n') && $reqYear === (int)date('Y'));
+              for ($d = 1; $d <= $daysInMonth; $d++): 
+                $isToday = ($isCurrentMonthAndYear && $d === $todayNum);
+                $hasItems = !empty($holidaysByDay[$d]) || !empty($tasksByDay[$d]) || !empty($projectEventsByDay[$d]);
+              ?>
+                <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&day=<?= $d; ?>&country=<?= $reqCountry; ?>&view=day" 
+                   class="gcal-mini-cell <?= $isToday ? 'today' : ''; ?> <?= $hasItems ? 'has-events' : ''; ?>"
+                   title="<?= $d; ?> <?= date('F', $monthTs); ?>">
+                  <?= $d; ?>
+                </a>
+              <?php endfor; ?>
             </div>
-          <?php endfor; ?>
-        </div>
-      </div>
-
-      <!-- Right Side Panel: Tabbed Insights & Management -->
-      <div class="cal-side-card">
-        <div class="cal-side-tabs">
-          <button type="button" class="side-tab-btn active" id="tabBtnHolidays" onclick="switchSideTab('holidays')">
-            🏛️ Days Off (<?= count($holidaysByDay); ?>)
-          </button>
-          <button type="button" class="side-tab-btn" id="tabBtnProjects" onclick="switchSideTab('projects')">
-            🚀 Projects (<?= count($projects); ?>)
-          </button>
-          <button type="button" class="side-tab-btn" id="tabBtnDeadlines" onclick="switchSideTab('deadlines')">
-            ⏰ Upcoming
-          </button>
-        </div>
-
-        <!-- Tab 1: Official Government Public Holidays -->
-        <div id="tabContentHolidays">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-            <span style="font-size:12.5px; font-weight:700; color:var(--text-primary);">
-              <?= htmlspecialchars($countryLabels[$reqCountry] ?? 'Government Holidays'); ?>
-            </span>
-            <button type="button" class="btn btn-secondary" onclick="openAddCustomHolidayModal()" style="font-size:11px; padding:3px 8px;">
-              + Custom Day Off
-            </button>
           </div>
 
-          <?php if (empty($holidaysByDay)): ?>
-            <div style="text-align:center; padding:30px 10px; color:var(--text-muted); font-size:12.5px;">
-              No official government public holidays in <?= $monthLabel; ?>.
+          <!-- Section: My Calendars (Toggles) -->
+          <div class="gcal-sidebar-section">
+            <div class="gcal-section-header">
+              <span>My Calendars</span>
             </div>
-          <?php else: ?>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              <?php foreach ($holidaysByDay as $dNum => $hList): ?>
-                <?php foreach ($hList as $h): ?>
-                  <div class="side-item-card" style="border-left:3px solid #D97706; cursor:pointer;" onclick="openDayDetailModal(<?= $dNum; ?>)">
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                      <span class="holiday-flag-pill">
-                        <?= $h['flag'] ?? '🏛️'; ?> <?= date('l, M j', strtotime($h['iso_date'])); ?>
-                      </span>
-                      <span style="font-size:10.5px; font-weight:700; color:#D97706; text-transform:uppercase;">Official Day Off</span>
-                    </div>
-                    <div style="font-size:13.5px; font-weight:700; color:var(--text-primary); margin-bottom:2px;">
-                      <?= htmlspecialchars($h['name']); ?>
-                    </div>
-                    <?php if (!empty($h['local_name']) && $h['local_name'] !== $h['name']): ?>
-                      <div style="font-size:11.5px; color:#D97706; font-weight:600; margin-bottom:4px;">
-                        <?= htmlspecialchars($h['local_name']); ?>
-                      </div>
-                    <?php endif; ?>
-                    <div style="font-size:11.5px; color:var(--text-muted); line-height:1.4;">
-                      <?= htmlspecialchars($h['description']); ?>
-                    </div>
-                  </div>
-                <?php endforeach; ?>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
-        </div>
+            <div class="gcal-section-items">
+              <!-- Government Holidays -->
+              <label class="gcal-check-item">
+                <input type="checkbox" id="layerHolidays" checked onchange="toggleCalendarLayer('holiday', this.checked)" style="accent-color: #D97706; cursor:pointer;" />
+                <span>🏛️ Public Holidays</span>
+              </label>
 
-        <!-- Tab 2: User's Projects & Deadlines -->
-        <div id="tabContentProjects" style="display:none;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-            <span style="font-size:12.5px; font-weight:700; color:var(--text-primary);">Tracked Projects (<?= count($projects); ?>)</span>
-            <button type="button" class="btn btn-secondary" onclick="openCreateProjectDeadlineModal()" style="font-size:11px; padding:3px 8px;">
-              + Set Deadline
-            </button>
+              <!-- Project Launch / Kickoffs -->
+              <label class="gcal-check-item">
+                <input type="checkbox" id="layerProjects" checked onchange="toggleCalendarLayer('project', this.checked)" style="accent-color: #D93025; cursor:pointer;" />
+                <span>🚀 Project Deadlines</span>
+              </label>
+
+              <!-- Milestones -->
+              <label class="gcal-check-item">
+                <input type="checkbox" id="layerMilestones" checked onchange="toggleCalendarLayer('milestone', this.checked)" style="accent-color: #1A73E8; cursor:pointer;" />
+                <span>🎯 Milestones</span>
+              </label>
+
+              <!-- Tasks -->
+              <label class="gcal-check-item">
+                <input type="checkbox" id="layerTasks" checked onchange="toggleCalendarLayer('task', this.checked)" style="accent-color: #6C5CE7; cursor:pointer;" />
+                <span>📋 Tasks & Schedules</span>
+              </label>
+            </div>
           </div>
 
-          <?php if (empty($projects)): ?>
-            <div style="text-align:center; padding:30px 10px; color:var(--text-muted); font-size:12.5px;">
-              No projects created yet.
+          <!-- Section: Projects Filter -->
+          <div class="gcal-sidebar-section">
+            <div class="gcal-section-header">
+              <span>Filter Projects (<?= count($projects); ?>)</span>
+              <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?>" style="font-size:11px; text-decoration:none; color:var(--gcal-blue); font-weight:600;">All</a>
             </div>
-          <?php else: ?>
-            <div style="display:flex; flex-direction:column; gap:8px;">
+            <div class="gcal-section-items" style="max-height: 220px; overflow-y: auto;">
               <?php foreach ($projects as $p): 
-                $prog = (int)$p['progress_pct'];
+                $isSelected = ($reqProject === (int)$p['id']);
                 $ring = $p['ring_color'] ?? '#6C5CE7';
               ?>
-                <div class="side-item-card" style="border-left:3px solid <?= htmlspecialchars($ring); ?>;">
-                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                    <div style="display:flex; align-items:center; gap:6px;">
-                      <span style="font-size:10px; font-weight:800; background:<?= htmlspecialchars($ring); ?>; color:#FFF; padding:1px 5px; border-radius:3px;">
-                        <?= htmlspecialchars($p['code']); ?>
-                      </span>
-                      <span style="font-size:13px; font-weight:700; color:var(--text-primary);"><?= htmlspecialchars($p['name']); ?></span>
-                    </div>
-                    <span style="font-size:11px; font-weight:700; color:var(--text-primary);"><?= $prog; ?>%</span>
-                  </div>
-
-                  <!-- Progress Bar -->
-                  <div style="width:100%; height:4px; background:var(--border-base); border-radius:2px; overflow:hidden; margin:6px 0;">
-                    <div style="height:100%; width:<?= $prog; ?>%; background:<?= htmlspecialchars($ring); ?>; border-radius:2px;"></div>
-                  </div>
-
-                  <div style="display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:var(--text-muted); margin-top:4px;">
-                    <span>Launch / Due: <?= !empty($p['due_date']) ? htmlspecialchars($p['due_date']) : 'Not set'; ?></span>
-                    <button type="button" onclick="openEditProjectDatesModal(<?= htmlspecialchars(json_encode($p)); ?>)" style="background:none; border:none; color:var(--brand-primary); font-weight:600; cursor:pointer; padding:0;">Edit</button>
-                  </div>
-                </div>
+                <a href="?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?>&project_id=<?= $isSelected ? 'all' : $p['id']; ?>" 
+                   class="gcal-check-item" 
+                   style="<?= $isSelected ? 'background: var(--gcal-hover-bg); font-weight: 700;' : ''; ?> text-decoration:none;">
+                  <span class="gcal-custom-checkbox" style="background:<?= htmlspecialchars($ring); ?>; color:#FFF; font-size:10px;">✓</span>
+                  <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">
+                    [<?= htmlspecialchars($p['code']); ?>] <?= htmlspecialchars($p['name']); ?>
+                  </span>
+                </a>
               <?php endforeach; ?>
             </div>
-          <?php endif; ?>
-        </div>
-
-        <!-- Tab 3: Upcoming Deadlines Timeline -->
-        <div id="tabContentDeadlines" style="display:none;">
-          <div style="margin-bottom:12px; font-size:12.5px; font-weight:700; color:var(--text-primary);">
-            Upcoming Deadlines & Schedules
           </div>
 
-          <?php if (empty($upcomingDeadlines)): ?>
-            <div style="text-align:center; padding:30px 10px; color:var(--text-muted); font-size:12.5px;">
-              No pending upcoming deadlines.
-            </div>
-          <?php else: ?>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              <?php foreach (array_slice($upcomingDeadlines, 0, 8) as $ud): 
-                $itemType = $ud['item_type'];
+          <!-- Quick Day Off Link -->
+          <div style="margin-top:auto; padding-top:12px; border-top:1px solid var(--gcal-border-subtle);">
+            <button type="button" class="btn btn-secondary" onclick="openAddCustomHolidayModal()" style="width:100%; font-size:12px; justify-content:center;">
+              + Record Day Off
+            </button>
+          </div>
+
+        </aside>
+
+        <!-- ==================================================== -->
+        <!-- MAIN CANVAS: Month View / Week View / Agenda View    -->
+        <!-- ==================================================== -->
+        <main class="gcal-canvas" id="gcalCanvas">
+
+          <?php if ($reqView === 'schedule'): ?>
+            <!-- ------------------------------------------------ -->
+            <!-- VIEW: SCHEDULE / AGENDA LIST VIEW                -->
+            <!-- ------------------------------------------------ -->
+            <div class="gcal-schedule-view" id="gcalScheduleView">
+              <?php 
+              $hasAnyEvent = false;
+              for ($d = 1; $d <= $daysInMonth; $d++): 
+                $dTasks = $tasksByDay[$d] ?? [];
+                $dProj = $projectEventsByDay[$d] ?? [];
+                $dMiles = $milestonesByDay[$d] ?? [];
+                $dHols = $holidaysByDay[$d] ?? [];
+
+                if (empty($dTasks) && empty($dProj) && empty($dMiles) && empty($dHols)) continue;
+                $hasAnyEvent = true;
+
+                $curDateTs = mktime(0, 0, 0, $reqMonth, $d, $reqYear);
+                $isToday = ($isCurrentMonthAndYear && $d === $todayNum);
               ?>
-                <?php if ($itemType === 'project_deadline'): 
-                  $p = $ud['project'];
-                ?>
-                  <div class="side-item-card" style="border-left:3px solid #DC2626;">
-                    <div style="display:flex; align-items:center; justify-content:space-between;">
-                      <span style="font-size:10.5px; font-weight:800; color:#DC2626; text-transform:uppercase;">
-                        🚀 Project Launch • <?= $ud['formatted_date']; ?>
-                      </span>
-                      <span style="font-size:11px; font-weight:700; color:var(--text-primary);"><?= (int)$p['progress_pct']; ?>%</span>
-                    </div>
-                    <div style="font-size:13.5px; font-weight:700; color:var(--text-primary); margin-top:2px;">
-                      <?= htmlspecialchars($p['name']); ?>
-                    </div>
-                    <div style="font-size:11.5px; color:var(--text-muted);">Category: <?= htmlspecialchars($p['category']); ?></div>
+                <div class="gcal-agenda-day-group">
+                  <div class="gcal-agenda-date-badge">
+                    <span class="gcal-agenda-day-num <?= $isToday ? 'today' : ''; ?>"><?= $d; ?></span>
+                    <span class="gcal-agenda-day-name"><?= date('D • M', $curDateTs); ?></span>
                   </div>
 
-                <?php elseif ($itemType === 'milestone'): 
-                  $m = $ud['milestone'];
-                ?>
-                  <div class="side-item-card" style="border-left:3px solid #0284C7;">
-                    <span style="font-size:10.5px; font-weight:800; color:#0284C7; text-transform:uppercase;">
-                      🎯 Milestone • <?= $ud['formatted_date']; ?>
-                    </span>
-                    <div style="font-size:13.5px; font-weight:700; color:var(--text-primary); margin-top:2px;">
-                      <?= htmlspecialchars($m['name']); ?>
-                    </div>
-                    <div style="font-size:11.5px; color:var(--text-muted);">Project: <?= htmlspecialchars($m['project_name']); ?></div>
-                  </div>
+                  <div class="gcal-agenda-events-col">
+                    <!-- Holidays -->
+                    <?php foreach ($dHols as $h): ?>
+                      <div class="gcal-agenda-card" style="border-left-color:#D97706; background:var(--gcal-holiday-chip-bg);" onclick="openDayDetailModal(<?= $d; ?>)">
+                        <div>
+                          <div style="font-size:11px; font-weight:800; color:#D97706; text-transform:uppercase;">🏛️ Government Public Holiday</div>
+                          <div style="font-size:14.5px; font-weight:700; color:var(--gcal-text-primary); margin-top:2px;"><?= htmlspecialchars($h['name']); ?></div>
+                          <div style="font-size:12px; color:var(--gcal-text-secondary);"><?= htmlspecialchars($h['description']); ?></div>
+                        </div>
+                        <span class="gcal-logo-badge" style="background:#FDE68A; color:#92400E;">OFFICIAL DAY OFF</span>
+                      </div>
+                    <?php endforeach; ?>
 
-                <?php else: 
-                  $t = $ud['task'];
-                  $prio = strtolower($t['priority'] ?? 'medium');
-                  $prioColor = ($prio === 'urgent') ? '#DC2626' : (($prio === 'high') ? '#EA580C' : 'var(--brand-primary)');
+                    <!-- Project Deadlines -->
+                    <?php foreach ($dProj as $pe): ?>
+                      <div class="gcal-agenda-card" style="border-left-color:<?= htmlspecialchars($pe['ring_color']); ?>;" onclick="openDayDetailModal(<?= $d; ?>)">
+                        <div>
+                          <div style="font-size:11px; font-weight:800; color:#DC2626; text-transform:uppercase;">🚀 <?= htmlspecialchars($pe['title']); ?></div>
+                          <div style="font-size:14.5px; font-weight:700; color:var(--gcal-text-primary); margin-top:2px;">[<?= htmlspecialchars($pe['project_code']); ?>] <?= htmlspecialchars($pe['project_name']); ?></div>
+                          <div style="font-size:12px; color:var(--gcal-text-muted);">Status: <?= htmlspecialchars($pe['status']); ?> • <?= $pe['progress_pct']; ?>% Complete</div>
+                        </div>
+                        <span class="gcal-shortcut-kbd" style="font-weight:700; color:#DC2626;"><?= $pe['time_str']; ?></span>
+                      </div>
+                    <?php endforeach; ?>
+
+                    <!-- Milestones -->
+                    <?php foreach ($dMiles as $m): ?>
+                      <div class="gcal-agenda-card" style="border-left-color:#1A73E8;" onclick="openDayDetailModal(<?= $d; ?>)">
+                        <div>
+                          <div style="font-size:11px; font-weight:800; color:#1A73E8; text-transform:uppercase;">🎯 Milestone</div>
+                          <div style="font-size:14.5px; font-weight:700; color:var(--gcal-text-primary); margin-top:2px;"><?= htmlspecialchars($m['name']); ?></div>
+                          <div style="font-size:12px; color:var(--gcal-text-muted);">Project: <?= htmlspecialchars($m['project_name']); ?></div>
+                        </div>
+                        <span class="gcal-shortcut-kbd"><?= $m['time_str']; ?></span>
+                      </div>
+                    <?php endforeach; ?>
+
+                    <!-- Tasks -->
+                    <?php foreach ($dTasks as $t): ?>
+                      <div class="gcal-agenda-card" style="border-left-color:<?= htmlspecialchars($t['ring_color']); ?>;" onclick="openDayDetailModal(<?= $d; ?>)">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                          <input type="checkbox" <?= ($t['status'] === 'Done') ? 'checked' : ''; ?> onclick="event.stopPropagation(); toggleTaskDoneStatus(<?= $t['id']; ?>, this)" style="width:18px; height:18px; cursor:pointer;" />
+                          <div>
+                            <div style="font-size:14px; font-weight:600; color:var(--gcal-text-primary); <?= ($t['status'] === 'Done') ? 'text-decoration:line-through; opacity:0.6;' : ''; ?>">
+                              <?= htmlspecialchars($t['task_name']); ?>
+                            </div>
+                            <div style="font-size:12px; color:var(--gcal-text-muted);">
+                              [<?= htmlspecialchars($t['project_name']); ?>] • Priority: <strong><?= htmlspecialchars($t['priority'] ?? 'Medium'); ?></strong>
+                            </div>
+                          </div>
+                        </div>
+                        <span class="gcal-shortcut-kbd"><?= $t['time_str']; ?></span>
+                      </div>
+                    <?php endforeach; ?>
+
+                  </div>
+                </div>
+              <?php endfor; ?>
+
+              <?php if (!$hasAnyEvent): ?>
+                <div style="text-align:center; padding:60px 20px; color:var(--gcal-text-muted);">
+                  <div style="font-size:36px; margin-bottom:8px;">📅</div>
+                  <div style="font-size:16px; font-weight:600; color:var(--gcal-text-primary);">No events scheduled in <?= $monthLabel; ?></div>
+                  <div style="font-size:13px; margin-top:4px;">Click the "+ Create" button to schedule a task or project deadline.</div>
+                </div>
+              <?php endif; ?>
+            </div>
+
+          <?php elseif ($reqView === 'day'): ?>
+            <!-- ------------------------------------------------ -->
+            <!-- VIEW: SINGLE DAY HOURLY TIMELINE                 -->
+            <!-- ------------------------------------------------ -->
+            <div style="display:flex; flex-direction:column; flex:1; overflow-y:auto; padding:16px 24px; background:var(--gcal-bg);">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; border-bottom:1px solid var(--gcal-border-subtle); padding-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <span style="font-size:32px; font-weight:800; color:var(--gcal-blue);"><?= $reqDay; ?></span>
+                  <div>
+                    <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--gcal-text-primary);"><?= date('l, F j, Y', mktime(0,0,0,$reqMonth,$reqDay,$reqYear)); ?></h3>
+                    <span style="font-size:12.5px; color:var(--gcal-text-secondary);">Single Day Focus View</span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-save" onclick="quickAddEventOnDate('<?= sprintf('%02d-%02d-%04d', $reqDay, $reqMonth, $reqYear); ?>')">
+                  + Add Item on this Day
+                </button>
+              </div>
+
+              <!-- Day Timeline Slots -->
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <?php 
+                $dayTasks = $tasksByDay[$reqDay] ?? [];
+                $dayHols = $holidaysByDay[$reqDay] ?? [];
+                $dayProj = $projectEventsByDay[$reqDay] ?? [];
+                $dayMiles = $milestonesByDay[$reqDay] ?? [];
                 ?>
-                  <div class="side-item-card" style="border-left:3px solid <?= $prioColor; ?>;">
-                    <span style="font-size:10.5px; font-weight:800; color:<?= $prioColor; ?>; text-transform:uppercase;">
-                      <?= $ud['formatted_date']; ?> • <?= htmlspecialchars($t['priority'] ?? 'Medium'); ?>
-                    </span>
-                    <div style="font-size:13.5px; font-weight:700; color:var(--text-primary); margin-top:2px;">
-                      <?= htmlspecialchars($t['task_name']); ?>
-                    </div>
-                    <div style="font-size:11.5px; color:var(--text-muted);">
-                      Project: <?= htmlspecialchars($t['project_name']); ?> • Assigned: <?= htmlspecialchars($t['assigned_to'] ?? 'Me'); ?>
+                <!-- All-Day Section -->
+                <?php if (!empty($dayHols) || !empty($dayProj)): ?>
+                  <div style="background:var(--gcal-hover-bg); border-radius:6px; padding:10px 14px; margin-bottom:12px;">
+                    <span style="font-size:11px; font-weight:800; color:var(--gcal-text-muted); text-transform:uppercase;">All-Day & Milestones</span>
+                    <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+                      <?php foreach ($dayHols as $h): ?>
+                        <div class="gcal-chip-holiday" style="font-size:12.5px; height:26px;">
+                          <span><?= $h['flag'] ?? '🏛️'; ?></span>
+                          <span><strong><?= htmlspecialchars($h['name']); ?></strong> (Official Government Day Off)</span>
+                        </div>
+                      <?php endforeach; ?>
+                      <?php foreach ($dayProj as $pe): ?>
+                        <div class="gcal-chip-solid" style="background:<?= htmlspecialchars($pe['ring_color']); ?>; font-size:12.5px; height:26px;">
+                          <span>🚀</span>
+                          <span><strong><?= htmlspecialchars($pe['title']); ?></strong></span>
+                        </div>
+                      <?php endforeach; ?>
                     </div>
                   </div>
                 <?php endif; ?>
-              <?php endforeach; ?>
+
+                <!-- Hours List (8 AM - 7 PM) -->
+                <?php for ($hr = 8; $hr <= 19; $hr++): 
+                  $hrStr = ($hr > 12) ? ($hr - 12) . ' PM' : (($hr === 12) ? '12 PM' : $hr . ' AM');
+                ?>
+                  <div style="display:flex; gap:16px; border-top:1px solid var(--gcal-border-subtle); padding:10px 0; min-height:50px;">
+                    <div style="width:65px; font-size:11px; font-weight:700; color:var(--gcal-text-muted); text-align:right;">
+                      <?= $hrStr; ?>
+                    </div>
+                    <div style="flex:1; display:flex; flex-direction:column; gap:6px;" onclick="quickAddEventOnDate('<?= sprintf('%02d-%02d-%04d', $reqDay, $reqMonth, $reqYear); ?>')">
+                      <?php if ($hr === 10 && !empty($dayTasks)): ?>
+                        <?php foreach ($dayTasks as $t): ?>
+                          <div class="gcal-chip-solid" style="background:<?= htmlspecialchars($t['ring_color']); ?>; max-width:400px; height:28px;" onclick="event.stopPropagation(); openDayDetailModal(<?= $reqDay; ?>)">
+                            <span>📋</span>
+                            <span><?= htmlspecialchars($t['task_name']); ?></span>
+                          </div>
+                        <?php endforeach; ?>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                <?php endfor; ?>
+              </div>
+            </div>
+
+          <?php else: ?>
+            <!-- ------------------------------------------------ -->
+            <!-- VIEW: ICONIC MONTH VIEW (DEFAULT GOOGLE GRID)    -->
+            <!-- ------------------------------------------------ -->
+            <!-- Weekday Header Row -->
+            <div class="gcal-grid-header">
+              <div class="gcal-day-col-header">Sun</div>
+              <div class="gcal-day-col-header">Mon</div>
+              <div class="gcal-day-col-header">Tue</div>
+              <div class="gcal-day-col-header">Wed</div>
+              <div class="gcal-day-col-header">Thu</div>
+              <div class="gcal-day-col-header">Fri</div>
+              <div class="gcal-day-col-header">Sat</div>
+            </div>
+
+            <!-- Month 7x6 Grid -->
+            <div class="gcal-month-grid" id="gcalMonthGrid">
+              <?php
+              // 1. Leading overflow days from previous month
+              for ($p = 0; $p < $firstDayOfWeek; $p++):
+                $prevDayNum = $prevMonthDays - ($firstDayOfWeek - 1 - $p);
+                $prevDateStr = sprintf('%02d-%02d-%04d', $prevDayNum, $prevMonth, $prevYear);
+                $prevHols = $prevMonthHolidays[$prevDayNum] ?? [];
+              ?>
+                <div class="gcal-day-box is-other-month" 
+                     data-date="<?= $prevDateStr; ?>" 
+                     onclick="window.location.href='?month=<?= $prevMonth; ?>&year=<?= $prevYear; ?>&day=<?= $prevDayNum; ?>&country=<?= $reqCountry; ?>'">
+                  <div class="gcal-day-box-header">
+                    <span class="gcal-day-num"><?= $prevDayNum; ?></span>
+                  </div>
+                  <div class="gcal-events-flow">
+                    <?php if (!empty($prevHols)): ?>
+                      <div class="gcal-chip-holiday" style="opacity:0.6;">
+                        <span>🏛️</span>
+                        <span><?= htmlspecialchars($prevHols[0]['name']); ?></span>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              <?php endfor; ?>
+
+              <?php
+              // 2. Active Month Days (1 to $daysInMonth)
+              for ($d = 1; $d <= $daysInMonth; $d++):
+                $isToday = ($isCurrentMonthAndYear && $d === $todayNum);
+                $dateFormatted = sprintf('%02d-%02d-%04d', $d, $reqMonth, $reqYear);
+
+                $dTasks = $tasksByDay[$d] ?? [];
+                $dProj = $projectEventsByDay[$d] ?? [];
+                $dMiles = $milestonesByDay[$d] ?? [];
+                $dHols = $holidaysByDay[$d] ?? [];
+
+                $hasDayOff = false;
+                foreach ($dHols as $h) {
+                    if ($h['is_day_off']) { $hasDayOff = true; break; }
+                }
+
+                $totalItems = count($dHols) + count($dProj) + count($dMiles) + count($dTasks);
+                $maxDisplay = 3;
+                $renderedCount = 0;
+              ?>
+                <div class="gcal-day-box <?= $isToday ? 'is-today' : ''; ?> <?= $hasDayOff ? 'is-holiday-day' : ''; ?>"
+                     id="gcalDayCell_<?= $d; ?>"
+                     data-day="<?= $d; ?>"
+                     data-date="<?= $dateFormatted; ?>"
+                     onclick="handleDayCellClick(<?= $d; ?>, '<?= $dateFormatted; ?>', event)">
+
+                  <!-- Cell Header (Day Number + Add Trigger) -->
+                  <div class="gcal-day-box-header">
+                    <span class="gcal-day-num"><?= $d; ?></span>
+                    <button type="button" class="gcal-day-add-icon" title="Add event on this date" onclick="event.stopPropagation(); quickAddEventOnDate('<?= $dateFormatted; ?>')">+</button>
+                  </div>
+
+                  <!-- Events Flow (Google Calendar chips) -->
+                  <div class="gcal-events-flow">
+
+                    <!-- Government Public Holidays (Amber pill) -->
+                    <?php if (!empty($dHols)): ?>
+                      <?php foreach ($dHols as $h): 
+                        if ($renderedCount >= $maxDisplay) break;
+                        $renderedCount++;
+                      ?>
+                        <div class="gcal-chip-holiday gcal-layer-holiday" 
+                             onclick="event.stopPropagation(); openEventDetailModal('holiday', <?= htmlspecialchars(json_encode($h)); ?>, '<?= $dateFormatted; ?>')"
+                             title="🏛️ Official Public Holiday: <?= htmlspecialchars($h['name']); ?> (<?= htmlspecialchars($h['description']); ?>)">
+                          <span><?= $h['flag'] ?? '🏛️'; ?></span>
+                          <span><?= htmlspecialchars($h['name']); ?></span>
+                        </div>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <!-- Project Due Dates / Kickoffs (Solid colored banner) -->
+                    <?php if (!empty($dProj)): ?>
+                      <?php foreach ($dProj as $pe): 
+                        if ($renderedCount >= $maxDisplay) break;
+                        $renderedCount++;
+                        $isDue = ($pe['type'] === 'project_due');
+                      ?>
+                        <div class="gcal-chip-solid gcal-layer-project" 
+                             style="background:<?= htmlspecialchars($pe['ring_color']); ?>;"
+                             onclick="event.stopPropagation(); openEventDetailModal('project', <?= htmlspecialchars(json_encode($pe)); ?>, '<?= $dateFormatted; ?>')"
+                             title="<?= htmlspecialchars($pe['title']); ?> • <?= $pe['progress_pct']; ?>% Complete">
+                          <span><?= $isDue ? '🚀' : '🏁'; ?></span>
+                          <span>[<?= htmlspecialchars($pe['project_code']); ?>] <?= htmlspecialchars($pe['title']); ?></span>
+                        </div>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <!-- Milestones (Sky blue solid chip) -->
+                    <?php if (!empty($dMiles)): ?>
+                      <?php foreach ($dMiles as $m): 
+                        if ($renderedCount >= $maxDisplay) break;
+                        $renderedCount++;
+                      ?>
+                        <div class="gcal-chip-solid gcal-layer-milestone" 
+                             style="background:#1A73E8;"
+                             onclick="event.stopPropagation(); openEventDetailModal('milestone', <?= htmlspecialchars(json_encode($m)); ?>, '<?= $dateFormatted; ?>')"
+                             title="Milestone: <?= htmlspecialchars($m['name']); ?> (<?= htmlspecialchars($m['project_name']); ?>)">
+                          <span>🎯</span>
+                          <span><?= htmlspecialchars($m['name']); ?></span>
+                        </div>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <!-- Tasks (Timed / Pill chips) -->
+                    <?php if (!empty($dTasks)): ?>
+                      <?php foreach ($dTasks as $t): 
+                        if ($renderedCount >= $maxDisplay) break;
+                        $renderedCount++;
+                        $isDone = ($t['status'] === 'Done');
+                      ?>
+                        <div class="gcal-chip-timed gcal-layer-task" 
+                             onclick="event.stopPropagation(); openEventDetailModal('task', <?= htmlspecialchars(json_encode($t)); ?>, '<?= $dateFormatted; ?>')"
+                             title="<?= htmlspecialchars($t['task_name']); ?> [<?= htmlspecialchars($t['project_name']); ?>]">
+                          <span class="gcal-chip-timed-dot" style="background:<?= htmlspecialchars($t['ring_color']); ?>;"></span>
+                          <span class="gcal-chip-time-lbl"><?= $t['time_str']; ?></span>
+                          <span style="<?= $isDone ? 'text-decoration:line-through; opacity:0.6;' : ''; ?>"><?= htmlspecialchars($t['task_name']); ?></span>
+                        </div>
+                      <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <!-- "+X more" Pill if overflowing -->
+                    <?php if ($totalItems > $maxDisplay): ?>
+                      <span class="gcal-more-link" onclick="event.stopPropagation(); openDayDetailModal(<?= $d; ?>)">
+                        +<?= $totalItems - $maxDisplay; ?> more
+                      </span>
+                    <?php endif; ?>
+
+                  </div>
+                </div>
+              <?php endfor; ?>
+
+              <?php
+              // 3. Trailing overflow days from next month to complete 35 or 42 grid cells
+              $totalCellsSoFar = $firstDayOfWeek + $daysInMonth;
+              $gridTargetCells = ($totalCellsSoFar <= 35) ? 35 : 42;
+              $nextDaysNeeded = $gridTargetCells - $totalCellsSoFar;
+
+              for ($n = 1; $n <= $nextDaysNeeded; $n++):
+                $nextDateStr = sprintf('%02d-%02d-%04d', $n, $nextMonth, $nextYear);
+                $nextHols = $nextMonthHolidays[$n] ?? [];
+              ?>
+                <div class="gcal-day-box is-other-month" 
+                     data-date="<?= $nextDateStr; ?>" 
+                     onclick="window.location.href='?month=<?= $nextMonth; ?>&year=<?= $nextYear; ?>&day=<?= $n; ?>&country=<?= $reqCountry; ?>'">
+                  <div class="gcal-day-box-header">
+                    <span class="gcal-day-num"><?= $n; ?></span>
+                  </div>
+                  <div class="gcal-events-flow">
+                    <?php if (!empty($nextHols)): ?>
+                      <div class="gcal-chip-holiday" style="opacity:0.6;">
+                        <span>🏛️</span>
+                        <span><?= htmlspecialchars($nextHols[0]['name']); ?></span>
+                      </div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              <?php endfor; ?>
             </div>
           <?php endif; ?>
-        </div>
 
+        </main>
       </div>
     </div>
 
@@ -867,14 +1758,54 @@ include __DIR__ . '/includes/head.php';
 </div>
 
 <!-- ======================================================== -->
-<!-- MODAL 1: Day Details & Quick Actions Modal                -->
+<!-- GOOGLE CALENDAR EVENT POPOVER / PREVIEW CARD             -->
+<!-- ======================================================== -->
+<div class="gcal-event-popover" id="gcalEventPopover">
+  <div class="gcal-popover-header">
+    <button type="button" class="gcal-icon-btn" id="btnPopoverEdit" title="Edit Item" style="width:32px; height:32px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    </button>
+    <button type="button" class="gcal-icon-btn" onclick="closeEventPopover()" title="Close (Esc)" style="width:32px; height:32px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="gcal-popover-body">
+    <div class="gcal-popover-title-row">
+      <span class="gcal-popover-color-dot" id="popoverDot"></span>
+      <div>
+        <div class="gcal-popover-title" id="popoverTitle">Event Title</div>
+        <span id="popoverTypeBadge" style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--gcal-blue);"></span>
+      </div>
+    </div>
+
+    <!-- Date & Time -->
+    <div class="gcal-popover-detail-row">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="popoverDateTime">Wednesday, Oct 1 • 10:00 AM</span>
+    </div>
+
+    <!-- Project Association -->
+    <div class="gcal-popover-detail-row" id="popoverProjectRow">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span id="popoverProjectName">Marketing Redesign</span>
+    </div>
+
+    <!-- Description / Extra details -->
+    <div style="font-size:12.5px; color:var(--gcal-text-secondary); line-height:1.4; border-top:1px solid var(--gcal-border-subtle); padding-top:10px;" id="popoverDescription">
+      Description...
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL 1: Day Details & All Events Overlay Modal          -->
 <!-- ======================================================== -->
 <div class="modal-overlay" id="dayDetailModal">
-  <div class="modal-card" style="max-width:580px;">
+  <div class="modal-card" style="max-width:560px;">
     <div class="modal-header">
       <div>
         <h3 class="modal-title" id="dayModalDateTitle">Schedule for Day</h3>
-        <span id="dayModalSubTitle" style="font-size:12px; color:var(--text-secondary);"></span>
+        <span id="dayModalSubTitle" style="font-size:12px; color:var(--gcal-text-secondary);"></span>
       </div>
       <button class="modal-close-btn" aria-label="Close modal" onclick="closeDayDetailModal()">&times;</button>
     </div>
@@ -899,7 +1830,7 @@ include __DIR__ . '/includes/head.php';
     </div>
     
     <!-- Modal Navigation Tabs -->
-    <div style="display:flex; gap:6px; border-bottom:1px solid var(--border-base); padding:0 20px 8px; margin-top:8px;">
+    <div style="display:flex; gap:6px; border-bottom:1px solid var(--gcal-border); padding:0 20px 8px; margin-top:8px;">
       <button type="button" class="side-tab-btn active" id="schedTabTask" onclick="switchSchedTab('task')">📋 Task</button>
       <button type="button" class="side-tab-btn" id="schedTabProject" onclick="switchSchedTab('project')">🚀 Project Deadline</button>
       <button type="button" class="side-tab-btn" id="schedTabMilestone" onclick="switchSchedTab('milestone')">🎯 Milestone</button>
@@ -971,7 +1902,7 @@ include __DIR__ . '/includes/head.php';
             <input type="text" id="projDueDate" class="form-input" placeholder="DD-MM-YYYY" required />
           </div>
         </div>
-        <p style="font-size:12px; color:var(--text-muted); margin:0;">
+        <p style="font-size:12px; color:var(--gcal-text-muted); margin:0;">
           Setting a launch deadline displays a high-priority Project Deadline Banner directly on the calendar grid.
         </p>
       </div>
@@ -1051,44 +1982,44 @@ include __DIR__ . '/includes/head.php';
       <button class="modal-close-btn" aria-label="Close modal" onclick="closeShareScheduleModal()">&times;</button>
     </div>
     <div class="modal-body" style="padding-top:14px;">
-      <p style="font-size:13px; color:var(--text-secondary); margin:0 0 16px;">
+      <p style="font-size:13px; color:var(--gcal-text-secondary); margin:0 0 16px;">
         Share your upcoming task deadlines, project schedules, and government holidays with team members or sync directly into calendar apps.
       </p>
 
       <!-- Web Link Box -->
-      <div style="background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); padding:14px; margin-bottom:14px;">
-        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+      <div style="background:var(--gcal-hover-bg); border:1px solid var(--gcal-border); border-radius:6px; padding:14px; margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--gcal-text-primary); margin-bottom:6px;">
           Public Read-Only Web Link
         </label>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="shareWebUrlInput" readonly class="form-input" style="font-size:12.5px; background:var(--bg-surface);" />
+          <input type="text" id="shareWebUrlInput" readonly class="form-input" style="font-size:12.5px; background:var(--gcal-surface);" />
           <button type="button" class="btn-save" id="btnCopyWebUrl" onclick="copyShareUrl('shareWebUrlInput', 'btnCopyWebUrl')" style="white-space:nowrap; padding:6px 14px; font-size:12px;">Copy Link</button>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-          <span style="font-size:11.5px; color:var(--text-muted);">Viewable in browser without logging in.</span>
-          <a id="btnPreviewSharePage" href="#" target="_blank" style="font-size:11.5px; font-weight:600; color:var(--brand-primary); text-decoration:none;">Preview Page &rarr;</a>
+          <span style="font-size:11.5px; color:var(--gcal-text-muted);">Viewable in browser without logging in.</span>
+          <a id="btnPreviewSharePage" href="#" target="_blank" style="font-size:11.5px; font-weight:600; color:var(--gcal-blue); text-decoration:none;">Preview Page &rarr;</a>
         </div>
       </div>
 
       <!-- Live WebCal Calendar Feed -->
-      <div style="background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:var(--radius-sm); padding:14px; margin-bottom:14px;">
-        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+      <div style="background:var(--gcal-hover-bg); border:1px solid var(--gcal-border); border-radius:6px; padding:14px; margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:700; color:var(--gcal-text-primary); margin-bottom:6px;">
           Live Calendar Feed (Google Calendar / Apple Calendar / Outlook)
         </label>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="shareFeedUrlInput" readonly class="form-input" style="font-size:12.5px; background:var(--bg-surface);" />
+          <input type="text" id="shareFeedUrlInput" readonly class="form-input" style="font-size:12.5px; background:var(--gcal-surface);" />
           <button type="button" class="btn-save" id="btnCopyFeedUrl" onclick="copyShareUrl('shareFeedUrlInput', 'btnCopyFeedUrl')" style="white-space:nowrap; padding:6px 14px; font-size:12px;">Copy Feed</button>
         </div>
-        <span style="display:block; font-size:11.5px; color:var(--text-muted); margin-top:8px;">
-          Subscribe to this URL in your phone or calendar client to automatically keep all deadlines, projects, and holidays in sync.
+        <span style="display:block; font-size:11.5px; color:var(--gcal-text-muted); margin-top:8px;">
+          Subscribe to this URL in your Google Calendar app to automatically keep all deadlines, projects, and holidays in sync.
         </span>
       </div>
 
       <!-- Revocation Box -->
-      <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-base);">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--gcal-border-subtle);">
         <div>
-          <span style="display:block; font-size:12px; font-weight:600; color:var(--text-primary);">Revoke Share Link</span>
-          <span style="font-size:11px; color:var(--text-muted);">Instantly regenerates secret token and disables previous link.</span>
+          <span style="display:block; font-size:12px; font-weight:600; color:var(--gcal-text-primary);">Revoke Share Link</span>
+          <span style="font-size:11px; color:var(--gcal-text-muted);">Instantly regenerates secret token and disables previous link.</span>
         </div>
         <button type="button" class="btn btn-secondary" id="btnRegenerateShare" onclick="regenerateShareToken()" style="font-size:11.5px; padding:6px 12px; color:#DC2626; border-color:rgba(220,38,38,0.3);">
           Reset Link
@@ -1106,8 +2037,10 @@ include __DIR__ . '/includes/head.php';
 window.__CAL_DATA = {
   month: <?= $reqMonth; ?>,
   year: <?= $reqYear; ?>,
+  day: <?= $reqDay; ?>,
   country: '<?= htmlspecialchars($reqCountry); ?>',
   projectId: <?= $reqProject !== null ? $reqProject : 'null'; ?>,
+  view: '<?= $reqView; ?>',
   holidays: <?= json_encode($holidaysByDay); ?>,
   projects: <?= json_encode($projects); ?>,
   projectEvents: <?= json_encode($projectEventsByDay); ?>,
@@ -1118,15 +2051,54 @@ window.__CAL_DATA = {
 
 <script src="assets/js/app.js"></script>
 <script>
-// Tab Switching in Side Panel
-window.switchSideTab = function(tabName) {
-  document.getElementById('tabContentHolidays').style.display = (tabName === 'holidays') ? 'block' : 'none';
-  document.getElementById('tabContentProjects').style.display = (tabName === 'projects') ? 'block' : 'none';
-  document.getElementById('tabContentDeadlines').style.display = (tabName === 'deadlines') ? 'block' : 'none';
+// Toggle Google Calendar Left Sidebar
+window.toggleGcalSidebar = function() {
+  const sb = document.getElementById('gcalSidebar');
+  if (sb) sb.classList.toggle('collapsed');
+};
 
-  document.getElementById('tabBtnHolidays').classList.toggle('active', tabName === 'holidays');
-  document.getElementById('tabBtnProjects').classList.toggle('active', tabName === 'projects');
-  document.getElementById('tabBtnDeadlines').classList.toggle('active', tabName === 'deadlines');
+// View Switcher Dropdown
+window.toggleViewDropdown = function() {
+  const menu = document.getElementById('gcalViewMenu');
+  if (menu) menu.classList.toggle('active');
+};
+
+document.addEventListener('click', function(e) {
+  const btn = document.getElementById('btnGcalViewSelect');
+  const menu = document.getElementById('gcalViewMenu');
+  if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+    menu.classList.remove('active');
+  }
+
+  // Close Event Popover if clicked outside
+  const popover = document.getElementById('gcalEventPopover');
+  if (popover && popover.classList.contains('active')) {
+    if (!popover.contains(e.target) && !e.target.closest('.gcal-chip-solid') && !e.target.closest('.gcal-chip-timed') && !e.target.closest('.gcal-chip-holiday')) {
+      closeEventPopover();
+    }
+  }
+});
+
+// Real-Time Search in Calendar
+window.handleGcalSearch = function(query) {
+  const q = query.toLowerCase().trim();
+  const chips = document.querySelectorAll('.gcal-chip-solid, .gcal-chip-timed, .gcal-chip-holiday, .gcal-agenda-card');
+  chips.forEach(chip => {
+    if (!q) {
+      chip.style.display = '';
+    } else {
+      const txt = chip.textContent.toLowerCase();
+      chip.style.display = txt.includes(q) ? '' : 'none';
+    }
+  });
+};
+
+// Filter Toggles for "My Calendars" Layers
+window.toggleCalendarLayer = function(layerType, isVisible) {
+  const elements = document.querySelectorAll('.gcal-layer-' + layerType);
+  elements.forEach(el => {
+    el.style.display = isVisible ? '' : 'none';
+  });
 };
 
 // Country & Project URL Navigation
@@ -1136,32 +2108,81 @@ window.changeCountry = function(newCountry) {
   window.location.href = url.toString();
 };
 
-window.filterByProject = function(projId) {
-  const url = new URL(window.location.href);
-  if (projId === 'all') {
-    url.searchParams.delete('project_id');
-  } else {
-    url.searchParams.set('project_id', projId);
-  }
-  window.location.href = url.toString();
-};
-
-window.toggleHolidayHighlight = function(show) {
-  const cells = document.querySelectorAll('.cal-day-cell.is-holiday');
-  cells.forEach(c => {
-    if (show) {
-      c.style.removeProperty('background');
-      c.style.removeProperty('border-color');
-    } else {
-      c.style.background = 'var(--bg-surface)';
-      c.style.borderColor = 'var(--border-base)';
-    }
-  });
-};
-
-// Day Detail Modal
+// Day Cell Click & Quick Add Event
 let currentSelectedDayDate = '';
 
+window.handleDayCellClick = function(dayNum, dateStr, evt) {
+  // If clicked directly on the cell (not an event chip)
+  if (evt.target.closest('.gcal-chip-solid') || evt.target.closest('.gcal-chip-timed') || evt.target.closest('.gcal-chip-holiday') || evt.target.closest('.gcal-more-link')) {
+    return;
+  }
+  currentSelectedDayDate = dateStr;
+  openUniversalScheduleModal(dateStr);
+};
+
+// Google Calendar Event Popover
+window.openEventDetailModal = function(type, data, dateStr) {
+  const popover = document.getElementById('gcalEventPopover');
+  if (!popover) return;
+
+  const dot = document.getElementById('popoverDot');
+  const title = document.getElementById('popoverTitle');
+  const typeBadge = document.getElementById('popoverTypeBadge');
+  const dateTime = document.getElementById('popoverDateTime');
+  const projRow = document.getElementById('popoverProjectRow');
+  const projName = document.getElementById('popoverProjectName');
+  const desc = document.getElementById('popoverDescription');
+
+  if (type === 'holiday') {
+    dot.style.background = '#D97706';
+    title.textContent = data.name;
+    typeBadge.textContent = '🏛️ Official Government Day Off';
+    typeBadge.style.color = '#D97706';
+    dateTime.textContent = dateStr + ' • Full Day';
+    projRow.style.display = 'none';
+    desc.innerHTML = `<strong>${escapeHtml(data.local_name || '')}</strong><br>${escapeHtml(data.description || 'Public holiday by government law.')}`;
+  } else if (type === 'project') {
+    dot.style.background = data.ring_color || '#D93025';
+    title.textContent = data.title;
+    typeBadge.textContent = '🚀 Project Target';
+    typeBadge.style.color = '#D93025';
+    dateTime.textContent = dateStr + ' • ' + (data.time_str || '11:59 PM');
+    projRow.style.display = 'flex';
+    projName.textContent = '[' + (data.project_code || 'PRJ') + '] ' + data.project_name;
+    desc.innerHTML = `Progress: <strong>${data.progress_pct}%</strong><br>Status: <strong>${data.status}</strong>`;
+  } else if (type === 'milestone') {
+    dot.style.background = '#1A73E8';
+    title.textContent = data.name;
+    typeBadge.textContent = '🎯 Project Milestone';
+    typeBadge.style.color = '#1A73E8';
+    dateTime.textContent = dateStr + ' • ' + (data.time_str || '2:00 PM');
+    projRow.style.display = 'flex';
+    projName.textContent = data.project_name || 'Project';
+    desc.innerHTML = `Status: <strong>${data.status || 'Pending'}</strong>`;
+  } else { // task
+    dot.style.background = data.ring_color || '#1A73E8';
+    title.textContent = data.task_name;
+    typeBadge.textContent = '📋 Task (' + (data.priority || 'Medium') + ')';
+    typeBadge.style.color = 'var(--gcal-blue)';
+    dateTime.textContent = dateStr + ' • ' + (data.time_str || '10:00 AM');
+    projRow.style.display = 'flex';
+    projName.textContent = data.project_name || 'General';
+    desc.innerHTML = `Assigned: <strong>${escapeHtml(data.assigned_to || 'Me')}</strong><br>Status: <strong>${data.status || 'Open'}</strong>`;
+  }
+
+  // Position popover near mouse or center
+  popover.style.top = '50%';
+  popover.style.left = '50%';
+  popover.style.transform = 'translate(-50%, -50%)';
+  popover.classList.add('active');
+};
+
+window.closeEventPopover = function() {
+  const popover = document.getElementById('gcalEventPopover');
+  if (popover) popover.classList.remove('active');
+};
+
+// Day Detail Modal (List of all items on that date)
 window.openDayDetailModal = function(dayNum) {
   const data = window.__CAL_DATA;
   const holidays = data.holidays[dayNum] || [];
@@ -1186,15 +2207,15 @@ window.openDayDetailModal = function(dayNum) {
     html += '<div style="font-size:11px; font-weight:700; color:#D97706; text-transform:uppercase; margin-bottom:6px;">Official Government Day Off</div>';
     holidays.forEach(h => {
       html += `
-        <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:6px; padding:12px; margin-bottom:8px;">
+        <div style="background:var(--gcal-holiday-chip-bg); border-left:3px solid #D97706; border-radius:6px; padding:12px; margin-bottom:8px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span style="font-size:20px;">${h.flag || '🏛️'}</span>
             <div>
-              <div style="font-size:14px; font-weight:800; color:var(--text-primary);">${escapeHtml(h.name)}</div>
+              <div style="font-size:14px; font-weight:800; color:var(--gcal-text-primary);">${escapeHtml(h.name)}</div>
               ${h.local_name ? `<div style="font-size:12px; font-weight:600; color:#D97706;">${escapeHtml(h.local_name)}</div>` : ''}
             </div>
           </div>
-          <p style="font-size:12px; color:var(--text-secondary); margin:8px 0 0; line-height:1.4;">${escapeHtml(h.description)}</p>
+          <p style="font-size:12px; color:var(--gcal-text-secondary); margin:8px 0 0; line-height:1.4;">${escapeHtml(h.description)}</p>
         </div>
       `;
     });
@@ -1204,18 +2225,18 @@ window.openDayDetailModal = function(dayNum) {
   // 2. Project Events Section
   if (projEvents.length > 0) {
     html += '<div style="margin-bottom:14px;">';
-    html += '<div style="font-size:11px; font-weight:700; color:var(--brand-primary); text-transform:uppercase; margin-bottom:6px;">Project Timelines</div>';
+    html += '<div style="font-size:11px; font-weight:700; color:var(--gcal-blue); text-transform:uppercase; margin-bottom:6px;">Project Timelines</div>';
     projEvents.forEach(pe => {
       const isDue = pe.type === 'project_due';
       html += `
-        <div style="background:var(--bg-subtle); border-left:3px solid ${pe.ring_color}; border-radius:6px; padding:10px 12px; margin-bottom:8px; border-top:1px solid var(--border-base); border-right:1px solid var(--border-base); border-bottom:1px solid var(--border-base);">
+        <div style="background:var(--gcal-hover-bg); border-left:3px solid ${pe.ring_color}; border-radius:6px; padding:10px 12px; margin-bottom:8px;">
           <div style="display:flex; align-items:center; justify-content:space-between;">
             <span style="font-size:11px; font-weight:800; color:${isDue ? '#DC2626' : '#059669'}; text-transform:uppercase;">
               ${isDue ? '🚀 Project Launch Deadline' : '🏁 Project Kickoff'}
             </span>
-            <span style="font-size:11px; font-weight:700; color:var(--text-primary);">${pe.progress_pct}% Completed</span>
+            <span style="font-size:11px; font-weight:700; color:var(--gcal-text-primary);">${pe.progress_pct}% Completed</span>
           </div>
-          <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-top:2px;">[${escapeHtml(pe.project_code)}] ${escapeHtml(pe.project_name)}</div>
+          <div style="font-size:14px; font-weight:700; color:var(--gcal-text-primary); margin-top:2px;">[${escapeHtml(pe.project_code)}] ${escapeHtml(pe.project_name)}</div>
         </div>
       `;
     });
@@ -1225,12 +2246,12 @@ window.openDayDetailModal = function(dayNum) {
   // 3. Milestones Section
   if (milestones.length > 0) {
     html += '<div style="margin-bottom:14px;">';
-    html += '<div style="font-size:11px; font-weight:700; color:#0284C7; text-transform:uppercase; margin-bottom:6px;">Project Milestones</div>';
+    html += '<div style="font-size:11px; font-weight:700; color:#1A73E8; text-transform:uppercase; margin-bottom:6px;">Project Milestones</div>';
     milestones.forEach(m => {
       html += `
-        <div style="background:var(--bg-subtle); border-left:3px solid #0284C7; border-radius:6px; padding:10px 12px; margin-bottom:8px; border-top:1px solid var(--border-base); border-right:1px solid var(--border-base); border-bottom:1px solid var(--border-base);">
-          <div style="font-size:13.5px; font-weight:700; color:var(--text-primary);">${escapeHtml(m.name)}</div>
-          <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Project: ${escapeHtml(m.project_name)}</div>
+        <div style="background:var(--gcal-hover-bg); border-left:3px solid #1A73E8; border-radius:6px; padding:10px 12px; margin-bottom:8px;">
+          <div style="font-size:13.5px; font-weight:700; color:var(--gcal-text-primary);">${escapeHtml(m.name)}</div>
+          <div style="font-size:12px; color:var(--gcal-text-muted); margin-top:2px;">Project: ${escapeHtml(m.project_name)}</div>
         </div>
       `;
     });
@@ -1240,21 +2261,21 @@ window.openDayDetailModal = function(dayNum) {
   // 4. Tasks Section
   if (tasks.length > 0) {
     html += '<div style="margin-bottom:14px;">';
-    html += '<div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Tasks Scheduled (${tasks.length})</div>';
+    html += '<div style="font-size:11px; font-weight:700; color:var(--gcal-text-secondary); text-transform:uppercase; margin-bottom:6px;">Tasks Scheduled (${tasks.length})</div>';
     tasks.forEach(t => {
       const isDone = (t.status === 'Done');
       const prio = (t.priority || 'Medium').toLowerCase();
-      const prioColor = (prio === 'urgent') ? '#DC2626' : ((prio === 'high') ? '#EA580C' : 'var(--brand-primary)');
+      const prioColor = (prio === 'urgent') ? '#DC2626' : ((prio === 'high') ? '#EA580C' : 'var(--gcal-blue)');
       html += `
-        <div style="background:var(--bg-subtle); border:1px solid var(--border-base); border-radius:6px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="background:var(--gcal-hover-bg); border:1px solid var(--gcal-border-subtle); border-radius:6px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
           <div style="display:flex; align-items:center; gap:10px;">
             <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleTaskDoneStatus(${t.id}, this)" style="cursor:pointer; width:16px; height:16px;" />
             <div>
-              <div style="font-size:13.5px; font-weight:700; color:var(--text-primary); ${isDone ? 'text-decoration:line-through; opacity:0.6;' : ''}">${escapeHtml(t.task_name)}</div>
-              <div style="font-size:11.5px; color:var(--text-muted);">[${escapeHtml(t.project_name)}] • Priority: <span style="font-weight:700; color:${prioColor};">${escapeHtml(t.priority || 'Medium')}</span></div>
+              <div style="font-size:13.5px; font-weight:700; color:var(--gcal-text-primary); ${isDone ? 'text-decoration:line-through; opacity:0.6;' : ''}">${escapeHtml(t.task_name)}</div>
+              <div style="font-size:11.5px; color:var(--gcal-text-muted);">[${escapeHtml(t.project_name)}] • Priority: <span style="font-weight:700; color:${prioColor};">${escapeHtml(t.priority || 'Medium')}</span></div>
             </div>
           </div>
-          <span style="font-size:11px; font-weight:700; background:var(--bg-surface); padding:2px 6px; border-radius:4px; border:1px solid var(--border-base);">${escapeHtml(t.status || 'Open')}</span>
+          <span style="font-size:11px; font-weight:700; background:var(--gcal-surface); padding:2px 6px; border-radius:4px; border:1px solid var(--gcal-border);">${escapeHtml(t.status || 'Open')}</span>
         </div>
       `;
     });
@@ -1263,9 +2284,9 @@ window.openDayDetailModal = function(dayNum) {
 
   if (holidays.length === 0 && projEvents.length === 0 && milestones.length === 0 && tasks.length === 0) {
     html = `
-      <div style="text-align:center; padding:32px 10px; color:var(--text-muted);">
+      <div style="text-align:center; padding:32px 10px; color:var(--gcal-text-muted);">
         <div style="font-size:24px; margin-bottom:6px;">📅</div>
-        <div style="font-size:13.5px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">No events scheduled for this day</div>
+        <div style="font-size:13.5px; font-weight:600; color:var(--gcal-text-primary); margin-bottom:4px;">No events scheduled for this day</div>
         <div style="font-size:12px;">Click below to add a task, set a project deadline, or mark a custom day off.</div>
       </div>
     `;
@@ -1314,22 +2335,6 @@ window.openAddCustomHolidayModal = function() {
   switchSchedTab('holiday');
 };
 
-window.openCreateProjectDeadlineModal = function() {
-  openUniversalScheduleModal();
-  switchSchedTab('project');
-};
-
-window.openEditProjectDatesModal = function(p) {
-  openUniversalScheduleModal();
-  switchSchedTab('project');
-  const sel = document.getElementById('projSelect');
-  if (sel) {
-    sel.value = p.id;
-    document.getElementById('projStartDate').value = p.start_date || '';
-    document.getElementById('projDueDate').value = p.due_date || '';
-  }
-};
-
 window.switchSchedTab = function(tab) {
   const tabs = ['task', 'project', 'milestone', 'holiday'];
   tabs.forEach(t => {
@@ -1375,7 +2380,7 @@ window.handleTaskScheduleSubmit = async function(e) {
     });
     const data = await res.json();
     if (data.success) {
-      if (typeof showToast === 'function') showToast('Task scheduled successfully!');
+      if (typeof showToast === 'function') showToast('Task scheduled on Google Calendar!');
       closeUniversalScheduleModal();
       setTimeout(() => location.reload(), 400);
     } else {
@@ -1447,7 +2452,7 @@ window.handleMilestoneSubmit = async function(e) {
     });
     const data = await res.json();
     if (data.success) {
-      if (typeof showToast === 'function') showToast('Project milestone added!');
+      if (typeof showToast === 'function') showToast('Milestone saved on calendar!');
       closeUniversalScheduleModal();
       setTimeout(() => location.reload(), 400);
     } else {
@@ -1608,6 +2613,40 @@ window.regenerateShareToken = async function() {
     }
   }
 };
+
+// Keyboard Shortcuts (Google Calendar Standard: t=today, p=prev, n=next, m=month, w=week, d=day, s=schedule, c=create)
+document.addEventListener('keydown', function(e) {
+  // Ignore inside inputs or textareas
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+    return;
+  }
+
+  if (e.key === 'Escape') {
+    closeEventPopover();
+    closeDayDetailModal();
+    closeUniversalScheduleModal();
+    closeShareScheduleModal();
+  } else if (e.key === 't' || e.key === 'T') {
+    window.location.href = '?month=<?= (int)date('n'); ?>&year=<?= (int)date('Y'); ?>&day=<?= (int)date('j'); ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?>';
+  } else if (e.key === 'p' || e.key === 'k') {
+    window.location.href = '?month=<?= $prevMonth; ?>&year=<?= $prevYear; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>';
+  } else if (e.key === 'n' || e.key === 'j') {
+    window.location.href = '?month=<?= $nextMonth; ?>&year=<?= $nextYear; ?>&country=<?= $reqCountry; ?>&view=<?= $reqView; ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>';
+  } else if (e.key === 'm' || e.key === 'M') {
+    window.location.href = '?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=month';
+  } else if (e.key === 'w' || e.key === 'W') {
+    window.location.href = '?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=week';
+  } else if (e.key === 'd' || e.key === 'D') {
+    window.location.href = '?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=day';
+  } else if (e.key === 's' || e.key === 'S') {
+    window.location.href = '?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=schedule';
+  } else if (e.key === 'c' || e.key === 'C') {
+    openUniversalScheduleModal();
+  } else if (e.key === '/') {
+    e.preventDefault();
+    document.getElementById('gcalSearchInput')?.focus();
+  }
+});
 </script>
 </body>
 </html>
