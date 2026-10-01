@@ -225,9 +225,14 @@ include __DIR__ . '/includes/head.php';
         <p class="gantt-subtitle">Drag bars to reschedule, resize durations, inspect task dependencies, and track official government days off.</p>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <a href="calendar.php" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; text-decoration:none;">
+        <select class="form-control" style="width:auto; height:34px; font-size:12px; border-radius:6px; padding:0 10px; cursor:pointer;" onchange="window.location.href='?country='+this.value+'<?= $reqProject ? '&project_id=' . $reqProject : ''; ?>'" title="Filter Government Days Off by Region">
+          <option value="KH" <?= ($reqCountry === 'KH') ? 'selected' : ''; ?>>🇰🇭 Cambodia</option>
+          <option value="US" <?= ($reqCountry === 'US') ? 'selected' : ''; ?>>🇺🇸 United States</option>
+          <option value="GLOBAL" <?= ($reqCountry === 'GLOBAL') ? 'selected' : ''; ?>>🌐 International</option>
+        </select>
+        <a href="calendar.php?country=<?= htmlspecialchars($reqCountry); ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; text-decoration:none;" title="Open Google Calendar View (Press M)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Month Calendar
+          Google Calendar
         </a>
         <a href="assignments.php" class="btn btn-save" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; text-decoration:none;">
           + New Task
@@ -677,6 +682,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadDependencies();
   window.addEventListener('resize', () => renderDependencyArrows());
+
+  // Keyboard Shortcuts: M/C = Google Calendar, T = Scroll to Today
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'm' || e.key === 'M' || e.key === 'c' || e.key === 'C') {
+      window.location.href = 'calendar.php?country=<?= $reqCountry; ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>';
+    } else if (e.key === 't' || e.key === 'T') {
+      const scrollWrap = document.getElementById('ganttScrollable');
+      const todayLine = document.querySelector('.today-indicator-line');
+      if (scrollWrap && todayLine) {
+        scrollWrap.scrollTo({ left: Math.max(0, parseInt(todayLine.style.left || '130', 10) - 200), behavior: 'smooth' });
+        if (typeof showToast === 'function') showToast('Scrolled to Today');
+      }
+    }
+  });
 });
 </script>
 </body>

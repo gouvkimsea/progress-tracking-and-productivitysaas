@@ -1263,6 +1263,11 @@ include __DIR__ . '/includes/head.php';
                 <span>Schedule</span>
                 <span class="gcal-shortcut-kbd">S</span>
               </a>
+              <div style="border-top:1px solid var(--gcal-border-subtle); margin:4px 0;"></div>
+              <a href="gantt.php?country=<?= htmlspecialchars($reqCountry); ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>" class="gcal-dropdown-item" title="Open Gantt interactive timeline">
+                <span>Gantt Timeline</span>
+                <span class="gcal-shortcut-kbd">G</span>
+              </a>
             </div>
           </div>
 
@@ -2640,6 +2645,8 @@ document.addEventListener('keydown', function(e) {
     window.location.href = '?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=day';
   } else if (e.key === 's' || e.key === 'S') {
     window.location.href = '?month=<?= $reqMonth; ?>&year=<?= $reqYear; ?>&country=<?= $reqCountry; ?>&view=schedule';
+  } else if (e.key === 'g' || e.key === 'G') {
+    window.location.href = 'gantt.php?country=<?= $reqCountry; ?><?= $reqProject ? '&project_id=' . $reqProject : ''; ?>';
   } else if (e.key === 'c' || e.key === 'C') {
     openUniversalScheduleModal();
   } else if (e.key === '/') {
