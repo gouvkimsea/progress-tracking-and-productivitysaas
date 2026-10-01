@@ -321,6 +321,22 @@ include __DIR__ . '/includes/head.php';
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
+
+        <?php if (!empty($milestones)): ?>
+          <div class="gantt-sidebar-head" style="margin-top:12px; border-top:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:space-between;">
+            <span>Milestones (<?= count($milestones); ?>)</span>
+            <span style="font-size:10.5px; color:var(--text-muted); font-weight:500;">Checkpoint</span>
+          </div>
+          <?php foreach ($milestones as $m): 
+            $mRing = $m['ring_color'] ?? '#3B82F6';
+            $mCode = $m['project_code'] ?? 'MS';
+          ?>
+            <div class="gantt-task-row" title="<?= htmlspecialchars($m['name']); ?> • Project: <?= htmlspecialchars($m['project_name']); ?> • Due: <?= htmlspecialchars($m['due_date']); ?>">
+              <span class="proj-code-badge" style="background:<?= htmlspecialchars($mRing); ?>;"><?= htmlspecialchars($mCode); ?></span>
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600;">◆ <?= htmlspecialchars($m['name']); ?></span>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </div>
 
       <!-- Right Timeline Grid -->
@@ -419,6 +435,33 @@ include __DIR__ . '/includes/head.php';
                   [<?= htmlspecialchars($t['project_code']); ?>] <?= htmlspecialchars($t['task_name']); ?>
                 </span>
                 <div class="gantt-resize-handle" title="Drag to adjust duration"></div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+
+        <!-- Project Milestones Rows -->
+        <?php if (!empty($milestones)): ?>
+          <?php foreach ($milestones as $m): 
+            $mRaw = $m['due_date'] ?? null;
+            if (!empty($mRaw)) {
+                $mTs = strtotime(str_replace('/', '-', $mRaw));
+            } else {
+                $mTs = $todayTs + (7 * 86400);
+            }
+            $mDayOffset = max(0, round(($mTs - $timelineStartTs) / 86400));
+            $mLeftPx = ($mDayOffset * 44) + 14;
+            $mRing = $m['ring_color'] ?? '#3B82F6';
+          ?>
+            <div class="gantt-bar-row" style="position:relative; height:38px; display:flex; align-items:center;">
+              <div class="gantt-milestone-marker" 
+                   data-milestone-id="<?= $m['id']; ?>"
+                   data-day-offset="<?= $mDayOffset; ?>"
+                   style="position:absolute; left: <?= $mLeftPx; ?>px; width: 16px; height: 16px; transform: rotate(45deg); background: <?= htmlspecialchars($mRing); ?>; border: 2px solid #FFF; border-radius: 2px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 5;"
+                   title="◆ Milestone: <?= htmlspecialchars($m['name']); ?> • Project: <?= htmlspecialchars($m['project_name']); ?> • Due: <?= htmlspecialchars($m['due_date']); ?>">
+              </div>
+              <div class="gantt-milestone-label" style="position:absolute; left: <?= $mLeftPx + 24; ?>px; font-size:11.5px; font-weight:700; color:var(--text-primary); white-space:nowrap; pointer-events:none; background:var(--surface); padding:2px 8px; border-radius:4px; border:1px solid var(--border-subtle); box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                ◆ [<?= htmlspecialchars($m['project_code']); ?>] <?= htmlspecialchars($m['name']); ?>
               </div>
             </div>
           <?php endforeach; ?>
@@ -660,6 +703,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const todayIdx = parseInt(todayLine.dataset.todayIdx || 3, 10);
         todayLine.style.left = (todayIdx * dayCellWidth + (dayCellWidth / 2)) + 'px';
       }
+
+      // Recalibrate milestone markers & labels
+      document.querySelectorAll('.gantt-milestone-marker').forEach(marker => {
+        const mOffset = parseInt(marker.dataset.dayOffset || 0, 10);
+        const mLeft = (mOffset * dayCellWidth) + Math.max(4, Math.floor(dayCellWidth / 2) - 8);
+        marker.style.left = mLeft + 'px';
+        const label = marker.nextElementSibling;
+        if (label) {
+          label.style.left = (mLeft + 24) + 'px';
+        }
+      });
 
       renderDependencyArrows();
       if (typeof showToast === 'function') showToast(`Zoom: ${zoomMode} view`);
